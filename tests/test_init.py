@@ -15,7 +15,7 @@ class TestInit:
     def test_init_creates_directory_and_vault(self, tmp_path: Path) -> None:
         vault_dir = tmp_path / "test-vault"
         runner = CliRunner()
-        result = runner.invoke(cli, ["init", "--path", str(vault_dir)])
+        result = runner.invoke(cli, ["--path", str(vault_dir), "init"])
 
         assert result.exit_code == 0
         assert vault_dir.is_dir()
@@ -26,7 +26,7 @@ class TestInit:
     def test_vault_json_validates_against_schema(self, tmp_path: Path) -> None:
         vault_dir = tmp_path / "test-vault"
         runner = CliRunner()
-        runner.invoke(cli, ["init", "--path", str(vault_dir)])
+        runner.invoke(cli, ["--path", str(vault_dir), "init"])
 
         raw = (vault_dir / "vault.json").read_text()
         data = json.loads(raw)
@@ -39,7 +39,7 @@ class TestInit:
         runner = CliRunner()
 
         # First init
-        result1 = runner.invoke(cli, ["init", "--path", str(vault_dir)])
+        result1 = runner.invoke(cli, ["--path", str(vault_dir), "init"])
         assert result1.exit_code == 0
 
         # Write something to verify it's not overwritten
@@ -47,7 +47,7 @@ class TestInit:
         original_content = vault_path.read_text()
 
         # Second init
-        result2 = runner.invoke(cli, ["init", "--path", str(vault_dir)])
+        result2 = runner.invoke(cli, ["--path", str(vault_dir), "init"])
         assert result2.exit_code == 0
         assert "already exists" in result2.output
 
@@ -57,7 +57,7 @@ class TestInit:
     def test_gitignore_contains_credentials(self, tmp_path: Path) -> None:
         vault_dir = tmp_path / "test-vault"
         runner = CliRunner()
-        runner.invoke(cli, ["init", "--path", str(vault_dir)])
+        runner.invoke(cli, ["--path", str(vault_dir), "init"])
 
         gitignore = (vault_dir / ".gitignore").read_text()
         assert ".credentials" in gitignore

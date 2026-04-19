@@ -28,8 +28,10 @@ def init_repo(path: Path) -> None:
 
 
 def commit(path: Path, message: str) -> None:
-    """Stage vault.json and commit with the given message."""
-    _run(["git", "add", "vault.json", ".gitignore"], cwd=path)
+    """Stage vault.json (and .gitignore if present) then commit."""
+    _run(["git", "add", "vault.json"], cwd=path)
+    if (path / ".gitignore").is_file():
+        _run(["git", "add", ".gitignore"], cwd=path)
     _run(["git", "commit", "-m", message, "--allow-empty"], cwd=path)
 
 
