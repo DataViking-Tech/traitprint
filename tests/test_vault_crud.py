@@ -526,6 +526,219 @@ class TestAddSkillCLI:
 
 
 # ------------------------------------------------------------------
+# CLI: vault add-experience / add-story / add-philosophy (non-interactive)
+# ------------------------------------------------------------------
+
+
+class TestAddExperienceCLI:
+    def test_non_interactive_required_only(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-experience",
+                "--title",
+                "Senior Engineer",
+                "--company",
+                "Acme",
+                "--start-date",
+                "2022-01",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        assert "Added experience: Senior Engineer at Acme" in result.output
+        v = VaultStore(vault_dir).load()
+        assert len(v.experiences) == 1
+        exp = v.experiences[0]
+        assert exp.title == "Senior Engineer"
+        assert exp.company == "Acme"
+        assert exp.start_date == "2022-01"
+
+    def test_non_interactive_with_accomplishments(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-experience",
+                "--title",
+                "Lead",
+                "--company",
+                "Beta",
+                "--start-date",
+                "2021-06",
+                "--end-date",
+                "2023-03",
+                "--description",
+                "Built stuff",
+                "--accomplishment",
+                "Shipped X",
+                "--accomplishment",
+                "Reduced Y by 30%",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        v = VaultStore(vault_dir).load()
+        exp = v.experiences[0]
+        assert exp.end_date == "2023-03"
+        assert exp.description == "Built stuff"
+        assert exp.accomplishments == ["Shipped X", "Reduced Y by 30%"]
+
+
+class TestAddStoryCLI:
+    def test_non_interactive_star_fields(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-story",
+                "--title",
+                "Scaled checkout",
+                "--situation",
+                "High load",
+                "--task",
+                "Rearchitect",
+                "--action",
+                "Sharded DB",
+                "--result",
+                "10x throughput",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        assert "Added story: Scaled checkout" in result.output
+        v = VaultStore(vault_dir).load()
+        story = v.stories[0]
+        assert story.title == "Scaled checkout"
+        assert story.situation == "High load"
+        assert story.task == "Rearchitect"
+        assert story.action == "Sharded DB"
+        assert story.result == "10x throughput"
+
+    def test_non_interactive_with_skill_and_experience_refs(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        store = VaultStore(vault_dir)
+        skill = store.add_skill(name="Go", proficiency=8, category="technical")
+        exp = store.add_experience(
+            title="Eng", company="Co", start_date="2020-01"
+        )
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-story",
+                "--title",
+                "Linked story",
+                "--situation",
+                "s",
+                "--task",
+                "t",
+                "--action",
+                "a",
+                "--result",
+                "r",
+                "--skill-id",
+                str(skill.id),
+                "--experience-id",
+                str(exp.id),
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        v = store.load()
+        story = v.stories[0]
+        assert story.skill_ids == [skill.id]
+        assert story.experience_id == exp.id
+
+
+class TestAddPhilosophyCLI:
+    def test_non_interactive_required_fields(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-philosophy",
+                "--title",
+                "Ship small",
+                "--description",
+                "Bias toward delivery.",
+                "--category",
+                PhilosophyCategory.LEADERSHIP.value,
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        assert "Added philosophy: Ship small" in result.output
+        v = VaultStore(vault_dir).load()
+        p = v.philosophies[0]
+        assert p.title == "Ship small"
+        assert p.category == PhilosophyCategory.LEADERSHIP
+
+    def test_non_interactive_missing_category_errors(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-philosophy",
+                "--title",
+                "Incomplete",
+                "--description",
+                "No category provided.",
+            ],
+        )
+        assert result.exit_code != 0
+        assert "--category is required" in result.output
+
+    def test_non_interactive_with_evidence_ids(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        store = VaultStore(vault_dir)
+        s = store.add_story(
+            title="Evidence", situation="s", task="t", action="a", result="r"
+        )
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-philosophy",
+                "--title",
+                "With evidence",
+                "--description",
+                "desc",
+                "--category",
+                PhilosophyCategory.COLLABORATION.value,
+                "--evidence-id",
+                str(s.id),
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        v = store.load()
+        p = v.philosophies[0]
+        assert p.evidence_story_ids == [s.id]
+
+
+# ------------------------------------------------------------------
 # CLI: vault history / diff / rollback
 # ------------------------------------------------------------------
 
