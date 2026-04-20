@@ -79,6 +79,45 @@ def _keyword_score(kws: list[str], content: str) -> float:
     return hits / len(kws)
 
 
+_WIN_MARKERS = (
+    "cut ",
+    "saved",
+    "shipped",
+    "delivered",
+    "increased",
+    "improved",
+    "reduced",
+    "achieved",
+    "grew",
+    "won",
+    "exceeded",
+    "percent",
+    "%",
+)
+_FAILURE_MARKERS = (
+    "failed",
+    "missed",
+    "rolled back",
+    "rollback",
+    "outage",
+    "broke",
+    "abandoned",
+    "cancelled",
+    "canceled",
+    "regressed",
+)
+
+
+def _infer_outcome(result: str) -> str:
+    """Classify a story result as win/failure/learning via keyword heuristic."""
+    lc = result.lower()
+    if any(m in lc for m in _FAILURE_MARKERS):
+        return "failure"
+    if any(m in lc for m in _WIN_MARKERS):
+        return "win"
+    return "learning"
+
+
 def _round3(value: float) -> float:
     return round(min(max(value, 0.0), 1.0) * 1000) / 1000
 
@@ -274,8 +313,11 @@ def _handle_find_story(
 
     skill_name_by_id = {skill.id: skill.name for skill in vault.skills}
 
-    scored: list[tuple[StorySchema, float]] = []
+    scored: list[tuple[StorySchema, float, str]] = []
     for story in complete:
+        story_outcome = _infer_outcome(story.result)
+        if outcome and story_outcome != outcome:
+            continue
         content = " ".join(
             [story.title, story.situation, story.task, story.action, story.result]
         )
@@ -284,7 +326,7 @@ def _handle_find_story(
             score += _keyword_score(sit_kw, content)
         if theme_kw:
             score += _keyword_score(theme_kw, content)
-        scored.append((story, score))
+        scored.append((story, score, story_outcome))
 
     if has_text_filter:
         scored = [x for x in scored if x[1] > 0]
@@ -292,7 +334,7 @@ def _handle_find_story(
     scored.sort(key=lambda x: -x[1])
 
     stories_out: list[dict[str, Any]] = []
-    for story, score in scored[:limit]:
+    for story, score, story_outcome in scored[:limit]:
         related_skills = [
             skill_name_by_id[sid] for sid in story.skill_ids if sid in skill_name_by_id
         ]
@@ -305,7 +347,7 @@ def _handle_find_story(
                 "action": story.action,
                 "result": story.result,
                 "lesson": None,
-                "outcome": "learning",
+                "outcome": story_outcome,
                 "related_skills": related_skills,
                 "related_experience_id": (
                     str(story.experience_id) if story.experience_id else None
