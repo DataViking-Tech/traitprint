@@ -14,7 +14,7 @@ from traitprint.git_ops import log as git_log
 from traitprint.git_ops import rollback as git_rollback
 from traitprint.schema import PhilosophyCategory
 from traitprint.taxonomy import find_exact, suggest_matches
-from traitprint.vault import VaultStore
+from traitprint.vault import DuplicateSkillError, VaultStore
 
 if TYPE_CHECKING:
     from traitprint.credentials import Credentials
@@ -258,13 +258,21 @@ def vault_add_skill(
             click.echo(f"Did you mean: {names}?")
             click.echo("Adding as custom skill (no taxonomy match).")
 
-    skill = store.add_skill(
-        name=name,
-        proficiency=proficiency,
-        category=category,
-        notes=notes,
-        taxonomy_id=taxonomy_id,
-    )
+    try:
+        skill = store.add_skill(
+            name=name,
+            proficiency=proficiency,
+            category=category,
+            notes=notes,
+            taxonomy_id=taxonomy_id,
+        )
+    except DuplicateSkillError as exc:
+        click.echo(
+            f"Skill already exists: {exc.name!r} ({exc.existing_id}). "
+            "Remove it first with 'vault remove <id>' to replace."
+        )
+        ctx.exit(1)
+        return
     click.echo(f"Added skill: {skill.name} ({skill.proficiency}/10) [{skill.id}]")
 
 
