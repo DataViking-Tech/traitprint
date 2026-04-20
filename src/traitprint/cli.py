@@ -401,6 +401,49 @@ def vault_remove(ctx: click.Context, item_id: str, yes: bool) -> None:
     click.echo(f"Item not found: {uid}")
 
 
+# --- vault export ---
+
+
+@vault.command(name="export")
+@click.option(
+    "--format",
+    "-f",
+    "fmt",
+    type=click.Choice(
+        ["json", "markdown", "jsonresume", "synthpanel-persona"],
+        case_sensitive=False,
+    ),
+    default="json",
+    show_default=True,
+    help="Export format.",
+)
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(),
+    default=None,
+    help="Write to file instead of stdout.",
+)
+@click.pass_context
+def vault_export(ctx: click.Context, fmt: str, output: str | None) -> None:
+    """Export the vault as JSON, Markdown, JSON Resume, or a SynthPanel persona."""
+    from traitprint.export import export_vault
+
+    store = _get_store(ctx)
+    if not store.exists():
+        click.echo("No vault found. Run 'traitprint init' first.")
+        return
+    v = store.load()
+    rendered = export_vault(v, fmt.lower())
+    if output:
+        from pathlib import Path
+
+        Path(output).write_text(rendered, encoding="utf-8")
+        click.echo(f"Wrote {fmt} export to {output}")
+    else:
+        click.echo(rendered, nl=False)
+
+
 # --- vault history ---
 
 
