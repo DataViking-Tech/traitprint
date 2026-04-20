@@ -88,7 +88,7 @@ def plan_pull(local: VaultSchema | None, pull: PullResult) -> SyncPlan:
             server_updated_at=server_ts,
             reason="No local vault; server vault will be installed.",
         )
-    if server_ts > local_ts:
+    if local_ts is None or server_ts > local_ts:
         return SyncPlan(
             direction="pull",
             local_updated_at=local_ts,

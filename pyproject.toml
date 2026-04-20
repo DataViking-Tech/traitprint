@@ -41,7 +41,7 @@ dependencies = [
 dev = [
     "pytest",
     "ruff",
-    "mypy",
+    "mypy", "types-PyYAML",
 ]
 import = [
     "pypdf>=4.0",
