@@ -14,7 +14,7 @@ from traitprint.cli import cli
 from traitprint.git_ops import commit, init_repo
 from traitprint.schema import PhilosophyCategory, SkillSchema
 from traitprint.taxonomy import find_exact, suggest_matches
-from traitprint.vault import VaultStore
+from traitprint.vault import DuplicateSkillError, VaultStore
 
 # ------------------------------------------------------------------
 # Fixtures
@@ -91,6 +91,22 @@ class TestAddSkill:
             name="Test", proficiency=5, category="x", taxonomy_id=tid
         )
         assert skill.taxonomy_id == tid
+
+    def test_duplicate_name_rejected(self, store: VaultStore) -> None:
+        first = store.add_skill(name="Python", proficiency=8, category="technical")
+        with pytest.raises(DuplicateSkillError) as exc_info:
+            store.add_skill(name="Python", proficiency=5, category="technical")
+        assert exc_info.value.existing_id == first.id
+        # Duplicate was not appended.
+        assert len(store.load().skills) == 1
+
+    def test_duplicate_name_case_insensitive(self, store: VaultStore) -> None:
+        store.add_skill(name="Python", proficiency=8, category="technical")
+        with pytest.raises(DuplicateSkillError):
+            store.add_skill(name="python", proficiency=5, category="technical")
+        with pytest.raises(DuplicateSkillError):
+            store.add_skill(name="  PYTHON  ", proficiency=5, category="technical")
+        assert len(store.load().skills) == 1
 
 
 # ------------------------------------------------------------------
@@ -466,6 +482,27 @@ class TestAddSkillCLI:
         store = VaultStore(vault_dir)
         vault = store.load()
         assert vault.skills[0].taxonomy_id is not None
+
+    def test_add_skill_duplicate_rejected_cli(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        args = [
+            "--path",
+            str(vault_dir),
+            "vault",
+            "add-skill",
+            "Python",
+            "--proficiency",
+            "8",
+            "--category",
+            "technical",
+        ]
+        first = runner.invoke(cli, args)
+        assert first.exit_code == 0
+        second = runner.invoke(cli, args)
+        assert second.exit_code == 1
+        assert "already exists" in second.output
+        assert len(VaultStore(vault_dir).load().skills) == 1
 
     def test_add_skill_no_taxonomy_match(
         self, runner: CliRunner, vault_dir: Path

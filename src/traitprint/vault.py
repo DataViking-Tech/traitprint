@@ -24,6 +24,15 @@ DEFAULT_VAULT_DIR = Path.home() / ".traitprint"
 SECTIONS = ("skills", "experiences", "stories", "philosophies", "education")
 
 
+class DuplicateSkillError(ValueError):
+    """Raised when adding a skill whose name already exists in the vault."""
+
+    def __init__(self, name: str, existing_id: UUID) -> None:
+        super().__init__(f"Skill already exists: {name!r} ({existing_id})")
+        self.name = name
+        self.existing_id = existing_id
+
+
 class VaultStore:
     """Manages reading and writing the vault.json file."""
 
@@ -116,8 +125,16 @@ class VaultStore:
         notes: str | None = None,
         taxonomy_id: UUID | None = None,
     ) -> SkillSchema:
-        """Add a skill to the vault, save, and auto-commit."""
+        """Add a skill to the vault, save, and auto-commit.
+
+        Raises ``DuplicateSkillError`` if a skill with the same name (case-
+        and whitespace-insensitive) already exists in the vault.
+        """
         vault = self.load()
+        normalized = name.strip().casefold()
+        for existing in vault.skills:
+            if existing.name.strip().casefold() == normalized:
+                raise DuplicateSkillError(existing.name, existing.id)
         skill = SkillSchema(
             name=name,
             proficiency=proficiency,
