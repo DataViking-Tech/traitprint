@@ -159,6 +159,59 @@ def vault_list(ctx: click.Context, section: str) -> None:
             )
 
 
+# --- vault set-profile ---
+
+
+@vault.command(name="set-profile")
+@click.option("--name", "display_name", default=None, help="Display name.")
+@click.option("--headline", default=None, help="Short professional headline.")
+@click.option("--summary", default=None, help="Longer professional summary.")
+@click.option("--location", default=None, help="Location (e.g. city, country).")
+@click.option("--email", "contact_email", default=None, help="Contact email.")
+@click.pass_context
+def vault_set_profile(
+    ctx: click.Context,
+    display_name: str | None,
+    headline: str | None,
+    summary: str | None,
+    location: str | None,
+    contact_email: str | None,
+) -> None:
+    """Set profile fields on the vault.
+
+    Only fields you pass are updated; omitted fields keep their current
+    values. Pass an empty string to clear a field.
+    """
+    store = _get_store(ctx)
+    if not store.exists():
+        click.echo("No vault found. Run 'traitprint init' first.")
+        return
+
+    if all(
+        v is None for v in (display_name, headline, summary, location, contact_email)
+    ):
+        click.echo(
+            "No fields provided. Pass at least one of "
+            "--name, --headline, --summary, --location, --email."
+        )
+        ctx.exit(1)
+        return
+
+    profile = store.set_profile(
+        display_name=display_name,
+        headline=headline,
+        summary=summary,
+        location=location,
+        contact_email=contact_email,
+    )
+    click.echo("Updated profile:")
+    click.echo(f"  display_name:  {profile.display_name}")
+    click.echo(f"  headline:      {profile.headline}")
+    click.echo(f"  summary:       {profile.summary}")
+    click.echo(f"  location:      {profile.location}")
+    click.echo(f"  contact_email: {profile.contact_email}")
+
+
 # --- vault add-skill ---
 
 
@@ -664,8 +717,7 @@ def export_cmd(
     store = _get_store(ctx)
     if not store.exists():
         raise click.ClickException(
-            f"No vault found at {store.directory}. "
-            "Run 'traitprint init' first."
+            f"No vault found at {store.directory}. Run 'traitprint init' first."
         )
 
     vault_obj = store.load()

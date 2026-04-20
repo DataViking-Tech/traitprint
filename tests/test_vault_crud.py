@@ -337,6 +337,105 @@ class TestVaultListCLI:
 
 
 # ------------------------------------------------------------------
+# CLI: vault set-profile
+# ------------------------------------------------------------------
+
+
+class TestSetProfileCLI:
+    def test_set_all_fields(self, runner: CliRunner, vault_dir: Path) -> None:
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "set-profile",
+                "--name",
+                "Ada Lovelace",
+                "--headline",
+                "Mathematician & programmer",
+                "--summary",
+                "Wrote the first algorithm.",
+                "--location",
+                "London",
+                "--email",
+                "ada@example.com",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "Updated profile" in result.output
+
+        profile = VaultStore(vault_dir).load().profile
+        assert profile.display_name == "Ada Lovelace"
+        assert profile.headline == "Mathematician & programmer"
+        assert profile.summary == "Wrote the first algorithm."
+        assert profile.location == "London"
+        assert profile.contact_email == "ada@example.com"
+
+    def test_partial_update_preserves_existing(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        store = VaultStore(vault_dir)
+        store.set_profile(display_name="Grace", headline="Engineer")
+
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "set-profile",
+                "--headline",
+                "Rear Admiral",
+            ],
+        )
+        assert result.exit_code == 0
+
+        profile = store.load().profile
+        assert profile.display_name == "Grace"
+        assert profile.headline == "Rear Admiral"
+
+    def test_no_fields_errors(self, runner: CliRunner, vault_dir: Path) -> None:
+        result = runner.invoke(cli, ["--path", str(vault_dir), "vault", "set-profile"])
+        assert result.exit_code == 1
+        assert "No fields provided" in result.output
+
+    def test_no_vault(self, runner: CliRunner, tmp_path: Path) -> None:
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(tmp_path / "nope"),
+                "vault",
+                "set-profile",
+                "--name",
+                "X",
+            ],
+        )
+        assert "No vault found" in result.output
+
+    def test_empty_string_clears_field(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        store = VaultStore(vault_dir)
+        store.set_profile(headline="Old headline")
+
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "set-profile",
+                "--headline",
+                "",
+            ],
+        )
+        assert result.exit_code == 0
+        assert store.load().profile.headline == ""
+
+
+# ------------------------------------------------------------------
 # CLI: vault add-skill (with taxonomy integration)
 # ------------------------------------------------------------------
 
