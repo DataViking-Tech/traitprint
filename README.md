@@ -1,10 +1,40 @@
 # Traitprint
 
-Local-first career identity vault for the agent era.
+**Local-first career identity vault for the agent era.**
 
 > Your resume is a lossy snapshot. Your Traitprint is a live API.
 
-🚧 **Coming soon.** See [COMING_SOON.md](COMING_SOON.md) for details.
+```
+pip install traitprint
+traitprint init
+traitprint mcp-serve
+```
+
+Point Claude Desktop (or any MCP client) at `traitprint mcp-serve` and your
+agent can talk to your career. No account. No cloud. No vendor lock-in. Your
+vault is a file on your machine.
+
+When you want a public profile, job matching, or a digital twin that
+recruiters can chat with:
+
+```
+traitprint login
+traitprint push
+```
+
+…and you're live at `traitprint.com/profile/you`.
+
+## What's in the box
+
+- **Local vault** — versioned, SQL-queryable storage on your laptop.
+- **MCP server (stdio)** — `get_profile_summary`, `search_skills`,
+  `find_story`, `get_philosophy`.
+- **CLI** — `traitprint init`, `traitprint vault add-skill`, `add-experience`,
+  `add-story`, `add-philosophy`, `add-education`, `remove`, `history`, `diff`,
+  `rollback`, `export`, `import-resume`.
+- **Resume import** with BYOK LLM (Anthropic, OpenAI, Ollama, OpenRouter) —
+  install with `pip install 'traitprint[import]'`.
+- **Optional cloud sync** — `login`, `logout`, `push`, `pull`.
 
 ## Local vs Cloud
 
