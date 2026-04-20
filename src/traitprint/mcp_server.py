@@ -126,6 +126,37 @@ def _normalize_query(text: str) -> str:
     return re.sub(r"[^\w\s]", "", text.lower()).strip()
 
 
+# Short noise words dropped before token matching so queries like
+# "Python programming" do not require every word to land a hit.
+_QUERY_STOPWORDS: frozenset[str] = frozenset(
+    {
+        "a",
+        "an",
+        "and",
+        "at",
+        "by",
+        "for",
+        "from",
+        "in",
+        "my",
+        "of",
+        "on",
+        "or",
+        "the",
+        "to",
+        "with",
+    }
+)
+
+
+def _tokenize(text: str) -> list[str]:
+    """Split ``text`` into lowercase word tokens, dropping stopwords."""
+    if not text:
+        return []
+    cleaned = re.sub(r"[^\w\s]", " ", text.lower())
+    return [t for t in cleaned.split() if len(t) >= 2 and t not in _QUERY_STOPWORDS]
+
+
 def _period(start: str, end: str) -> str:
     tail = end if end else "present"
     parts = [p for p in (start, tail) if p]
@@ -143,24 +174,86 @@ def _match_taxonomy(
 ) -> tuple[set[UUID], bool]:
     """Return (matching taxonomy IDs, used_alias flag).
 
-    A query matches a taxonomy entry if its (normalized) form is a
-    substring of the entry name, or if any alias equals the query
-    case-insensitively. Alias hits set ``used_alias=True``.
+    Matches in two ways:
+    1. Full-query substring/alias match (as before) — handles multi-word
+       aliases like "structured query language".
+    2. Per-token match — any query token equal to an alias or present as
+       a token in the entry name. Enables "Python programming" to hit
+       the Python entry via its "python" token.
+
+    Alias hits (full or token) set ``used_alias=True``.
     """
     normalized = _normalize_query(query)
     if not normalized:
         return set(), False
 
+    tokens = set(_tokenize(query))
     direct_ids: set[UUID] = set()
     used_alias = False
     for entry in taxonomy:
-        alias_hit = any(alias.lower() == normalized for alias in entry.aliases)
-        name_hit = normalized in entry.name.lower()
-        if alias_hit:
+        entry_name_lower = entry.name.lower()
+        entry_name_tokens = set(_tokenize(entry.name))
+        aliases_lower = [a.lower() for a in entry.aliases]
+
+        full_alias_hit = any(a == normalized for a in aliases_lower)
+        full_name_hit = normalized in entry_name_lower
+
+        token_alias_hit = bool(tokens) and any(a in tokens for a in aliases_lower)
+        token_name_hit = bool(tokens) and bool(tokens & entry_name_tokens)
+
+        if full_alias_hit or token_alias_hit:
             used_alias = True
-        if alias_hit or name_hit:
+        if full_alias_hit or full_name_hit or token_alias_hit or token_name_hit:
             direct_ids.add(entry.id)
     return direct_ids, used_alias
+
+
+def _expand_query_tokens(
+    query: str, taxonomy: list[TaxonomyEntry], matched_ids: set[UUID]
+) -> set[str]:
+    """Return the query's tokens augmented with synonyms from matched taxonomy entries.
+
+    For every taxonomy entry the query hit (``matched_ids``), add each
+    alias and every token of the canonical name. This lets a query like
+    "python3" (alias) also match skills named "Python" or "python
+    scripting" through the shared ``python`` token.
+    """
+    expanded: set[str] = set(_tokenize(query))
+    if not matched_ids:
+        return expanded
+    for entry in taxonomy:
+        if entry.id not in matched_ids:
+            continue
+        expanded.update(_tokenize(entry.name))
+        for alias in entry.aliases:
+            expanded.update(_tokenize(alias))
+    return expanded
+
+
+def _skill_matches(
+    skill_name: str, expanded_tokens: set[str], normalized_query: str
+) -> tuple[bool, float]:
+    """Decide whether ``skill_name`` matches and return (hit, distance).
+
+    ``distance`` is ``1 - token_overlap_fraction`` (bounded to [0, 1]).
+    Zero tokens matched returns ``(False, 1.0)``. A full normalized
+    query substring hit also counts as a match (for multi-word skill
+    names that do not share tokens with the query directly).
+    """
+    name_lower = skill_name.lower()
+    name_tokens = set(_tokenize(skill_name))
+
+    overlap = expanded_tokens & name_tokens
+    substring_hits = {t for t in expanded_tokens - overlap if t in name_lower}
+    hits = overlap | substring_hits
+    full_hit = bool(normalized_query) and normalized_query in name_lower
+
+    if not hits and not full_hit:
+        return False, 1.0
+
+    denom = max(len(expanded_tokens), 1)
+    distance = max(0.0, 1.0 - len(hits) / denom) if hits else 0.5
+    return True, distance
 
 
 def _story_evidence_by_skill(
@@ -241,16 +334,19 @@ def _handle_search_skills(
 ) -> dict[str, Any]:
     direct_ids, used_alias = _match_taxonomy(query, taxonomy)
     normalized = _normalize_query(query)
+    expanded_tokens = _expand_query_tokens(query, taxonomy, direct_ids)
 
     evidence = _story_evidence_by_skill(vault.stories)
 
     matches: list[dict[str, Any]] = []
     for skill in vault.skills:
         tax_hit = bool(skill.taxonomy_id and skill.taxonomy_id in direct_ids)
-        name_hit = bool(normalized and normalized in skill.name.lower())
+        name_hit, name_distance = _skill_matches(
+            skill.name, expanded_tokens, normalized
+        )
         if not (tax_hit or name_hit):
             continue
-        distance = 0.0
+        distance = 0.0 if tax_hit else name_distance
 
         prof = _map_proficiency(skill.proficiency)
         if min_proficiency and not _meets_proficiency(prof, min_proficiency):
