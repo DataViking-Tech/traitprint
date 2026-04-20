@@ -15,6 +15,7 @@ Every tool returns a ``{"result": <payload>, "meta": {...}}`` envelope.
 from __future__ import annotations
 
 import re
+import sys
 from datetime import datetime, timezone
 from typing import Any, Literal
 from uuid import UUID
@@ -444,7 +445,15 @@ def create_server(store: VaultStore) -> FastMCP:
 
 
 def run_stdio(store: VaultStore) -> None:
-    """Run the MCP server over stdio (blocking)."""
+    """Run the MCP server over stdio (blocking).
+
+    Forces stdout into line-buffered mode so every JSON-RPC response
+    (each terminated by ``\\n``) flushes immediately. Without this,
+    Python's default block buffering on non-TTY stdout can hang the
+    client waiting for a response that is sitting in a buffer.
+    """
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(line_buffering=True)
     create_server(store).run(transport="stdio")
 
 
