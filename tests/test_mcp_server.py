@@ -156,9 +156,7 @@ class TestGetProfileSummary:
             "bio": "Shipping data products for a decade.",
         }
 
-    def test_standard_includes_top_skills(
-        self, populated_store: VaultStore
-    ) -> None:
+    def test_standard_includes_top_skills(self, populated_store: VaultStore) -> None:
         out = _handle_get_profile_summary(populated_store.load(), "standard")
         assert "top_skills" in out
         # Highest proficiency first
@@ -213,9 +211,7 @@ class TestSearchSkills:
         assert qi["used_distance_graph"] is False
         assert len(qi["matched_taxonomy_ids"]) >= 1
 
-    def test_alias_match_sets_used_alias(
-        self, populated_store: VaultStore
-    ) -> None:
+    def test_alias_match_sets_used_alias(self, populated_store: VaultStore) -> None:
         out = _handle_search_skills(
             populated_store.load(), load_taxonomy(), "python3", None, 10
         )
@@ -233,9 +229,7 @@ class TestSearchSkills:
         )
         assert all(m["name"] != "SQL" for m in out["matches"])
 
-    def test_name_fallback_without_taxonomy(
-        self, populated_store: VaultStore
-    ) -> None:
+    def test_name_fallback_without_taxonomy(self, populated_store: VaultStore) -> None:
         out = _handle_search_skills(
             populated_store.load(), load_taxonomy(), "leadership", None, 10
         )
@@ -243,18 +237,12 @@ class TestSearchSkills:
 
 
 class TestFindStory:
-    def test_requires_at_least_one_filter(
-        self, populated_store: VaultStore
-    ) -> None:
+    def test_requires_at_least_one_filter(self, populated_store: VaultStore) -> None:
         with pytest.raises(ValueError):
             _handle_find_story(populated_store.load(), None, None, None, 3)
 
-    def test_theme_match_returns_story(
-        self, populated_store: VaultStore
-    ) -> None:
-        out = _handle_find_story(
-            populated_store.load(), None, "migration", None, 3
-        )
+    def test_theme_match_returns_story(self, populated_store: VaultStore) -> None:
+        out = _handle_find_story(populated_store.load(), None, "migration", None, 3)
         assert len(out["stories"]) == 1
         story = out["stories"][0]
         assert story["title"] == "Redshift to BigQuery Migration"
@@ -280,18 +268,12 @@ class TestFindStory:
         # id round-trips as a UUID string
         UUID(story["id"])
 
-    def test_incomplete_stars_excluded(
-        self, populated_store: VaultStore
-    ) -> None:
-        out = _handle_find_story(
-            populated_store.load(), "situation", None, None, 3
-        )
+    def test_incomplete_stars_excluded(self, populated_store: VaultStore) -> None:
+        out = _handle_find_story(populated_store.load(), "situation", None, None, 3)
         titles = [s["title"] for s in out["stories"]]
         assert "Incomplete Story" not in titles
 
-    def test_no_match_returns_empty(
-        self, populated_store: VaultStore
-    ) -> None:
+    def test_no_match_returns_empty(self, populated_store: VaultStore) -> None:
         out = _handle_find_story(
             populated_store.load(), None, "cryptocurrency", None, 3
         )
@@ -300,9 +282,7 @@ class TestFindStory:
 
 class TestGetPhilosophy:
     def test_topic_match(self, populated_store: VaultStore) -> None:
-        out = _handle_get_philosophy(
-            populated_store.load(), "delegation", 3
-        )
+        out = _handle_get_philosophy(populated_store.load(), "delegation", 3)
         assert len(out["philosophies"]) == 1
         phil = out["philosophies"][0]
         assert set(phil) == {
@@ -320,9 +300,7 @@ class TestGetPhilosophy:
         assert len(phil["supporting_examples"]) == 1
         assert len(phil["related_story_ids"]) == 1
 
-    def test_empty_topic_returns_recent(
-        self, populated_store: VaultStore
-    ) -> None:
+    def test_empty_topic_returns_recent(self, populated_store: VaultStore) -> None:
         out = _handle_get_philosophy(populated_store.load(), "", 3)
         assert len(out["philosophies"]) == 1
 
@@ -349,9 +327,7 @@ class TestServerRegistration:
             "get_philosophy",
         }
 
-    def test_server_version_in_init_options(
-        self, populated_store: VaultStore
-    ) -> None:
+    def test_server_version_in_init_options(self, populated_store: VaultStore) -> None:
         """serverInfo.version must report *our* version, not the MCP SDK."""
         server = create_server(populated_store)
         opts = server._mcp_server.create_initialization_options()
@@ -383,22 +359,16 @@ async def _stdio_roundtrip(vault_dir: Path) -> tuple[list[str], dict[str, str]]:
         names = [t.name for t in listed.tools]
 
         results: dict[str, str] = {}
-        r = await session.call_tool(
-            "get_profile_summary", {"depth": "brief"}
-        )
+        r = await session.call_tool("get_profile_summary", {"depth": "brief"})
         results["get_profile_summary"] = r.content[0].text  # type: ignore[union-attr]
 
         r = await session.call_tool("search_skills", {"query": "python"})
         results["search_skills"] = r.content[0].text  # type: ignore[union-attr]
 
-        r = await session.call_tool(
-            "find_story", {"theme": "migration", "limit": 3}
-        )
+        r = await session.call_tool("find_story", {"theme": "migration", "limit": 3})
         results["find_story"] = r.content[0].text  # type: ignore[union-attr]
 
-        r = await session.call_tool(
-            "get_philosophy", {"topic": "delegation"}
-        )
+        r = await session.call_tool("get_philosophy", {"topic": "delegation"})
         results["get_philosophy"] = r.content[0].text  # type: ignore[union-attr]
 
     return names, results
@@ -409,9 +379,7 @@ async def _stdio_roundtrip(vault_dir: Path) -> tuple[list[str], dict[str, str]]:
     reason="stdio_client subprocess behavior is unreliable on Windows",
 )
 class TestStdioRoundTrip:
-    def test_four_tools_callable_via_jsonrpc(
-        self, populated_store: VaultStore
-    ) -> None:
+    def test_four_tools_callable_via_jsonrpc(self, populated_store: VaultStore) -> None:
         names, results = asyncio.run(_stdio_roundtrip(populated_store.directory))
         assert set(names) == {
             "get_profile_summary",
@@ -436,5 +404,3 @@ class TestStdioRoundTrip:
         phils = json.loads(results["get_philosophy"])
         assert len(phils["result"]["philosophies"]) == 1
         assert phils["result"]["philosophies"][0]["topic"] == "Delegation as Leverage"
-
-

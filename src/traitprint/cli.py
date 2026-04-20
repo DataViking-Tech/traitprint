@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 import click
@@ -14,6 +15,10 @@ from traitprint.git_ops import rollback as git_rollback
 from traitprint.schema import PhilosophyCategory
 from traitprint.taxonomy import find_exact, suggest_matches
 from traitprint.vault import VaultStore
+
+if TYPE_CHECKING:
+    from traitprint.credentials import Credentials
+    from traitprint.sync import SyncPlan
 
 
 def _get_store(ctx: click.Context) -> VaultStore:
@@ -128,9 +133,7 @@ def vault_list(ctx: click.Context, section: str) -> None:
         click.echo(f"{'Name':<25} {'Prof':>4}  {'Category':<15} {'ID'}")
         click.echo("-" * 80)
         for s in items:
-            click.echo(
-                f"{s.name:<25} {s.proficiency:>4}  {s.category:<15} {s.id}"
-            )
+            click.echo(f"{s.name:<25} {s.proficiency:>4}  {s.category:<15} {s.id}")
     elif section == "experiences":
         click.echo(f"{'Title':<30} {'Company':<20} {'Dates':<15} {'ID'}")
         click.echo("-" * 80)
@@ -152,8 +155,7 @@ def vault_list(ctx: click.Context, section: str) -> None:
         click.echo("-" * 80)
         for ed in items:
             click.echo(
-                f"{ed.institution:<30} {ed.degree:<20} "
-                f"{ed.field_of_study:<20} {ed.id}"
+                f"{ed.institution:<30} {ed.degree:<20} {ed.field_of_study:<20} {ed.id}"
             )
 
 
@@ -217,9 +219,7 @@ def vault_add_skill(
 
 
 @vault.command(name="add-experience")
-@click.option(
-    "--interactive", "-i", is_flag=True, default=True, help="Guided prompts."
-)
+@click.option("--interactive", "-i", is_flag=True, default=True, help="Guided prompts.")
 @click.pass_context
 def vault_add_experience(ctx: click.Context, interactive: bool) -> None:
     """Add a work experience to your vault (interactive)."""
@@ -233,9 +233,7 @@ def vault_add_experience(ctx: click.Context, interactive: bool) -> None:
     start_date = click.prompt("Start date (YYYY-MM)", default="")
     end_date = click.prompt("End date (YYYY-MM, blank for current)", default="")
     description = click.prompt("Description", default="")
-    raw_acc = click.prompt(
-        "Accomplishments (comma-separated, or blank)", default=""
-    )
+    raw_acc = click.prompt("Accomplishments (comma-separated, or blank)", default="")
     accomplishments = (
         [a.strip() for a in raw_acc.split(",") if a.strip()] if raw_acc else []
     )
@@ -272,9 +270,7 @@ def vault_add_story(ctx: click.Context, interactive: bool) -> None:
     task = click.prompt("Task")
     action = click.prompt("Action")
     result = click.prompt("Result")
-    raw_skills = click.prompt(
-        "Skill IDs (comma-separated UUIDs, or blank)", default=""
-    )
+    raw_skills = click.prompt("Skill IDs (comma-separated UUIDs, or blank)", default="")
     skill_ids: list[UUID] = []
     if raw_skills:
         for sid in raw_skills.split(","):
@@ -302,9 +298,7 @@ _PHILOSOPHY_CATEGORIES = [c.value for c in PhilosophyCategory]
 
 
 @vault.command(name="add-philosophy")
-@click.option(
-    "--interactive", "-i", is_flag=True, default=True, help="Guided prompts."
-)
+@click.option("--interactive", "-i", is_flag=True, default=True, help="Guided prompts.")
 @click.pass_context
 def vault_add_philosophy(ctx: click.Context, interactive: bool) -> None:
     """Add a work philosophy to your vault (interactive)."""
@@ -343,9 +337,7 @@ def vault_add_philosophy(ctx: click.Context, interactive: bool) -> None:
 
 
 @vault.command(name="add-education")
-@click.option(
-    "--interactive", "-i", is_flag=True, default=True, help="Guided prompts."
-)
+@click.option("--interactive", "-i", is_flag=True, default=True, help="Guided prompts.")
 @click.pass_context
 def vault_add_education(ctx: click.Context, interactive: bool) -> None:
     """Add an education entry to your vault (interactive)."""
@@ -369,9 +361,7 @@ def vault_add_education(ctx: click.Context, interactive: bool) -> None:
         end_date=end_date if end_date else None,
         description=description,
     )
-    click.echo(
-        f"Added education: {edu.degree} at {edu.institution} [{edu.id}]"
-    )
+    click.echo(f"Added education: {edu.degree} at {edu.institution} [{edu.id}]")
 
 
 # --- vault remove ---
@@ -493,7 +483,155 @@ def mcp_serve(ctx: click.Context) -> None:
     store = _get_store(ctx)
     if not store.exists():
         raise click.ClickException(
-            f"No vault found at {store.directory}. "
-            "Run 'traitprint init' first."
+            f"No vault found at {store.directory}. Run 'traitprint init' first."
         )
     run_stdio(store)
+
+
+# ------------------------------------------------------------------
+# Cloud sync: login / logout / push / pull
+# ------------------------------------------------------------------
+
+
+def _require_credentials(store: VaultStore) -> Credentials:
+    from traitprint.credentials import CredentialsStore
+
+    creds = CredentialsStore(store.directory).load()
+    if creds is None or not creds.token:
+        raise click.ClickException("Not logged in. Run 'traitprint login' first.")
+    return creds
+
+
+def _render_plan(plan: SyncPlan) -> str:
+    return f"[{plan.direction}] {plan.reason}"
+
+
+@cli.command(name="login")
+@click.option("--email", "-e", prompt=True, help="Your Traitprint account email.")
+@click.option(
+    "--password",
+    "-p",
+    prompt=True,
+    hide_input=True,
+    help="Your Traitprint account password.",
+)
+@click.option(
+    "--api-url",
+    default=None,
+    help="Override the cloud API URL (default: https://traitprint.com).",
+)
+@click.pass_context
+def login_cmd(
+    ctx: click.Context, email: str, password: str, api_url: str | None
+) -> None:
+    """Log in to Traitprint cloud and save a bearer token to .credentials."""
+    from traitprint.cloud import AuthError, CloudClient, CloudError
+    from traitprint.credentials import DEFAULT_API_URL, CredentialsStore
+
+    store = _get_store(ctx)
+    if not store.exists():
+        raise click.ClickException(
+            f"No vault found at {store.directory}. Run 'traitprint init' first."
+        )
+
+    with CloudClient(api_url or DEFAULT_API_URL) as client:
+        try:
+            creds = client.login(email, password)
+        except AuthError as exc:
+            raise click.ClickException(str(exc)) from exc
+        except CloudError as exc:
+            raise click.ClickException(str(exc)) from exc
+
+    CredentialsStore(store.directory).save(creds)
+    click.echo(f"Logged in as {creds.email}.")
+
+
+@cli.command(name="logout")
+@click.pass_context
+def logout_cmd(ctx: click.Context) -> None:
+    """Remove saved cloud credentials from the vault directory."""
+    from traitprint.credentials import CredentialsStore
+
+    store = _get_store(ctx)
+    removed = CredentialsStore(store.directory).delete()
+    click.echo("Logged out." if removed else "No credentials to remove.")
+
+
+@cli.command(name="push")
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    default=False,
+    help="Show what would happen without uploading.",
+)
+@click.pass_context
+def push_cmd(ctx: click.Context, dry_run: bool) -> None:
+    """Upload the local vault to Traitprint cloud (last-write-wins)."""
+    from traitprint.cloud import AuthError, CloudClient, CloudError, ConflictError
+    from traitprint.sync import do_push
+
+    store = _get_store(ctx)
+    if not store.exists():
+        raise click.ClickException(
+            f"No vault found at {store.directory}. Run 'traitprint init' first."
+        )
+    creds = _require_credentials(store)
+
+    with CloudClient.from_credentials(creds) as client:
+        try:
+            plan, result = do_push(store, client, dry_run=dry_run)
+        except ConflictError as exc:
+            raise click.ClickException(str(exc)) from exc
+        except AuthError as exc:
+            raise click.ClickException(str(exc)) from exc
+        except CloudError as exc:
+            raise click.ClickException(str(exc)) from exc
+
+    click.echo(_render_plan(plan))
+    if dry_run:
+        click.echo("Dry run: no data was uploaded.")
+        return
+    if plan.direction == "conflict":
+        raise click.ClickException(plan.reason)
+    if result is not None and result.accepted:
+        click.echo("Push complete.")
+
+
+@cli.command(name="pull")
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    default=False,
+    help="Show what would happen without writing to disk.",
+)
+@click.pass_context
+def pull_cmd(ctx: click.Context, dry_run: bool) -> None:
+    """Download the cloud vault to local disk (last-write-wins)."""
+    from traitprint.cloud import AuthError, CloudClient, CloudError
+    from traitprint.sync import do_pull
+
+    store = _get_store(ctx)
+    if not store.exists():
+        # Allow pull even before 'init' only if a vault dir exists to hold
+        # credentials. Simplest: require init first.
+        raise click.ClickException(
+            f"No vault found at {store.directory}. Run 'traitprint init' first."
+        )
+    creds = _require_credentials(store)
+
+    with CloudClient.from_credentials(creds) as client:
+        try:
+            plan, _ = do_pull(store, client, dry_run=dry_run)
+        except AuthError as exc:
+            raise click.ClickException(str(exc)) from exc
+        except CloudError as exc:
+            raise click.ClickException(str(exc)) from exc
+
+    click.echo(_render_plan(plan))
+    if dry_run:
+        click.echo("Dry run: no local changes were written.")
+        return
+    if plan.direction == "conflict":
+        raise click.ClickException(plan.reason)
+    if plan.direction == "pull":
+        click.echo("Pull complete.")

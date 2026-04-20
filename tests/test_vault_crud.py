@@ -299,23 +299,17 @@ class TestProficiencyValidation:
 
 
 class TestVaultShowCLI:
-    def test_vault_show_output(
-        self, runner: CliRunner, vault_dir: Path
-    ) -> None:
+    def test_vault_show_output(self, runner: CliRunner, vault_dir: Path) -> None:
         store = VaultStore(vault_dir)
         store.add_skill(name="A", proficiency=5, category="x")
         store.add_skill(name="B", proficiency=3, category="y")
-        result = runner.invoke(
-            cli, ["--path", str(vault_dir), "vault", "show"]
-        )
+        result = runner.invoke(cli, ["--path", str(vault_dir), "vault", "show"])
         assert result.exit_code == 0
         assert "2 skills" in result.output
         assert "0 experiences" in result.output
 
     def test_no_vault(self, runner: CliRunner, tmp_path: Path) -> None:
-        result = runner.invoke(
-            cli, ["--path", str(tmp_path / "nope"), "vault", "show"]
-        )
+        result = runner.invoke(cli, ["--path", str(tmp_path / "nope"), "vault", "show"])
         assert "No vault found" in result.output
 
 
@@ -325,9 +319,7 @@ class TestVaultShowCLI:
 
 
 class TestVaultListCLI:
-    def test_list_skills(
-        self, runner: CliRunner, vault_dir: Path
-    ) -> None:
+    def test_list_skills(self, runner: CliRunner, vault_dir: Path) -> None:
         store = VaultStore(vault_dir)
         store.add_skill(name="Python", proficiency=8, category="technical")
         result = runner.invoke(
@@ -337,9 +329,7 @@ class TestVaultListCLI:
         assert "Python" in result.output
         assert "technical" in result.output
 
-    def test_list_empty_section(
-        self, runner: CliRunner, vault_dir: Path
-    ) -> None:
+    def test_list_empty_section(self, runner: CliRunner, vault_dir: Path) -> None:
         result = runner.invoke(
             cli, ["--path", str(vault_dir), "vault", "list", "skills"]
         )
@@ -358,10 +348,15 @@ class TestAddSkillCLI:
         result = runner.invoke(
             cli,
             [
-                "--path", str(vault_dir),
-                "vault", "add-skill", "Python",
-                "--proficiency", "8",
-                "--category", "technical",
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-skill",
+                "Python",
+                "--proficiency",
+                "8",
+                "--category",
+                "technical",
             ],
         )
         assert result.exit_code == 0
@@ -379,10 +374,15 @@ class TestAddSkillCLI:
         result = runner.invoke(
             cli,
             [
-                "--path", str(vault_dir),
-                "vault", "add-skill", "FooBarLang",
-                "--proficiency", "5",
-                "--category", "technical",
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-skill",
+                "FooBarLang",
+                "--proficiency",
+                "5",
+                "--category",
+                "technical",
             ],
         )
         assert result.exit_code == 0
@@ -395,20 +395,14 @@ class TestAddSkillCLI:
 
 
 class TestHistoryDiffRollback:
-    def test_history_shows_commits(
-        self, runner: CliRunner, vault_dir: Path
-    ) -> None:
+    def test_history_shows_commits(self, runner: CliRunner, vault_dir: Path) -> None:
         store = VaultStore(vault_dir)
         store.add_skill(name="Go", proficiency=7, category="technical")
-        result = runner.invoke(
-            cli, ["--path", str(vault_dir), "vault", "history"]
-        )
+        result = runner.invoke(cli, ["--path", str(vault_dir), "vault", "history"])
         assert result.exit_code == 0
         assert "Add skill: Go" in result.output
 
-    def test_rollback_with_confirm(
-        self, runner: CliRunner, vault_dir: Path
-    ) -> None:
+    def test_rollback_with_confirm(self, runner: CliRunner, vault_dir: Path) -> None:
         store = VaultStore(vault_dir)
         store.add_skill(name="X", proficiency=1, category="z")
         assert len(store.load().skills) == 1
@@ -428,9 +422,7 @@ class TestHistoryDiffRollback:
 
 
 class TestRemoveCLI:
-    def test_remove_with_confirm(
-        self, runner: CliRunner, vault_dir: Path
-    ) -> None:
+    def test_remove_with_confirm(self, runner: CliRunner, vault_dir: Path) -> None:
         store = VaultStore(vault_dir)
         skill = store.add_skill(name="Rust", proficiency=7, category="technical")
         result = runner.invoke(
@@ -441,9 +433,7 @@ class TestRemoveCLI:
         assert "Removed from skills" in result.output
         assert len(store.load().skills) == 0
 
-    def test_remove_not_found(
-        self, runner: CliRunner, vault_dir: Path
-    ) -> None:
+    def test_remove_not_found(self, runner: CliRunner, vault_dir: Path) -> None:
         fake_id = str(uuid4())
         result = runner.invoke(
             cli,

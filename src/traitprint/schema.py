@@ -108,6 +108,7 @@ class VaultSchema(BaseModel):
     """Top-level vault.json schema (v0)."""
 
     schema_version: int = 0
+    updated_at: datetime = Field(default_factory=_now)
     profile: ProfileSchema = Field(default_factory=ProfileSchema)
     skills: list[SkillSchema] = Field(default_factory=list)
     experiences: list[ExperienceSchema] = Field(default_factory=list)
