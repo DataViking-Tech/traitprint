@@ -261,7 +261,7 @@ class TestFindStory:
             "evidence",
             "disputed",
         }
-        assert story["outcome"] == "learning"
+        assert story["outcome"] == "win"
         assert story["match_score"] > 0
         # Related skills include Python and SQL
         assert set(story["related_skills"]) == {"Python", "SQL"}
@@ -278,6 +278,21 @@ class TestFindStory:
             populated_store.load(), None, "cryptocurrency", None, 3
         )
         assert out["stories"] == []
+
+    def test_theme_matches_non_title_fields(self, populated_store: VaultStore) -> None:
+        # 'ballooning' lives only in the situation field, 'dual-writes' only in
+        # action, 'warehouse' only in result. Each must match (tp-4tr).
+        for kw in ("ballooning", "dual-writes", "warehouse"):
+            out = _handle_find_story(populated_store.load(), None, kw, None, 3)
+            assert len(out["stories"]) == 1, f"theme={kw!r} should match"
+
+    def test_outcome_filter_is_applied(self, populated_store: VaultStore) -> None:
+        # The seeded story's result reads like a win; 'failure' must exclude it.
+        out = _handle_find_story(populated_store.load(), None, None, "failure", 3)
+        assert out["stories"] == []
+        out = _handle_find_story(populated_store.load(), None, None, "win", 3)
+        assert len(out["stories"]) == 1
+        assert out["stories"][0]["outcome"] == "win"
 
 
 class TestGetPhilosophy:
@@ -399,7 +414,7 @@ class TestStdioRoundTrip:
 
         stories = json.loads(results["find_story"])
         assert len(stories["result"]["stories"]) == 1
-        assert stories["result"]["stories"][0]["outcome"] == "learning"
+        assert stories["result"]["stories"][0]["outcome"] == "win"
 
         phils = json.loads(results["get_philosophy"])
         assert len(phils["result"]["philosophies"]) == 1
