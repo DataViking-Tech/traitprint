@@ -235,6 +235,53 @@ class TestSearchSkills:
         )
         assert any(m["name"] == "Team Leadership" for m in out["matches"])
 
+    def test_multiword_query_token_match(self, vault_dir: Path) -> None:
+        """'Python programming' finds both Python and user-added 'python scripting'."""
+        store = VaultStore(vault_dir)
+        vault = VaultSchema(
+            schema_version=0,
+            profile=ProfileSchema(display_name="t"),
+        )
+        taxonomy = load_taxonomy()
+        python_tax = next(e for e in taxonomy if e.name == "Python")
+        vault.skills = [
+            SkillSchema(
+                name="Python",
+                category="technical",
+                proficiency=9,
+                taxonomy_id=python_tax.id,
+            ),
+            SkillSchema(name="python scripting", category="technical", proficiency=5),
+            SkillSchema(name="Team Leadership", category="soft", proficiency=6),
+        ]
+        store.save(vault)
+
+        out = _handle_search_skills(
+            store.load(), taxonomy, "Python programming", None, 10
+        )
+        names = {m["name"] for m in out["matches"]}
+        assert "Python" in names
+        assert "python scripting" in names
+        assert "Team Leadership" not in names
+
+    def test_alias_expands_to_synonym_matches(self, vault_dir: Path) -> None:
+        """Query via alias ('golang') matches user skill 'Go services'."""
+        store = VaultStore(vault_dir)
+        vault = VaultSchema(
+            schema_version=0,
+            profile=ProfileSchema(display_name="t"),
+        )
+        vault.skills = [
+            SkillSchema(name="Go services", category="technical", proficiency=7),
+            SkillSchema(name="React", category="technical", proficiency=6),
+        ]
+        store.save(vault)
+
+        out = _handle_search_skills(store.load(), load_taxonomy(), "golang", None, 10)
+        names = {m["name"] for m in out["matches"]}
+        assert "Go services" in names
+        assert out["query_interpretation"]["used_alias"] is True
+
 
 class TestFindStory:
     def test_requires_at_least_one_filter(self, populated_store: VaultStore) -> None:
