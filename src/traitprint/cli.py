@@ -8,11 +8,11 @@ from uuid import UUID
 import click
 
 from traitprint import __version__
-from traitprint.git_ops import commit, init_repo
+from traitprint.git_ops import commit, head_sha, init_repo
 from traitprint.git_ops import diff as git_diff
 from traitprint.git_ops import log as git_log
 from traitprint.git_ops import rollback as git_rollback
-from traitprint.schema import PhilosophyCategory
+from traitprint.schema import PhilosophyCategory, VaultSchema
 from traitprint.taxonomy import find_exact, suggest_matches
 from traitprint.vault import DuplicateSkillError, VaultStore
 
@@ -87,21 +87,144 @@ def vault() -> None:
 
 
 @vault.command(name="show")
+@click.option(
+    "--verbose",
+    "-v",
+    is_flag=True,
+    default=False,
+    help="Show full vault contents including all fields, timestamps, and git metadata.",
+)
 @click.pass_context
-def vault_show(ctx: click.Context) -> None:
+def vault_show(ctx: click.Context, verbose: bool) -> None:
     """Pretty-print a summary of vault contents."""
     store = _get_store(ctx)
     if not store.exists():
         click.echo("No vault found. Run 'traitprint init' first.")
         return
     v = store.load()
-    click.echo(
-        f"{len(v.skills)} skills, "
-        f"{len(v.experiences)} experiences, "
-        f"{len(v.stories)} stories, "
-        f"{len(v.philosophies)} philosophies, "
-        f"{len(v.education)} education"
-    )
+    if not verbose:
+        click.echo(
+            f"{len(v.skills)} skills, "
+            f"{len(v.experiences)} experiences, "
+            f"{len(v.stories)} stories, "
+            f"{len(v.philosophies)} philosophies, "
+            f"{len(v.education)} education"
+        )
+        return
+
+    _render_vault_verbose(store, v)
+
+
+def _render_vault_verbose(store: VaultStore, v: VaultSchema) -> None:
+    """Render a full, human-readable dump of the vault."""
+    click.echo(f"Vault: {store.directory}")
+    click.echo(f"Schema version: {v.schema_version}")
+    click.echo(f"Updated at: {v.updated_at.isoformat()}")
+
+    # Profile
+    p = v.profile
+    click.echo("")
+    click.echo("Profile:")
+    click.echo(f"  Display name:  {p.display_name or '-'}")
+    click.echo(f"  Headline:      {p.headline or '-'}")
+    click.echo(f"  Summary:       {p.summary or '-'}")
+    click.echo(f"  Location:      {p.location or '-'}")
+    click.echo(f"  Contact email: {p.contact_email or '-'}")
+
+    # Skills
+    click.echo("")
+    click.echo(f"Skills ({len(v.skills)}):")
+    for s in v.skills:
+        click.echo(f"  - {s.name}  [id={s.id}]")
+        click.echo(f"      category:    {s.category or '-'}")
+        click.echo(f"      proficiency: {s.proficiency}/10")
+        click.echo(f"      source:      {s.source}")
+        click.echo(f"      taxonomy_id: {s.taxonomy_id or '-'}")
+        if s.notes:
+            click.echo(f"      notes:       {s.notes}")
+        click.echo(f"      created_at:  {s.created_at.isoformat()}")
+        click.echo(f"      updated_at:  {s.updated_at.isoformat()}")
+
+    # Experiences
+    click.echo("")
+    click.echo(f"Experiences ({len(v.experiences)}):")
+    for e in v.experiences:
+        header = f"{e.title}"
+        if e.company:
+            header += f" @ {e.company}"
+        click.echo(f"  - {header}  [id={e.id}]")
+        dates = f"{e.start_date or '?'} — {e.end_date or 'present'}"
+        click.echo(f"      dates:       {dates}")
+        if e.description:
+            click.echo(f"      description: {e.description}")
+        if e.accomplishments:
+            click.echo("      accomplishments:")
+            for a in e.accomplishments:
+                click.echo(f"        - {a}")
+        click.echo(f"      source:      {e.source}")
+        click.echo(f"      created_at:  {e.created_at.isoformat()}")
+        click.echo(f"      updated_at:  {e.updated_at.isoformat()}")
+
+    # Stories
+    click.echo("")
+    click.echo(f"Stories ({len(v.stories)}):")
+    for st in v.stories:
+        click.echo(f"  - {st.title}  [id={st.id}]")
+        if st.situation:
+            click.echo(f"      situation: {st.situation}")
+        if st.task:
+            click.echo(f"      task:      {st.task}")
+        if st.action:
+            click.echo(f"      action:    {st.action}")
+        if st.result:
+            click.echo(f"      result:    {st.result}")
+        if st.skill_ids:
+            click.echo(f"      skill_ids: {', '.join(str(x) for x in st.skill_ids)}")
+        if st.experience_id:
+            click.echo(f"      experience_id: {st.experience_id}")
+        click.echo(f"      source:      {st.source}")
+        click.echo(f"      created_at:  {st.created_at.isoformat()}")
+        click.echo(f"      updated_at:  {st.updated_at.isoformat()}")
+
+    # Philosophies
+    click.echo("")
+    click.echo(f"Philosophies ({len(v.philosophies)}):")
+    for ph in v.philosophies:
+        click.echo(f"  - {ph.title}  [id={ph.id}]")
+        click.echo(f"      category:    {ph.category.value}")
+        if ph.description:
+            click.echo(f"      description: {ph.description}")
+        if ph.evidence_story_ids:
+            ids = ", ".join(str(x) for x in ph.evidence_story_ids)
+            click.echo(f"      evidence_story_ids: {ids}")
+        click.echo(f"      source:      {ph.source}")
+        click.echo(f"      created_at:  {ph.created_at.isoformat()}")
+        click.echo(f"      updated_at:  {ph.updated_at.isoformat()}")
+
+    # Education
+    click.echo("")
+    click.echo(f"Education ({len(v.education)}):")
+    for ed in v.education:
+        header = ed.institution
+        if ed.degree or ed.field_of_study:
+            bits = " ".join(x for x in (ed.degree, ed.field_of_study) if x)
+            header = f"{bits} @ {ed.institution}" if bits else ed.institution
+        click.echo(f"  - {header}  [id={ed.id}]")
+        dates = f"{ed.start_date or '?'} — {ed.end_date or 'present'}"
+        click.echo(f"      dates:       {dates}")
+        if ed.description:
+            click.echo(f"      description: {ed.description}")
+
+    # Git metadata
+    click.echo("")
+    click.echo("Git:")
+    sha = head_sha(store.directory)
+    click.echo(f"  HEAD: {sha or '(no commits)'}")
+    recent = git_log(store.directory, n=5)
+    if recent:
+        click.echo("  Recent commits:")
+        for line in recent:
+            click.echo(f"    {line}")
 
 
 # --- vault list ---

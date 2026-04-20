@@ -328,6 +328,57 @@ class TestVaultShowCLI:
         result = runner.invoke(cli, ["--path", str(tmp_path / "nope"), "vault", "show"])
         assert "No vault found" in result.output
 
+    def test_vault_show_verbose_contents(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        store = VaultStore(vault_dir)
+        store.add_skill(
+            name="Python",
+            proficiency=8,
+            category="technical",
+            notes="Primary lang",
+        )
+        store.add_experience(
+            title="Staff Engineer",
+            company="Acme",
+            start_date="2020-01",
+            end_date="2024-06",
+            description="Led platform team.",
+            accomplishments=["Shipped v2", "Grew team"],
+        )
+        store.add_philosophy(
+            title="Small PRs",
+            description="Small diffs are easier to review.",
+            category=PhilosophyCategory.TECHNICAL_APPROACH,
+        )
+        result = runner.invoke(
+            cli, ["--path", str(vault_dir), "vault", "show", "--verbose"]
+        )
+        assert result.exit_code == 0, result.output
+        out = result.output
+        assert "Schema version:" in out
+        assert "Profile:" in out
+        assert "Skills (1)" in out
+        assert "Python" in out
+        assert "proficiency: 8/10" in out
+        assert "Primary lang" in out
+        assert "Experiences (1)" in out
+        assert "Staff Engineer" in out
+        assert "Acme" in out
+        assert "Shipped v2" in out
+        assert "Philosophies (1)" in out
+        assert "Small PRs" in out
+        assert "technical-approach" in out
+        assert "Git:" in out
+
+    def test_vault_show_verbose_short_flag(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        result = runner.invoke(cli, ["--path", str(vault_dir), "vault", "show", "-v"])
+        assert result.exit_code == 0
+        assert "Profile:" in result.output
+        assert "Skills (0)" in result.output
+
 
 # ------------------------------------------------------------------
 # CLI: vault list

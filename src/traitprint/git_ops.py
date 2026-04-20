@@ -35,6 +35,22 @@ def commit(path: Path, message: str) -> None:
     _run(["git", "commit", "-m", message, "--allow-empty"], cwd=path)
 
 
+def head_sha(path: Path, *, short: bool = True) -> str:
+    """Return the current HEAD commit SHA for the repo at *path*.
+
+    Returns an empty string if the repo has no commits or is not a repo.
+    """
+    args = (
+        ["git", "rev-parse", "--short", "HEAD"]
+        if short
+        else ["git", "rev-parse", "HEAD"]
+    )
+    result = _run(args, cwd=path)
+    if result.returncode != 0:
+        return ""
+    return result.stdout.strip()
+
+
 def log(path: Path, n: int = 10) -> list[str]:
     """Return the last *n* log entries as one-line strings."""
     result = _run(
