@@ -12,6 +12,7 @@ from traitprint.schema import (
     ExperienceSchema,
     PhilosophyCategory,
     PhilosophySchema,
+    ProfileSchema,
     SkillSchema,
     StorySchema,
     VaultSchema,
@@ -203,6 +204,52 @@ class VaultStore:
                 self._save_and_commit(vault, f"Remove {section[:-1]}: {item_id}")
                 return True
         return False
+
+    def import_from_draft(
+        self,
+        *,
+        profile: ProfileSchema | dict[str, object] | None = None,
+        skills: list[SkillSchema] | None = None,
+        experiences: list[ExperienceSchema] | None = None,
+        education: list[EducationSchema] | None = None,
+        commit_message: str = "Import resume",
+        update_profile: bool = True,
+    ) -> dict[str, int]:
+        """Bulk-append LLM-extracted items into the vault in a single commit.
+
+        ``profile`` is merged field-by-field: non-empty incoming fields
+        overwrite existing ones, empty strings are preserved. Skills,
+        experiences, and education are appended — caller is responsible for
+        deduplication.
+
+        Returns a count dict like ``{"skills": 12, "experiences": 3}``.
+        """
+        vault = self.load()
+
+        if profile is not None and update_profile:
+            if isinstance(profile, ProfileSchema):
+                incoming: dict[str, object] = profile.model_dump()
+            else:
+                incoming = dict(profile)
+            current = vault.profile.model_dump()
+            for key, value in incoming.items():
+                if value:
+                    current[key] = value
+            vault.profile = ProfileSchema(**current)
+
+        counts: dict[str, int] = {}
+        if skills:
+            vault.skills.extend(skills)
+            counts["skills"] = len(skills)
+        if experiences:
+            vault.experiences.extend(experiences)
+            counts["experiences"] = len(experiences)
+        if education:
+            vault.education.extend(education)
+            counts["education"] = len(education)
+
+        self._save_and_commit(vault, commit_message)
+        return counts
 
     def get_item(
         self, section: str, item_id: UUID

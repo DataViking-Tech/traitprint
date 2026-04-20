@@ -466,6 +466,119 @@ def vault_rollback_cmd(ctx: click.Context, yes: bool) -> None:
     click.echo("Vault rolled back to previous state.")
 
 
+# --- vault import-resume ---
+
+
+@vault.command(name="import-resume")
+@click.argument(
+    "path",
+    type=click.Path(exists=True, dir_okay=False, readable=True, path_type=str),
+)
+@click.option(
+    "--provider",
+    type=click.Choice(
+        ["anthropic", "openai", "ollama", "openrouter"], case_sensitive=False
+    ),
+    default=None,
+    help="LLM provider (auto-detected from env if omitted).",
+)
+@click.option(
+    "--model", default=None, help="Override the default model for the provider."
+)
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    default=False,
+    help="Skip the confirmation prompt and import everything.",
+)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    default=False,
+    help="Show what would be imported without modifying the vault.",
+)
+@click.pass_context
+def vault_import_resume(
+    ctx: click.Context,
+    path: str,
+    provider: str | None,
+    model: str | None,
+    yes: bool,
+    dry_run: bool,
+) -> None:
+    """Import a resume via a BYOK LLM provider.
+
+    Extracts profile, skills, experiences, and education from PDF, DOCX,
+    TXT, or MD. Shows a summary and asks for confirmation before writing
+    to the vault.
+    """
+    from pathlib import Path as _Path
+
+    from traitprint.mining import ResumeExtractionError, resume_to_draft
+    from traitprint.providers import (
+        LLMError,
+        ProviderNotConfigured,
+        detect_provider,
+    )
+
+    store = _get_store(ctx)
+    if not store.exists():
+        click.echo("No vault found. Run 'traitprint init' first.")
+        ctx.exit(1)
+        return
+
+    try:
+        llm = detect_provider(preferred=provider, model=model)
+    except ProviderNotConfigured as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    click.echo(f"Using provider: {llm.name} (model: {llm.model})")
+    click.echo(f"Reading resume: {path}")
+
+    try:
+        draft = resume_to_draft(_Path(path), llm)
+    except ResumeExtractionError as exc:
+        raise click.ClickException(f"Resume extraction failed: {exc}") from exc
+    except LLMError as exc:
+        raise click.ClickException(f"LLM extraction failed: {exc}") from exc
+
+    click.echo("")
+    click.echo("Extracted:")
+    for line in draft.summary_lines():
+        click.echo("  " + line)
+
+    if draft.usage is not None:
+        usage = draft.usage
+        click.echo("")
+        click.echo(
+            f"Usage: {usage.input_tokens} input + {usage.output_tokens} "
+            f"output tokens (~${usage.cost_usd:.4f})"
+        )
+
+    if dry_run:
+        click.echo("")
+        click.echo("Dry run — vault not modified.")
+        return
+
+    if not yes:
+        click.echo("")
+        if not click.confirm("Import these items into your vault?", default=True):
+            click.echo("Cancelled — vault unchanged.")
+            return
+
+    counts = store.import_from_draft(
+        profile=draft.profile,
+        skills=draft.skills,
+        experiences=draft.experiences,
+        education=draft.education,
+        commit_message=f"Import resume: {_Path(path).name}",
+    )
+
+    summary = ", ".join(f"{v} {k}" for k, v in counts.items()) or "no new items"
+    click.echo(f"Imported {summary}. Run 'traitprint vault show' to review.")
+
+
 # --- mcp-serve ---
 
 
