@@ -476,10 +476,24 @@ def vault_rollback_cmd(ctx: click.Context, yes: bool) -> None:
     click.echo("Vault rolled back to previous state.")
 
 
-# --- mcp-serve (placeholder) ---
+# --- mcp-serve ---
 
 
 @cli.command(name="mcp-serve")
-def mcp_serve() -> None:
-    """Start the MCP server (coming in v0.1.0)."""
-    click.echo("MCP server coming in v0.1.0")
+@click.pass_context
+def mcp_serve(ctx: click.Context) -> None:
+    """Run the Traitprint MCP server over stdio.
+
+    Exposes four tools (get_profile_summary, search_skills, find_story,
+    get_philosophy) with response schemas that mirror the cloud MCP
+    server so agents can swap local ↔ cloud by changing a URL.
+    """
+    from traitprint.mcp_server import run_stdio
+
+    store = _get_store(ctx)
+    if not store.exists():
+        raise click.ClickException(
+            f"No vault found at {store.directory}. "
+            "Run 'traitprint init' first."
+        )
+    run_stdio(store)
