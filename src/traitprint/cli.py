@@ -272,32 +272,75 @@ def vault_add_skill(
 
 
 @vault.command(name="add-experience")
+@click.option("--title", default=None, help="Job title.")
+@click.option("--company", default=None, help="Company name.")
+@click.option("--start-date", default=None, help="Start date (YYYY-MM).")
+@click.option(
+    "--end-date", default=None, help="End date (YYYY-MM); blank/omitted means current."
+)
+@click.option("--description", default=None, help="Description of the role.")
+@click.option(
+    "--accomplishment",
+    "accomplishments",
+    multiple=True,
+    help="An accomplishment line (repeatable).",
+)
 @click.option("--interactive", "-i", is_flag=True, default=True, help="Guided prompts.")
 @click.pass_context
-def vault_add_experience(ctx: click.Context, interactive: bool) -> None:
-    """Add a work experience to your vault (interactive)."""
+def vault_add_experience(
+    ctx: click.Context,
+    title: str | None,
+    company: str | None,
+    start_date: str | None,
+    end_date: str | None,
+    description: str | None,
+    accomplishments: tuple[str, ...],
+    interactive: bool,
+) -> None:
+    """Add a work experience to your vault.
+
+    Pass --title, --company, --start-date (and optional fields) for
+    non-interactive use. Any missing required field will be prompted for.
+    """
     store = _get_store(ctx)
     if not store.exists():
         click.echo("No vault found. Run 'traitprint init' first.")
         return
 
-    title = click.prompt("Job title")
-    company = click.prompt("Company")
-    start_date = click.prompt("Start date (YYYY-MM)", default="")
-    end_date = click.prompt("End date (YYYY-MM, blank for current)", default="")
-    description = click.prompt("Description", default="")
-    raw_acc = click.prompt("Accomplishments (comma-separated, or blank)", default="")
-    accomplishments = (
-        [a.strip() for a in raw_acc.split(",") if a.strip()] if raw_acc else []
-    )
+    non_interactive = title is not None
+    if non_interactive:
+        company = company if company is not None else ""
+        start_date = start_date if start_date is not None else ""
+        end_date_val = end_date if end_date else None
+        description = description if description is not None else ""
+        accomplishment_list = [a for a in accomplishments if a]
+    else:
+        title = click.prompt("Job title")
+        company = click.prompt("Company")
+        start_date = click.prompt("Start date (YYYY-MM)", default="")
+        end_date_prompt = click.prompt(
+            "End date (YYYY-MM, blank for current)", default=""
+        )
+        end_date_val = end_date_prompt if end_date_prompt else None
+        description = click.prompt("Description", default="")
+        if accomplishments:
+            accomplishment_list = [a for a in accomplishments if a]
+        else:
+            raw_acc = click.prompt(
+                "Accomplishments (comma-separated, or blank)", default=""
+            )
+            accomplishment_list = (
+                [a.strip() for a in raw_acc.split(",") if a.strip()] if raw_acc else []
+            )
 
+    assert title is not None
     exp = store.add_experience(
         title=title,
-        company=company,
-        start_date=start_date,
-        end_date=end_date if end_date else None,
-        description=description,
-        accomplishments=accomplishments,
+        company=company or "",
+        start_date=start_date or "",
+        end_date=end_date_val,
+        description=description or "",
+        accomplishments=accomplishment_list,
     )
     click.echo(f"Added experience: {exp.title} at {exp.company} [{exp.id}]")
 
@@ -306,41 +349,90 @@ def vault_add_experience(ctx: click.Context, interactive: bool) -> None:
 
 
 @vault.command(name="add-story")
+@click.option("--title", default=None, help="Story title.")
+@click.option("--situation", default=None, help="STAR: situation.")
+@click.option("--task", default=None, help="STAR: task.")
+@click.option("--action", default=None, help="STAR: action.")
+@click.option("--result", default=None, help="STAR: result.")
+@click.option(
+    "--skill-id",
+    "skill_ids_opt",
+    multiple=True,
+    help="Skill UUID (repeatable).",
+)
+@click.option(
+    "--experience-id", default=None, help="Experience UUID this story belongs to."
+)
 @click.option(
     "--interactive", "-i", is_flag=True, default=True, help="Guided STAR prompts."
 )
 @click.pass_context
-def vault_add_story(ctx: click.Context, interactive: bool) -> None:
-    """Add a STAR-format story to your vault (interactive)."""
+def vault_add_story(
+    ctx: click.Context,
+    title: str | None,
+    situation: str | None,
+    task: str | None,
+    action: str | None,
+    result: str | None,
+    skill_ids_opt: tuple[str, ...],
+    experience_id: str | None,
+    interactive: bool,
+) -> None:
+    """Add a STAR-format story to your vault.
+
+    Pass --title and STAR fields for non-interactive use. Any missing field
+    will be prompted for when --title is omitted.
+    """
     store = _get_store(ctx)
     if not store.exists():
         click.echo("No vault found. Run 'traitprint init' first.")
         return
 
-    click.echo("Enter your story in STAR format:")
-    title = click.prompt("Title")
-    situation = click.prompt("Situation")
-    task = click.prompt("Task")
-    action = click.prompt("Action")
-    result = click.prompt("Result")
-    raw_skills = click.prompt("Skill IDs (comma-separated UUIDs, or blank)", default="")
-    skill_ids: list[UUID] = []
-    if raw_skills:
-        for sid in raw_skills.split(","):
-            sid = sid.strip()
-            if sid:
-                skill_ids.append(UUID(sid))
-    raw_exp = click.prompt("Experience ID (UUID, or blank)", default="")
-    experience_id = UUID(raw_exp) if raw_exp else None
+    def _parse_uuids(raw: tuple[str, ...]) -> list[UUID]:
+        return [UUID(s.strip()) for s in raw if s and s.strip()]
 
+    non_interactive = title is not None
+    if non_interactive:
+        situation = situation if situation is not None else ""
+        task = task if task is not None else ""
+        action = action if action is not None else ""
+        result = result if result is not None else ""
+        skill_ids = _parse_uuids(skill_ids_opt)
+        experience_uuid = UUID(experience_id) if experience_id else None
+    else:
+        click.echo("Enter your story in STAR format:")
+        title = click.prompt("Title")
+        situation = click.prompt("Situation")
+        task = click.prompt("Task")
+        action = click.prompt("Action")
+        result = click.prompt("Result")
+        if skill_ids_opt:
+            skill_ids = _parse_uuids(skill_ids_opt)
+        else:
+            raw_skills = click.prompt(
+                "Skill IDs (comma-separated UUIDs, or blank)", default=""
+            )
+            skill_ids = []
+            if raw_skills:
+                for sid in raw_skills.split(","):
+                    sid = sid.strip()
+                    if sid:
+                        skill_ids.append(UUID(sid))
+        if experience_id:
+            experience_uuid = UUID(experience_id)
+        else:
+            raw_exp = click.prompt("Experience ID (UUID, or blank)", default="")
+            experience_uuid = UUID(raw_exp) if raw_exp else None
+
+    assert title is not None
     story = store.add_story(
         title=title,
-        situation=situation,
-        task=task,
-        action=action,
-        result=result,
+        situation=situation or "",
+        task=task or "",
+        action=action or "",
+        result=result or "",
         skill_ids=skill_ids,
-        experience_id=experience_id,
+        experience_id=experience_uuid,
     )
     click.echo(f"Added story: {story.title} [{story.id}]")
 
@@ -351,35 +443,78 @@ _PHILOSOPHY_CATEGORIES = [c.value for c in PhilosophyCategory]
 
 
 @vault.command(name="add-philosophy")
+@click.option("--title", default=None, help="Philosophy title.")
+@click.option("--description", default=None, help="Description of the philosophy.")
+@click.option(
+    "--category",
+    default=None,
+    type=click.Choice(_PHILOSOPHY_CATEGORIES, case_sensitive=False),
+    help="Philosophy category.",
+)
+@click.option(
+    "--evidence-id",
+    "evidence_ids_opt",
+    multiple=True,
+    help="Evidence story UUID (repeatable).",
+)
 @click.option("--interactive", "-i", is_flag=True, default=True, help="Guided prompts.")
 @click.pass_context
-def vault_add_philosophy(ctx: click.Context, interactive: bool) -> None:
-    """Add a work philosophy to your vault (interactive)."""
+def vault_add_philosophy(
+    ctx: click.Context,
+    title: str | None,
+    description: str | None,
+    category: str | None,
+    evidence_ids_opt: tuple[str, ...],
+    interactive: bool,
+) -> None:
+    """Add a work philosophy to your vault.
+
+    Pass --title, --description, --category for non-interactive use.
+    """
     store = _get_store(ctx)
     if not store.exists():
         click.echo("No vault found. Run 'traitprint init' first.")
         return
 
-    title = click.prompt("Philosophy title")
-    description = click.prompt("Description")
-    click.echo(f"Categories: {', '.join(_PHILOSOPHY_CATEGORIES)}")
-    category = click.prompt(
-        "Category",
-        type=click.Choice(_PHILOSOPHY_CATEGORIES, case_sensitive=False),
-    )
-    raw_evidence = click.prompt(
-        "Evidence story IDs (comma-separated UUIDs, or blank)", default=""
-    )
-    evidence_ids: list[UUID] = []
-    if raw_evidence:
-        for eid in raw_evidence.split(","):
-            eid = eid.strip()
-            if eid:
-                evidence_ids.append(UUID(eid))
+    non_interactive = title is not None
+    if non_interactive:
+        description = description if description is not None else ""
+        if category is None:
+            click.echo(
+                "--category is required when --title is provided. "
+                f"Choices: {', '.join(_PHILOSOPHY_CATEGORIES)}"
+            )
+            ctx.exit(1)
+            return
+        evidence_ids = [UUID(s.strip()) for s in evidence_ids_opt if s and s.strip()]
+    else:
+        title = click.prompt("Philosophy title")
+        description = click.prompt("Description")
+        click.echo(f"Categories: {', '.join(_PHILOSOPHY_CATEGORIES)}")
+        category = click.prompt(
+            "Category",
+            type=click.Choice(_PHILOSOPHY_CATEGORIES, case_sensitive=False),
+        )
+        if evidence_ids_opt:
+            evidence_ids = [
+                UUID(s.strip()) for s in evidence_ids_opt if s and s.strip()
+            ]
+        else:
+            raw_evidence = click.prompt(
+                "Evidence story IDs (comma-separated UUIDs, or blank)", default=""
+            )
+            evidence_ids = []
+            if raw_evidence:
+                for eid in raw_evidence.split(","):
+                    eid = eid.strip()
+                    if eid:
+                        evidence_ids.append(UUID(eid))
 
+    assert title is not None
+    assert category is not None
     philosophy = store.add_philosophy(
         title=title,
-        description=description,
+        description=description or "",
         category=category,
         evidence_story_ids=evidence_ids,
     )
