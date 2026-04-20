@@ -381,6 +381,10 @@ def create_server(store: VaultStore) -> FastMCP:
     """
     taxonomy = load_taxonomy()
     mcp = FastMCP(SERVER_NAME)
+    # FastMCP does not forward a version to the underlying MCPServer,
+    # so it falls back to the MCP-SDK package version.  Set it
+    # explicitly so ``serverInfo.version`` reports *our* version.
+    mcp._mcp_server.version = SERVER_VERSION
 
     @mcp.tool(
         description=(

@@ -349,6 +349,14 @@ class TestServerRegistration:
             "get_philosophy",
         }
 
+    def test_server_version_in_init_options(
+        self, populated_store: VaultStore
+    ) -> None:
+        """serverInfo.version must report *our* version, not the MCP SDK."""
+        server = create_server(populated_store)
+        opts = server._mcp_server.create_initialization_options()
+        assert opts.server_version == SERVER_VERSION
+
 
 # ── JSON-RPC round-trip over stdio ──────────────────────────────────
 
