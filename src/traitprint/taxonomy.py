@@ -3,13 +3,10 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
+from importlib.resources import files
 from uuid import UUID
 
 from pydantic import BaseModel, Field
-
-_PACKAGE_DIR = Path(__file__).resolve().parent
-_DATA_DIR = _PACKAGE_DIR.parent.parent / "data"
 
 
 class TaxonomyEntry(BaseModel):
@@ -22,9 +19,9 @@ class TaxonomyEntry(BaseModel):
 
 
 def load_taxonomy() -> list[TaxonomyEntry]:
-    """Load the embedded taxonomy from data/taxonomy.json."""
-    taxonomy_path = _DATA_DIR / "taxonomy.json"
-    raw = taxonomy_path.read_text(encoding="utf-8")
+    """Load the embedded taxonomy packaged with traitprint."""
+    resource = files("traitprint.data").joinpath("taxonomy.json")
+    raw = resource.read_text(encoding="utf-8")
     entries = json.loads(raw)
     return [TaxonomyEntry.model_validate(e) for e in entries]
 
