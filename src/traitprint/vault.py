@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 from uuid import UUID
 
@@ -43,8 +44,15 @@ class VaultStore:
         data = json.loads(raw)
         return VaultSchema.model_validate(data)
 
-    def save(self, vault: VaultSchema) -> None:
-        """Write vault to disk with pretty formatting."""
+    def save(self, vault: VaultSchema, *, bump_updated_at: bool = True) -> None:
+        """Write vault to disk with pretty formatting.
+
+        When ``bump_updated_at`` is True (the default), ``vault.updated_at`` is
+        refreshed to now. Pass False when persisting a vault received from the
+        cloud so its server timestamp is preserved.
+        """
+        if bump_updated_at:
+            vault.updated_at = datetime.now(timezone.utc)
         self.directory.mkdir(parents=True, exist_ok=True)
         payload = vault.model_dump(mode="json")
         self.vault_path.write_text(
@@ -177,9 +185,7 @@ class VaultStore:
             description=description,
         )
         vault.education.append(edu)
-        self._save_and_commit(
-            vault, f"Add education: {degree} at {institution}"
-        )
+        self._save_and_commit(vault, f"Add education: {degree} at {institution}")
         return edu
 
     def remove_item(self, section: str, item_id: UUID) -> bool:
@@ -194,9 +200,7 @@ class VaultStore:
         for i, item in enumerate(items):
             if getattr(item, "id", None) == item_id:
                 items.pop(i)
-                self._save_and_commit(
-                    vault, f"Remove {section[:-1]}: {item_id}"
-                )
+                self._save_and_commit(vault, f"Remove {section[:-1]}: {item_id}")
                 return True
         return False
 

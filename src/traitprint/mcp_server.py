@@ -141,9 +141,7 @@ def _story_evidence_by_skill(
 # ── Tool handlers ───────────────────────────────────────────────────
 
 
-def _handle_get_profile_summary(
-    vault: VaultSchema, depth: str
-) -> dict[str, Any]:
+def _handle_get_profile_summary(vault: VaultSchema, depth: str) -> dict[str, Any]:
     result: dict[str, Any] = {
         "headline": vault.profile.headline or vault.profile.display_name or "",
         "bio": vault.profile.summary or "",
@@ -168,9 +166,7 @@ def _handle_get_profile_summary(
     if depth != "detailed":
         return result
 
-    experiences = sorted(
-        vault.experiences, key=lambda e: -e.created_at.timestamp()
-    )[:3]
+    experiences = sorted(vault.experiences, key=lambda e: -e.created_at.timestamp())[:3]
     result["signature_experiences"] = [
         {
             "title": e.title,
@@ -181,9 +177,9 @@ def _handle_get_profile_summary(
         }
         for e in experiences
     ]
-    philosophies = sorted(
-        vault.philosophies, key=lambda p: -p.created_at.timestamp()
-    )[:3]
+    philosophies = sorted(vault.philosophies, key=lambda p: -p.created_at.timestamp())[
+        :3
+    ]
     result["core_philosophies"] = [
         {
             "topic": p.title,
@@ -297,9 +293,7 @@ def _handle_find_story(
     stories_out: list[dict[str, Any]] = []
     for story, score in scored[:limit]:
         related_skills = [
-            skill_name_by_id[sid]
-            for sid in story.skill_ids
-            if sid in skill_name_by_id
+            skill_name_by_id[sid] for sid in story.skill_ids if sid in skill_name_by_id
         ]
         stories_out.append(
             {
@@ -433,16 +427,12 @@ def create_server(store: VaultStore) -> FastMCP:
     ) -> dict[str, Any]:
         limit = max(1, min(limit, 5))
         vault = store.load()
-        return _envelope(
-            _handle_find_story(vault, situation, theme, outcome, limit)
-        )
+        return _envelope(_handle_find_story(vault, situation, theme, outcome, limit))
 
     @mcp.tool(
         description="Query stated beliefs and positions. 'What's their stance on X?'"
     )
-    def get_philosophy(
-        topic: str | None = None, limit: int = 3
-    ) -> dict[str, Any]:
+    def get_philosophy(topic: str | None = None, limit: int = 3) -> dict[str, Any]:
         limit = max(1, min(limit, 5))
         vault = store.load()
         return _envelope(_handle_get_philosophy(vault, topic or "", limit))
