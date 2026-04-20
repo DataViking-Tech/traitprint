@@ -34,6 +34,7 @@ dependencies = [
     "pydantic>=2.0",
     "mcp",
     "httpx",
+    "pyyaml>=6.0",
 ]
 
 [project.optional-dependencies]

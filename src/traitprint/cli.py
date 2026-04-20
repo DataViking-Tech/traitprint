@@ -579,6 +579,73 @@ def vault_import_resume(
     click.echo(f"Imported {summary}. Run 'traitprint vault show' to review.")
 
 
+# --- export ---
+
+
+_EXPORT_FORMATS = ["synthpanel-persona"]
+
+
+@cli.command(name="export")
+@click.option(
+    "--format",
+    "fmt",
+    type=click.Choice(_EXPORT_FORMATS, case_sensitive=False),
+    required=True,
+    help="Export target format.",
+)
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(dir_okay=False, writable=True),
+    default=None,
+    help="Write to file instead of stdout.",
+)
+@click.option(
+    "--pack-name",
+    default=None,
+    help="Override the pack name (synthpanel-persona only).",
+)
+@click.pass_context
+def export_cmd(
+    ctx: click.Context,
+    fmt: str,
+    output: str | None,
+    pack_name: str | None,
+) -> None:
+    """Export the vault in a format consumable by other tools.
+
+    ``--format synthpanel-persona`` emits a SynthPanel persona pack
+    (YAML) that can be fed directly to ``synthpanel panel run
+    --personas <file>``.
+    """
+    store = _get_store(ctx)
+    if not store.exists():
+        raise click.ClickException(
+            f"No vault found at {store.directory}. "
+            "Run 'traitprint init' first."
+        )
+
+    vault_obj = store.load()
+
+    if fmt == "synthpanel-persona":
+        import yaml
+
+        from traitprint.exporters.synthpanel import vault_to_synthpanel_pack
+
+        pack = vault_to_synthpanel_pack(vault_obj, pack_name=pack_name)
+        payload = yaml.safe_dump(pack, sort_keys=False, default_flow_style=False)
+    else:  # pragma: no cover — click.Choice guards this
+        raise click.ClickException(f"Unsupported format: {fmt}")
+
+    if output:
+        from pathlib import Path
+
+        Path(output).write_text(payload, encoding="utf-8")
+        click.echo(f"Wrote {fmt} export to {output}")
+    else:
+        click.echo(payload, nl=False)
+
+
 # --- mcp-serve ---
 
 
