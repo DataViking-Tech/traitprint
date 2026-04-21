@@ -3,13 +3,13 @@
     "id": "a1b2c3d4-0001-4000-8000-000000000001",
     "name": "Python",
     "category": "technical",
-    "aliases": ["python3", "cpython"]
+    "aliases": ["python3", "cpython", "py", "backend", "server-side"]
   },
   {
     "id": "a1b2c3d4-0002-4000-8000-000000000002",
     "name": "JavaScript",
     "category": "technical",
-    "aliases": ["js", "ecmascript"]
+    "aliases": ["js", "ecmascript", "frontend", "front-end", "front end", "web development", "web dev"]
   },
   {
     "id": "a1b2c3d4-0003-4000-8000-000000000003",
@@ -21,13 +21,13 @@
     "id": "a1b2c3d4-0004-4000-8000-000000000004",
     "name": "SQL",
     "category": "technical",
-    "aliases": ["structured query language"]
+    "aliases": ["structured query language", "database", "databases", "rdbms", "queries"]
   },
   {
     "id": "a1b2c3d4-0005-4000-8000-000000000005",
     "name": "Go",
     "category": "technical",
-    "aliases": ["golang"]
+    "aliases": ["golang", "backend", "server-side"]
   },
   {
     "id": "a1b2c3d4-0006-4000-8000-000000000006",
@@ -39,7 +39,7 @@
     "id": "a1b2c3d4-0007-4000-8000-000000000007",
     "name": "React",
     "category": "technical",
-    "aliases": ["reactjs", "react.js"]
+    "aliases": ["reactjs", "react.js", "frontend", "jsx"]
   },
   {
     "id": "a1b2c3d4-0008-4000-8000-000000000008",
@@ -57,7 +57,7 @@
     "id": "a1b2c3d4-0010-4000-8000-000000000010",
     "name": "Docker",
     "category": "technical",
-    "aliases": ["containerization"]
+    "aliases": ["containerization", "container", "containers"]
   },
   {
     "id": "a1b2c3d4-0011-4000-8000-000000000011",
@@ -93,13 +93,13 @@
     "id": "a1b2c3d4-0016-4000-8000-000000000016",
     "name": "Data Engineering",
     "category": "domain",
-    "aliases": ["data pipelines", "ETL", "ELT"]
+    "aliases": ["data pipelines", "data pipeline", "ETL", "ELT", "big data"]
   },
   {
     "id": "a1b2c3d4-0017-4000-8000-000000000017",
     "name": "Machine Learning",
     "category": "domain",
-    "aliases": ["ML", "deep learning", "AI"]
+    "aliases": ["ML", "deep learning", "AI", "data science", "ds", "ai/ml", "neural networks", "neural network", "nlp", "natural language processing", "llm", "large language models"]
   },
   {
     "id": "a1b2c3d4-0018-4000-8000-000000000018",
@@ -123,12 +123,12 @@
     "id": "a1b2c3d4-0021-4000-8000-000000000021",
     "name": "PostgreSQL",
     "category": "tool",
-    "aliases": ["postgres", "psql"]
+    "aliases": ["postgres", "psql", "relational database"]
   },
   {
     "id": "a1b2c3d4-0022-4000-8000-000000000022",
     "name": "Kubernetes",
     "category": "tool",
-    "aliases": ["k8s", "kube"]
+    "aliases": ["k8s", "kube", "container orchestration"]
   }
 ]
