@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "traitprint"
-version = "0.5.0"
+version = "0.6.0"
 description = "A structured career profile that AI tools can query. Local-first vault with MCP server."
 readme = "README.md"
 license = "MIT"
