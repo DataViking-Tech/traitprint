@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import UUID
@@ -19,9 +20,52 @@ from traitprint.schema import (
 )
 
 DEFAULT_VAULT_DIR = Path.home() / ".traitprint"
+VAULT_DIR_ENV_VAR = "TRAITPRINT_VAULT_DIR"
+LOCAL_VAULT_DIRNAME = ".traitprint"
 
 # Valid top-level section names for CRUD operations.
 SECTIONS = ("skills", "experiences", "stories", "philosophies", "education")
+
+
+def _find_local_vault(start: Path) -> Path | None:
+    """Walk up from ``start`` looking for a ``.traitprint/`` directory.
+
+    Mirrors how git locates ``.git/``. Returns the discovered vault directory,
+    or None if none exists between ``start`` and the filesystem root.
+    """
+    current = start.resolve()
+    for candidate in (current, *current.parents):
+        vault_dir = candidate / LOCAL_VAULT_DIRNAME
+        if vault_dir.is_dir():
+            return vault_dir
+    return None
+
+
+def resolve_vault_dir(
+    explicit: str | Path | None = None,
+    *,
+    start: Path | None = None,
+) -> Path:
+    """Resolve the vault directory using explicit → env → walk-up → home.
+
+    1. ``explicit`` (e.g. ``--vault-dir``) wins if provided.
+    2. ``TRAITPRINT_VAULT_DIR`` env var is honored next.
+    3. Walks up from ``start`` (default: cwd) looking for ``.traitprint/``.
+    4. Falls back to ``~/.traitprint``.
+    """
+    if explicit is not None:
+        return Path(explicit)
+
+    env_value = os.environ.get(VAULT_DIR_ENV_VAR)
+    if env_value:
+        return Path(env_value)
+
+    origin = start if start is not None else Path.cwd()
+    local = _find_local_vault(origin)
+    if local is not None:
+        return local
+
+    return DEFAULT_VAULT_DIR
 
 
 class DuplicateSkillError(ValueError):
@@ -37,7 +81,7 @@ class VaultStore:
     """Manages reading and writing the vault.json file."""
 
     def __init__(self, path: str | Path | None = None) -> None:
-        self.directory = Path(path) if path else DEFAULT_VAULT_DIR
+        self.directory = resolve_vault_dir(path)
 
     @property
     def vault_path(self) -> Path:
