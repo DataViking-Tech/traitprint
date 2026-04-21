@@ -1,8 +1,10 @@
 # Traitprint
 
-**Local-first career identity vault for the agent era.**
+**A structured career profile that AI tools can query.**
 
-> Your resume is a lossy snapshot. Your Traitprint is a live API.
+> Your resume is a lossy snapshot. Your Traitprint is a live, queryable record
+> of your skills, experience, stories, and philosophy — kept on your laptop,
+> shared on your terms.
 
 ```
 pip install traitprint
@@ -10,12 +12,13 @@ traitprint init
 traitprint mcp-serve
 ```
 
-Point Claude Desktop (or any MCP client) at `traitprint mcp-serve` and your
-agent can talk to your career. No account. No cloud. No vendor lock-in. Your
-vault is a file on your machine.
+Point Claude Desktop (or any MCP client) at `traitprint mcp-serve` and any AI
+assistant you use can answer questions about your career: which projects used
+Postgres, what your management philosophy is, the story behind a job change.
+No account. No cloud. No vendor lock-in. Your vault is a file on your machine.
 
-When you want a public profile, job matching, or a digital twin that
-recruiters can chat with:
+When you want a public profile, job matching, or a chat-ready twin that
+recruiters can talk to:
 
 ```
 traitprint login
@@ -23,6 +26,42 @@ traitprint push
 ```
 
 …and you're live at `traitprint.com/profile/you`.
+
+## Who it's for
+
+Traitprint is useful if you want your career data to be structured, portable,
+and queryable — not locked inside a PDF or a recruiter platform. Three concrete
+examples:
+
+### 🎯 The job seeker
+
+> "I'm tired of rewriting my resume for every application, and I want recruiters
+> who use AI tools to actually find me."
+
+Build your vault once with `traitprint init` and `vault add-*`. Run
+`traitprint push` to publish a profile at `traitprint.com/profile/you`.
+Recruiters' agents query your structured profile directly — skills, dates,
+stories — instead of guessing from keyword-matched PDFs.
+
+### 🧑‍💻 The developer using Claude Desktop / Cursor / any MCP client
+
+> "I want my AI assistant to know my actual stack, projects, and decisions —
+> not generic advice."
+
+Run `traitprint mcp-serve` and add it to your MCP client config. Your assistant
+can now call `search_skills`, `find_story`, and `get_philosophy` to ground its
+suggestions in your real history. Ask "draft a cover letter for this role" and
+it pulls from the vault, not a hallucinated resume.
+
+### 🧭 The career coach
+
+> "I work with a dozen clients and I need their career data structured the
+> same way so I can compare, advise, and produce portfolios."
+
+Use `traitprint import-resume` (BYOK LLM) to pull each client's resume into
+a structured vault. Edit, version, and `export` polished portfolios. Same
+schema for every client means coaching workflows compose instead of starting
+from scratch each time.
 
 ## What's in the box
 

@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "traitprint"
 version = "0.5.0"
-description = "Local-first career identity vault for the agent era. MCP server for AI agents."
+description = "A structured career profile that AI tools can query. Local-first vault with MCP server."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
