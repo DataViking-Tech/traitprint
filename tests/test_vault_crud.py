@@ -963,6 +963,293 @@ class TestHistoryDiffRollback:
 
 
 # ------------------------------------------------------------------
+# CLI: vault add-* --from-json (batch mode)
+# ------------------------------------------------------------------
+
+
+class TestAddSkillBatch:
+    def test_batch_adds_multiple_skills(
+        self, runner: CliRunner, vault_dir: Path, tmp_path: Path
+    ) -> None:
+        payload = tmp_path / "skills.json"
+        payload.write_text(
+            '[{"name":"Go","proficiency":8,"category":"technical"},'
+            '{"name":"Rust","proficiency":6,"category":"technical","notes":"WIP"}]'
+        )
+        result = runner.invoke(
+            cli,
+            [
+                "--path", str(vault_dir),
+                "vault", "add-skill", "--from-json", str(payload),
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        assert "[ok] Go" in result.output
+        assert "[ok] Rust" in result.output
+        assert "Summary: added 2, errors 0" in result.output
+        skills = VaultStore(vault_dir).load().skills
+        assert {s.name for s in skills} == {"Go", "Rust"}
+        rust = next(s for s in skills if s.name == "Rust")
+        assert rust.notes == "WIP"
+
+    def test_batch_continues_past_duplicate(
+        self, runner: CliRunner, vault_dir: Path, tmp_path: Path
+    ) -> None:
+        store = VaultStore(vault_dir)
+        store.add_skill(name="Python", proficiency=8, category="technical")
+        payload = tmp_path / "skills.json"
+        payload.write_text(
+            '[{"name":"python","proficiency":5,"category":"technical"},'
+            '{"name":"Go","proficiency":7,"category":"technical"}]'
+        )
+        result = runner.invoke(
+            cli,
+            [
+                "--path", str(vault_dir),
+                "vault", "add-skill", "--from-json", str(payload),
+            ],
+        )
+        assert result.exit_code == 1
+        assert "[dup] python" in result.output
+        assert "[ok] Go" in result.output
+        assert "Summary: added 1, errors 1" in result.output
+        assert len(store.load().skills) == 2  # Python + Go
+
+    def test_batch_reports_missing_fields(
+        self, runner: CliRunner, vault_dir: Path, tmp_path: Path
+    ) -> None:
+        payload = tmp_path / "skills.json"
+        payload.write_text(
+            '[{"name":"Incomplete"},'
+            '{"name":"Valid","proficiency":7,"category":"technical"}]'
+        )
+        result = runner.invoke(
+            cli,
+            [
+                "--path", str(vault_dir),
+                "vault", "add-skill", "--from-json", str(payload),
+            ],
+        )
+        assert result.exit_code == 1
+        assert "[err] Incomplete" in result.output
+        assert "proficiency" in result.output
+        assert "category" in result.output
+        assert "[ok] Valid" in result.output
+        assert "Summary: added 1, errors 1" in result.output
+
+    def test_batch_reports_invalid_proficiency(
+        self, runner: CliRunner, vault_dir: Path, tmp_path: Path
+    ) -> None:
+        payload = tmp_path / "skills.json"
+        payload.write_text(
+            '[{"name":"X","proficiency":99,"category":"technical"}]'
+        )
+        result = runner.invoke(
+            cli,
+            [
+                "--path", str(vault_dir),
+                "vault", "add-skill", "--from-json", str(payload),
+            ],
+        )
+        assert result.exit_code == 1
+        assert "[err] X" in result.output
+        assert "Summary: added 0, errors 1" in result.output
+        assert len(VaultStore(vault_dir).load().skills) == 0
+
+    def test_batch_from_stdin(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        result = runner.invoke(
+            cli,
+            [
+                "--path", str(vault_dir),
+                "vault", "add-skill", "--from-json", "-",
+            ],
+            input='[{"name":"Bash","proficiency":9,"category":"tool"}]',
+        )
+        assert result.exit_code == 0, result.output
+        assert "[ok] Bash" in result.output
+        assert len(VaultStore(vault_dir).load().skills) == 1
+
+    def test_batch_rejects_non_array(
+        self, runner: CliRunner, vault_dir: Path, tmp_path: Path
+    ) -> None:
+        payload = tmp_path / "bad.json"
+        payload.write_text('{"name":"Python","proficiency":8,"category":"technical"}')
+        result = runner.invoke(
+            cli,
+            [
+                "--path", str(vault_dir),
+                "vault", "add-skill", "--from-json", str(payload),
+            ],
+        )
+        assert result.exit_code != 0
+        assert "array" in result.output.lower()
+
+    def test_batch_rejects_invalid_json(
+        self, runner: CliRunner, vault_dir: Path, tmp_path: Path
+    ) -> None:
+        payload = tmp_path / "bad.json"
+        payload.write_text("{not json")
+        result = runner.invoke(
+            cli,
+            [
+                "--path", str(vault_dir),
+                "vault", "add-skill", "--from-json", str(payload),
+            ],
+        )
+        assert result.exit_code != 0
+        assert "Invalid JSON" in result.output
+
+    def test_from_json_rejects_mixed_flags(
+        self, runner: CliRunner, vault_dir: Path, tmp_path: Path
+    ) -> None:
+        payload = tmp_path / "skills.json"
+        payload.write_text('[{"name":"Go","proficiency":8,"category":"technical"}]')
+        result = runner.invoke(
+            cli,
+            [
+                "--path", str(vault_dir),
+                "vault", "add-skill", "Oops",
+                "--proficiency", "5", "--category", "x",
+                "--from-json", str(payload),
+            ],
+        )
+        assert result.exit_code == 2
+        assert "cannot be combined" in result.output
+
+
+class TestAddExperienceBatch:
+    def test_batch_adds_multiple(
+        self, runner: CliRunner, vault_dir: Path, tmp_path: Path
+    ) -> None:
+        payload = tmp_path / "exp.json"
+        payload.write_text(
+            '[{"title":"Engineer","company":"Acme","start_date":"2020-01",'
+            '"accomplishments":["Shipped X"]},'
+            '{"title":"Lead","company":"Beta","start_date":"2022-03",'
+            '"end_date":"2024-01","description":"Built team"}]'
+        )
+        result = runner.invoke(
+            cli,
+            [
+                "--path", str(vault_dir),
+                "vault", "add-experience", "--from-json", str(payload),
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        assert "[ok] Engineer at Acme" in result.output
+        assert "[ok] Lead at Beta" in result.output
+        exps = VaultStore(vault_dir).load().experiences
+        assert len(exps) == 2
+        eng = next(e for e in exps if e.title == "Engineer")
+        assert eng.accomplishments == ["Shipped X"]
+
+    def test_batch_missing_title(
+        self, runner: CliRunner, vault_dir: Path, tmp_path: Path
+    ) -> None:
+        payload = tmp_path / "exp.json"
+        payload.write_text('[{"company":"Acme"}]')
+        result = runner.invoke(
+            cli,
+            [
+                "--path", str(vault_dir),
+                "vault", "add-experience", "--from-json", str(payload),
+            ],
+        )
+        assert result.exit_code == 1
+        assert "missing field title" in result.output
+
+
+class TestAddStoryBatch:
+    def test_batch_adds_with_refs(
+        self, runner: CliRunner, vault_dir: Path, tmp_path: Path
+    ) -> None:
+        store = VaultStore(vault_dir)
+        skill = store.add_skill(name="Go", proficiency=7, category="technical")
+        exp = store.add_experience(title="Eng", company="Co", start_date="2020-01")
+        payload = tmp_path / "stories.json"
+        payload.write_text(
+            f'[{{"title":"Scaled API","situation":"load","task":"fix",'
+            f'"action":"shard","result":"10x",'
+            f'"skill_ids":["{skill.id}"],"experience_id":"{exp.id}"}},'
+            f'{{"title":"Migrated DB","situation":"s","task":"t",'
+            f'"action":"a","result":"r"}}]'
+        )
+        result = runner.invoke(
+            cli,
+            [
+                "--path", str(vault_dir),
+                "vault", "add-story", "--from-json", str(payload),
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        stories = store.load().stories
+        assert len(stories) == 2
+        scaled = next(s for s in stories if s.title == "Scaled API")
+        assert scaled.skill_ids == [skill.id]
+        assert scaled.experience_id == exp.id
+
+    def test_batch_invalid_uuid(
+        self, runner: CliRunner, vault_dir: Path, tmp_path: Path
+    ) -> None:
+        payload = tmp_path / "stories.json"
+        payload.write_text(
+            '[{"title":"Bad","skill_ids":["not-a-uuid"]}]'
+        )
+        result = runner.invoke(
+            cli,
+            [
+                "--path", str(vault_dir),
+                "vault", "add-story", "--from-json", str(payload),
+            ],
+        )
+        assert result.exit_code == 1
+        assert "[err] Bad" in result.output
+
+
+class TestAddPhilosophyBatch:
+    def test_batch_adds_multiple(
+        self, runner: CliRunner, vault_dir: Path, tmp_path: Path
+    ) -> None:
+        payload = tmp_path / "phil.json"
+        payload.write_text(
+            '[{"title":"Ship small","description":"Bias to delivery",'
+            '"category":"leadership"},'
+            '{"title":"Write it down","category":"collaboration"}]'
+        )
+        result = runner.invoke(
+            cli,
+            [
+                "--path", str(vault_dir),
+                "vault", "add-philosophy", "--from-json", str(payload),
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        assert "[ok] Ship small" in result.output
+        assert "[ok] Write it down" in result.output
+        phils = VaultStore(vault_dir).load().philosophies
+        assert len(phils) == 2
+
+    def test_batch_invalid_category(
+        self, runner: CliRunner, vault_dir: Path, tmp_path: Path
+    ) -> None:
+        payload = tmp_path / "phil.json"
+        payload.write_text(
+            '[{"title":"Bad","category":"not-a-real-category"}]'
+        )
+        result = runner.invoke(
+            cli,
+            [
+                "--path", str(vault_dir),
+                "vault", "add-philosophy", "--from-json", str(payload),
+            ],
+        )
+        assert result.exit_code == 1
+        assert "[err] Bad" in result.output
+
+
+# ------------------------------------------------------------------
 # CLI: vault remove
 # ------------------------------------------------------------------
 

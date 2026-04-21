@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import json
+from typing import IO, TYPE_CHECKING, Any
 from uuid import UUID
 
 import click
+from pydantic import ValidationError
 
 from traitprint import __version__
 from traitprint.git_ops import commit, head_sha, init_repo
@@ -25,6 +27,46 @@ def _get_store(ctx: click.Context) -> VaultStore:
     """Retrieve the VaultStore from the Click context."""
     path: str | None = ctx.obj.get("path") if ctx.obj else None
     return VaultStore(path)
+
+
+def _read_json_items(source: IO[str]) -> list[dict[str, Any]]:
+    """Parse a JSON array-of-objects from an open text stream.
+
+    Raises click.ClickException if the payload is not a JSON array of objects.
+    """
+    try:
+        data = json.loads(source.read())
+    except json.JSONDecodeError as exc:
+        raise click.ClickException(f"Invalid JSON: {exc}") from exc
+    if not isinstance(data, list):
+        raise click.ClickException(
+            f"Expected a JSON array, got {type(data).__name__}"
+        )
+    for i, item in enumerate(data):
+        if not isinstance(item, dict):
+            raise click.ClickException(
+                f"Item {i}: expected an object, got {type(item).__name__}"
+            )
+    return data
+
+
+def _parse_uuid_list(
+    raw: object, field: str, item_index: int
+) -> list[UUID]:
+    """Parse a list-of-UUID field from a JSON item. Returns [] for missing/None."""
+    if raw is None:
+        return []
+    if not isinstance(raw, list):
+        raise ValueError(f"{field} must be a list of UUID strings")
+    out: list[UUID] = []
+    for v in raw:
+        if not isinstance(v, str):
+            raise ValueError(f"{field}: expected UUID string, got {type(v).__name__}")
+        try:
+            out.append(UUID(v))
+        except ValueError as exc:
+            raise ValueError(f"{field}: invalid UUID {v!r}: {exc}") from exc
+    return out
 
 
 @click.group()
@@ -394,18 +436,18 @@ def vault_set_profile(
 
 
 @vault.command(name="add-skill")
-@click.argument("name")
+@click.argument("name", required=False)
 @click.option(
     "--proficiency",
     "-p",
     type=click.IntRange(1, 10),
-    required=True,
+    default=None,
     help="Proficiency level (1-10).",
 )
 @click.option(
     "--category",
     "-c",
-    required=True,
+    default=None,
     help="Skill category (e.g. technical, soft, domain, tool).",
 )
 @click.option("--notes", "-n", default=None, help="Optional notes about the skill.")
@@ -415,19 +457,50 @@ def vault_set_profile(
     default=False,
     help="Keep --category even when it disagrees with the taxonomy match.",
 )
+@click.option(
+    "--from-json",
+    "from_json",
+    type=click.File("r"),
+    default=None,
+    help="Batch mode: load skills from a JSON file (or '-' for stdin). "
+    "Expects a JSON array of {name, proficiency, category, notes?} objects.",
+)
 @click.pass_context
 def vault_add_skill(
     ctx: click.Context,
-    name: str,
-    proficiency: int,
-    category: str,
+    name: str | None,
+    proficiency: int | None,
+    category: str | None,
     notes: str | None,
     force_category: bool,
+    from_json: IO[str] | None,
 ) -> None:
-    """Add a skill to your vault."""
+    """Add a skill to your vault (single or batch via --from-json)."""
     store = _get_store(ctx)
     if not store.exists():
         click.echo("No vault found. Run 'traitprint init' first.")
+        return
+
+    if from_json is not None:
+        if name is not None or proficiency is not None or category is not None:
+            click.echo(
+                "--from-json cannot be combined with NAME, --proficiency, "
+                "or --category."
+            )
+            ctx.exit(2)
+            return
+        items = _read_json_items(from_json)
+        errors = _batch_add_skills(store, items)
+        if errors:
+            ctx.exit(1)
+        return
+
+    if name is None or proficiency is None or category is None:
+        click.echo(
+            "NAME, --proficiency, and --category are required "
+            "(or use --from-json for batch input)."
+        )
+        ctx.exit(2)
         return
 
     # Taxonomy integration
@@ -476,6 +549,63 @@ def vault_add_skill(
     click.echo(f"Added skill: {skill.name} ({skill.proficiency}/10) [{skill.id}]")
 
 
+def _batch_add_skills(store: VaultStore, items: list[dict[str, Any]]) -> int:
+    """Add skills from parsed JSON items.
+
+    Prints a per-item line (ok/dup/err) and a summary line. Returns the
+    number of items that failed (duplicates count as errors).
+    """
+    added = 0
+    errors = 0
+    for i, item in enumerate(items):
+        label = item.get("name") if isinstance(item.get("name"), str) else f"item {i}"
+        missing = [f for f in ("name", "proficiency", "category") if f not in item]
+        if missing:
+            click.echo(f"[err] {label}: missing field(s) {', '.join(missing)}")
+            errors += 1
+            continue
+        name = item["name"]
+        proficiency = item["proficiency"]
+        category = item["category"]
+        notes = item.get("notes")
+        if not isinstance(name, str) or not name.strip():
+            click.echo(f"[err] item {i}: name must be a non-empty string")
+            errors += 1
+            continue
+        if not isinstance(proficiency, int) or isinstance(proficiency, bool):
+            click.echo(f"[err] {name}: proficiency must be an integer 1-10")
+            errors += 1
+            continue
+        if not isinstance(category, str):
+            click.echo(f"[err] {name}: category must be a string")
+            errors += 1
+            continue
+        taxonomy_id = None
+        exact = find_exact(name)
+        if exact:
+            taxonomy_id = exact.id
+        try:
+            skill = store.add_skill(
+                name=name,
+                proficiency=proficiency,
+                category=category,
+                notes=str(notes) if notes else None,
+                taxonomy_id=taxonomy_id,
+            )
+        except DuplicateSkillError as exc:
+            click.echo(f"[dup] {name}: already exists ({exc.existing_id})")
+            errors += 1
+            continue
+        except (ValidationError, ValueError, TypeError) as exc:
+            click.echo(f"[err] {name}: {exc}")
+            errors += 1
+            continue
+        click.echo(f"[ok] {skill.name} ({skill.proficiency}/10) [{skill.id}]")
+        added += 1
+    click.echo(f"Summary: added {added}, errors {errors}")
+    return errors
+
+
 # --- vault add-experience (interactive) ---
 
 
@@ -494,6 +624,15 @@ def vault_add_skill(
     help="An accomplishment line (repeatable).",
 )
 @click.option("--interactive", "-i", is_flag=True, default=True, help="Guided prompts.")
+@click.option(
+    "--from-json",
+    "from_json",
+    type=click.File("r"),
+    default=None,
+    help="Batch mode: load experiences from a JSON file (or '-' for stdin). "
+    "Expects a JSON array of {title, company?, start_date?, end_date?, "
+    "description?, accomplishments?} objects.",
+)
 @click.pass_context
 def vault_add_experience(
     ctx: click.Context,
@@ -504,6 +643,7 @@ def vault_add_experience(
     description: str | None,
     accomplishments: tuple[str, ...],
     interactive: bool,
+    from_json: IO[str] | None,
 ) -> None:
     """Add a work experience to your vault.
 
@@ -513,6 +653,17 @@ def vault_add_experience(
     store = _get_store(ctx)
     if not store.exists():
         click.echo("No vault found. Run 'traitprint init' first.")
+        return
+
+    if from_json is not None:
+        if title is not None:
+            click.echo("--from-json cannot be combined with --title.")
+            ctx.exit(2)
+            return
+        items = _read_json_items(from_json)
+        errors = _batch_add_experiences(store, items)
+        if errors:
+            ctx.exit(1)
         return
 
     non_interactive = title is not None
@@ -553,6 +704,51 @@ def vault_add_experience(
     click.echo(f"Added experience: {exp.title} at {exp.company} [{exp.id}]")
 
 
+def _batch_add_experiences(store: VaultStore, items: list[dict[str, Any]]) -> int:
+    """Add experiences from parsed JSON items. Returns number of errors."""
+    added = 0
+    errors = 0
+    for i, item in enumerate(items):
+        label = item.get("title") if isinstance(item.get("title"), str) else f"item {i}"
+        if "title" not in item:
+            click.echo(f"[err] {label}: missing field title")
+            errors += 1
+            continue
+        title = item["title"]
+        if not isinstance(title, str) or not title.strip():
+            click.echo(f"[err] item {i}: title must be a non-empty string")
+            errors += 1
+            continue
+        company = item.get("company", "")
+        start_date = item.get("start_date", "")
+        end_date = item.get("end_date") or None
+        description = item.get("description", "")
+        accomplishments_raw = item.get("accomplishments") or []
+        if not isinstance(accomplishments_raw, list) or not all(
+            isinstance(a, str) for a in accomplishments_raw
+        ):
+            click.echo(f"[err] {title}: accomplishments must be a list of strings")
+            errors += 1
+            continue
+        try:
+            exp = store.add_experience(
+                title=title,
+                company=str(company),
+                start_date=str(start_date),
+                end_date=str(end_date) if end_date else None,
+                description=str(description),
+                accomplishments=list(accomplishments_raw),
+            )
+        except (ValidationError, ValueError, TypeError) as exc:
+            click.echo(f"[err] {title}: {exc}")
+            errors += 1
+            continue
+        click.echo(f"[ok] {exp.title} at {exp.company} [{exp.id}]")
+        added += 1
+    click.echo(f"Summary: added {added}, errors {errors}")
+    return errors
+
+
 # --- vault add-story (interactive, STAR format) ---
 
 
@@ -574,6 +770,15 @@ def vault_add_experience(
 @click.option(
     "--interactive", "-i", is_flag=True, default=True, help="Guided STAR prompts."
 )
+@click.option(
+    "--from-json",
+    "from_json",
+    type=click.File("r"),
+    default=None,
+    help="Batch mode: load stories from a JSON file (or '-' for stdin). "
+    "Expects a JSON array of {title, situation?, task?, action?, result?, "
+    "skill_ids?, experience_id?} objects.",
+)
 @click.pass_context
 def vault_add_story(
     ctx: click.Context,
@@ -585,6 +790,7 @@ def vault_add_story(
     skill_ids_opt: tuple[str, ...],
     experience_id: str | None,
     interactive: bool,
+    from_json: IO[str] | None,
 ) -> None:
     """Add a STAR-format story to your vault.
 
@@ -594,6 +800,17 @@ def vault_add_story(
     store = _get_store(ctx)
     if not store.exists():
         click.echo("No vault found. Run 'traitprint init' first.")
+        return
+
+    if from_json is not None:
+        if title is not None:
+            click.echo("--from-json cannot be combined with --title.")
+            ctx.exit(2)
+            return
+        items = _read_json_items(from_json)
+        errors = _batch_add_stories(store, items)
+        if errors:
+            ctx.exit(1)
         return
 
     def _parse_uuids(raw: tuple[str, ...]) -> list[UUID]:
@@ -645,6 +862,53 @@ def vault_add_story(
     click.echo(f"Added story: {story.title} [{story.id}]")
 
 
+def _batch_add_stories(store: VaultStore, items: list[dict[str, Any]]) -> int:
+    """Add stories from parsed JSON items. Returns number of errors."""
+    added = 0
+    errors = 0
+    for i, item in enumerate(items):
+        label = item.get("title") if isinstance(item.get("title"), str) else f"item {i}"
+        if "title" not in item:
+            click.echo(f"[err] {label}: missing field title")
+            errors += 1
+            continue
+        title = item["title"]
+        if not isinstance(title, str) or not title.strip():
+            click.echo(f"[err] item {i}: title must be a non-empty string")
+            errors += 1
+            continue
+        try:
+            skill_ids = _parse_uuid_list(item.get("skill_ids"), "skill_ids", i)
+            experience_id_raw = item.get("experience_id")
+            experience_uuid: UUID | None = None
+            if experience_id_raw:
+                if not isinstance(experience_id_raw, str):
+                    raise ValueError("experience_id must be a UUID string")
+                experience_uuid = UUID(experience_id_raw)
+        except ValueError as exc:
+            click.echo(f"[err] {title}: {exc}")
+            errors += 1
+            continue
+        try:
+            story = store.add_story(
+                title=title,
+                situation=str(item.get("situation", "") or ""),
+                task=str(item.get("task", "") or ""),
+                action=str(item.get("action", "") or ""),
+                result=str(item.get("result", "") or ""),
+                skill_ids=skill_ids,
+                experience_id=experience_uuid,
+            )
+        except (ValidationError, ValueError, TypeError) as exc:
+            click.echo(f"[err] {title}: {exc}")
+            errors += 1
+            continue
+        click.echo(f"[ok] {story.title} [{story.id}]")
+        added += 1
+    click.echo(f"Summary: added {added}, errors {errors}")
+    return errors
+
+
 # --- vault add-philosophy (interactive) ---
 
 _PHILOSOPHY_CATEGORIES = [c.value for c in PhilosophyCategory]
@@ -666,6 +930,15 @@ _PHILOSOPHY_CATEGORIES = [c.value for c in PhilosophyCategory]
     help="Evidence story UUID (repeatable).",
 )
 @click.option("--interactive", "-i", is_flag=True, default=True, help="Guided prompts.")
+@click.option(
+    "--from-json",
+    "from_json",
+    type=click.File("r"),
+    default=None,
+    help="Batch mode: load philosophies from a JSON file (or '-' for stdin). "
+    "Expects a JSON array of {title, description?, category, evidence_story_ids?} "
+    "objects.",
+)
 @click.pass_context
 def vault_add_philosophy(
     ctx: click.Context,
@@ -674,6 +947,7 @@ def vault_add_philosophy(
     category: str | None,
     evidence_ids_opt: tuple[str, ...],
     interactive: bool,
+    from_json: IO[str] | None,
 ) -> None:
     """Add a work philosophy to your vault.
 
@@ -682,6 +956,17 @@ def vault_add_philosophy(
     store = _get_store(ctx)
     if not store.exists():
         click.echo("No vault found. Run 'traitprint init' first.")
+        return
+
+    if from_json is not None:
+        if title is not None:
+            click.echo("--from-json cannot be combined with --title.")
+            ctx.exit(2)
+            return
+        items = _read_json_items(from_json)
+        errors = _batch_add_philosophies(store, items)
+        if errors:
+            ctx.exit(1)
         return
 
     non_interactive = title is not None
@@ -727,6 +1012,52 @@ def vault_add_philosophy(
         evidence_story_ids=evidence_ids,
     )
     click.echo(f"Added philosophy: {philosophy.title} [{philosophy.id}]")
+
+
+def _batch_add_philosophies(store: VaultStore, items: list[dict[str, Any]]) -> int:
+    """Add philosophies from parsed JSON items. Returns number of errors."""
+    added = 0
+    errors = 0
+    for i, item in enumerate(items):
+        label = item.get("title") if isinstance(item.get("title"), str) else f"item {i}"
+        missing = [f for f in ("title", "category") if f not in item]
+        if missing:
+            click.echo(f"[err] {label}: missing field(s) {', '.join(missing)}")
+            errors += 1
+            continue
+        title = item["title"]
+        category = item["category"]
+        if not isinstance(title, str) or not title.strip():
+            click.echo(f"[err] item {i}: title must be a non-empty string")
+            errors += 1
+            continue
+        if not isinstance(category, str):
+            click.echo(f"[err] {title}: category must be a string")
+            errors += 1
+            continue
+        try:
+            evidence_ids = _parse_uuid_list(
+                item.get("evidence_story_ids"), "evidence_story_ids", i
+            )
+        except ValueError as exc:
+            click.echo(f"[err] {title}: {exc}")
+            errors += 1
+            continue
+        try:
+            philosophy = store.add_philosophy(
+                title=title,
+                description=str(item.get("description", "") or ""),
+                category=category,
+                evidence_story_ids=evidence_ids,
+            )
+        except (ValidationError, ValueError, TypeError) as exc:
+            click.echo(f"[err] {title}: {exc}")
+            errors += 1
+            continue
+        click.echo(f"[ok] {philosophy.title} [{philosophy.id}]")
+        added += 1
+    click.echo(f"Summary: added {added}, errors {errors}")
+    return errors
 
 
 # --- vault add-education (interactive) ---
