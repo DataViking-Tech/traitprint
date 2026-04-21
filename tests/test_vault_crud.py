@@ -649,6 +649,78 @@ class TestAddSkillCLI:
         assert result.exit_code == 0
         assert "Added skill: FooBarLang" in result.output
 
+    def test_add_skill_category_mismatch_taxonomy_wins(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-skill",
+                "Kubernetes",
+                "--proficiency",
+                "7",
+                "--category",
+                "technical",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "Matched taxonomy: Kubernetes (tool)" in result.output
+        assert "Overriding --category 'technical'" in result.output
+        assert "--force-category" in result.output
+        stored = VaultStore(vault_dir).load().skills[0]
+        assert stored.category == "tool"
+
+    def test_add_skill_category_mismatch_force_keeps_user_value(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-skill",
+                "Kubernetes",
+                "--proficiency",
+                "7",
+                "--category",
+                "technical",
+                "--force-category",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "Matched taxonomy: Kubernetes (tool)" in result.output
+        assert "Keeping --category 'technical'" in result.output
+        stored = VaultStore(vault_dir).load().skills[0]
+        assert stored.category == "technical"
+        assert stored.taxonomy_id is not None
+
+    def test_add_skill_category_agrees_no_warning(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-skill",
+                "Python",
+                "--proficiency",
+                "8",
+                "--category",
+                "technical",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "Overriding" not in result.output
+        assert "Keeping" not in result.output
+        stored = VaultStore(vault_dir).load().skills[0]
+        assert stored.category == "technical"
+
 
 # ------------------------------------------------------------------
 # CLI: vault add-experience / add-story / add-philosophy (non-interactive)

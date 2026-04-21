@@ -409,6 +409,12 @@ def vault_set_profile(
     help="Skill category (e.g. technical, soft, domain, tool).",
 )
 @click.option("--notes", "-n", default=None, help="Optional notes about the skill.")
+@click.option(
+    "--force-category",
+    is_flag=True,
+    default=False,
+    help="Keep --category even when it disagrees with the taxonomy match.",
+)
 @click.pass_context
 def vault_add_skill(
     ctx: click.Context,
@@ -416,6 +422,7 @@ def vault_add_skill(
     proficiency: int,
     category: str,
     notes: str | None,
+    force_category: bool,
 ) -> None:
     """Add a skill to your vault."""
     store = _get_store(ctx)
@@ -425,10 +432,25 @@ def vault_add_skill(
 
     # Taxonomy integration
     taxonomy_id = None
+    effective_category = category
     exact = find_exact(name)
     if exact:
         taxonomy_id = exact.id
         click.echo(f"Matched taxonomy: {exact.name} ({exact.category})")
+        if category != exact.category:
+            if force_category:
+                click.echo(
+                    f"Keeping --category {category!r} "
+                    f"(taxonomy suggests {exact.category!r}); "
+                    "--force-category in effect."
+                )
+            else:
+                click.echo(
+                    f"Overriding --category {category!r} with "
+                    f"taxonomy category {exact.category!r}. "
+                    "Pass --force-category to keep your value."
+                )
+                effective_category = exact.category
     else:
         suggestions = suggest_matches(name)
         if suggestions:
@@ -440,7 +462,7 @@ def vault_add_skill(
         skill = store.add_skill(
             name=name,
             proficiency=proficiency,
-            category=category,
+            category=effective_category,
             notes=notes,
             taxonomy_id=taxonomy_id,
         )
