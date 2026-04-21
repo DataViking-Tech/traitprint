@@ -33,19 +33,23 @@ dependencies = [
     "click>=8.0",
     "pydantic>=2.0",
     "mcp",
-    "httpx",
     "pyyaml>=6.0",
 ]
 
 [project.optional-dependencies]
-dev = [
-    "pytest",
-    "ruff",
-    "mypy", "types-PyYAML",
+cloud = [
+    "httpx",
 ]
 import = [
     "pypdf>=4.0",
     "python-docx>=1.0",
+    "httpx",
+]
+dev = [
+    "pytest",
+    "ruff",
+    "mypy", "types-PyYAML",
+    "httpx",
 ]
 
 [project.scripts]
