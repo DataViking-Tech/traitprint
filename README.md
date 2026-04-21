@@ -97,8 +97,10 @@ account, no network calls, and no paywall.
 A fresh install never talks to traitprint.com. Cloud features are opt-in via
 `traitprint login` and `traitprint push`.
 
-**Full details, privacy commitment, and migration guide:**
-[docs/why-local.md](docs/why-local.md)
+**Full details and migration guide:** [docs/why-local.md](docs/why-local.md)
+
+**Privacy commitment (what leaves your machine on `push`, what we store,
+what we don't do, how to delete everything):** [docs/privacy.md](docs/privacy.md)
 
 ## License
 
