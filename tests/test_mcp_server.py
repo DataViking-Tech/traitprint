@@ -285,8 +285,37 @@ class TestSearchSkills:
 
 class TestFindStory:
     def test_requires_at_least_one_filter(self, populated_store: VaultStore) -> None:
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as excinfo:
             _handle_find_story(populated_store.load(), None, None, None, 3)
+        # Error message guides callers to the available filters (tp-7wo).
+        msg = str(excinfo.value)
+        for name in ("query", "situation", "theme", "outcome"):
+            assert name in msg
+
+    def test_query_param_matches_across_star_fields(
+        self, populated_store: VaultStore
+    ) -> None:
+        # Free-text 'query' is the ergonomic fallback (tp-7wo).
+        for kw in ("migration", "ballooning", "dual-writes", "warehouse"):
+            out = _handle_find_story(
+                populated_store.load(), None, None, None, 3, query=kw
+            )
+            assert len(out["stories"]) == 1, f"query={kw!r} should match"
+
+    def test_query_no_match_returns_empty(self, populated_store: VaultStore) -> None:
+        out = _handle_find_story(
+            populated_store.load(), None, None, None, 3, query="cryptocurrency"
+        )
+        assert out["stories"] == []
+
+    def test_structured_params_take_precedence_over_query(
+        self, populated_store: VaultStore
+    ) -> None:
+        # query would match the story, but outcome='failure' must still filter it out.
+        out = _handle_find_story(
+            populated_store.load(), None, None, "failure", 3, query="migration"
+        )
+        assert out["stories"] == []
 
     def test_theme_match_returns_story(self, populated_store: VaultStore) -> None:
         out = _handle_find_story(populated_store.load(), None, "migration", None, 3)
