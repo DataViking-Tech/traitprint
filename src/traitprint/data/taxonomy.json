@@ -3,132 +3,244 @@
     "id": "a1b2c3d4-0001-4000-8000-000000000001",
     "name": "Python",
     "category": "technical",
-    "aliases": ["python3", "cpython", "py", "backend", "server-side"]
+    "aliases": ["python3", "cpython", "py", "backend", "server-side"],
+    "neighbors": {
+      "Machine Learning": 0.4,
+      "Data Engineering": 0.5,
+      "Go": 0.7,
+      "Rust": 0.7
+    }
   },
   {
     "id": "a1b2c3d4-0002-4000-8000-000000000002",
     "name": "JavaScript",
     "category": "technical",
-    "aliases": ["js", "ecmascript", "frontend", "front-end", "front end", "web development", "web dev"]
+    "aliases": ["js", "ecmascript", "frontend", "front-end", "front end", "web development", "web dev"],
+    "neighbors": {
+      "TypeScript": 0.2,
+      "React": 0.3,
+      "Vue": 0.4,
+      "Angular": 0.4,
+      "Node.js": 0.3
+    }
   },
   {
     "id": "a1b2c3d4-0003-4000-8000-000000000003",
     "name": "TypeScript",
     "category": "technical",
-    "aliases": ["ts"]
+    "aliases": ["ts"],
+    "neighbors": {
+      "React": 0.3,
+      "Vue": 0.4,
+      "Angular": 0.4,
+      "Node.js": 0.3
+    }
   },
   {
     "id": "a1b2c3d4-0004-4000-8000-000000000004",
     "name": "SQL",
     "category": "technical",
-    "aliases": ["structured query language", "database", "databases", "rdbms", "queries"]
+    "aliases": ["structured query language", "database", "databases", "rdbms", "queries"],
+    "neighbors": {
+      "PostgreSQL": 0.2,
+      "MySQL": 0.2,
+      "SQLite": 0.3,
+      "Data Engineering": 0.4
+    }
   },
   {
     "id": "a1b2c3d4-0005-4000-8000-000000000005",
     "name": "Go",
     "category": "technical",
-    "aliases": ["golang", "backend", "server-side"]
+    "aliases": ["golang", "backend", "server-side"],
+    "neighbors": {
+      "Rust": 0.5,
+      "DevOps": 0.6
+    }
   },
   {
     "id": "a1b2c3d4-0006-4000-8000-000000000006",
     "name": "Rust",
     "category": "technical",
-    "aliases": ["rustlang"]
+    "aliases": ["rustlang"],
+    "neighbors": {}
   },
   {
     "id": "a1b2c3d4-0007-4000-8000-000000000007",
     "name": "React",
     "category": "technical",
-    "aliases": ["reactjs", "react.js", "frontend", "jsx"]
+    "aliases": ["reactjs", "react.js", "frontend", "jsx"],
+    "neighbors": {
+      "Vue": 0.3,
+      "Angular": 0.3,
+      "Node.js": 0.5
+    }
   },
   {
     "id": "a1b2c3d4-0008-4000-8000-000000000008",
     "name": "Node.js",
     "category": "technical",
-    "aliases": ["node", "nodejs"]
+    "aliases": ["node", "nodejs"],
+    "neighbors": {}
   },
   {
     "id": "a1b2c3d4-0009-4000-8000-000000000009",
     "name": "AWS",
     "category": "technical",
-    "aliases": ["amazon web services"]
+    "aliases": ["amazon web services"],
+    "neighbors": {
+      "DevOps": 0.4,
+      "Docker": 0.5,
+      "Kubernetes": 0.5
+    }
   },
   {
     "id": "a1b2c3d4-0010-4000-8000-000000000010",
     "name": "Docker",
     "category": "technical",
-    "aliases": ["containerization", "container", "containers"]
+    "aliases": ["containerization", "container", "containers"],
+    "neighbors": {
+      "Kubernetes": 0.3,
+      "DevOps": 0.4
+    }
   },
   {
     "id": "a1b2c3d4-0011-4000-8000-000000000011",
     "name": "Leadership",
     "category": "soft",
-    "aliases": ["team leadership", "people management"]
+    "aliases": ["team leadership", "people management"],
+    "neighbors": {
+      "Mentoring": 0.4,
+      "Communication": 0.5,
+      "Teamwork": 0.5,
+      "Product Management": 0.5
+    }
   },
   {
     "id": "a1b2c3d4-0012-4000-8000-000000000012",
     "name": "Communication",
     "category": "soft",
-    "aliases": ["written communication", "verbal communication"]
+    "aliases": ["written communication", "verbal communication"],
+    "neighbors": {
+      "Teamwork": 0.4,
+      "Mentoring": 0.5,
+      "Problem Solving": 0.6
+    }
   },
   {
     "id": "a1b2c3d4-0013-4000-8000-000000000013",
     "name": "Problem Solving",
     "category": "soft",
-    "aliases": ["analytical thinking", "critical thinking"]
+    "aliases": ["analytical thinking", "critical thinking"],
+    "neighbors": {}
   },
   {
     "id": "a1b2c3d4-0014-4000-8000-000000000014",
     "name": "Teamwork",
     "category": "soft",
-    "aliases": ["collaboration", "cross-functional"]
+    "aliases": ["collaboration", "cross-functional"],
+    "neighbors": {
+      "Mentoring": 0.5
+    }
   },
   {
     "id": "a1b2c3d4-0015-4000-8000-000000000015",
     "name": "Mentoring",
     "category": "soft",
-    "aliases": ["coaching", "mentorship"]
+    "aliases": ["coaching", "mentorship"],
+    "neighbors": {}
   },
   {
     "id": "a1b2c3d4-0016-4000-8000-000000000016",
     "name": "Data Engineering",
     "category": "domain",
-    "aliases": ["data pipelines", "data pipeline", "ETL", "ELT", "big data"]
+    "aliases": ["data pipelines", "data pipeline", "ETL", "ELT", "big data"],
+    "neighbors": {
+      "Machine Learning": 0.4,
+      "PostgreSQL": 0.5,
+      "DevOps": 0.6
+    }
   },
   {
     "id": "a1b2c3d4-0017-4000-8000-000000000017",
     "name": "Machine Learning",
     "category": "domain",
-    "aliases": ["ML", "deep learning", "AI", "data science", "ds", "ai/ml", "neural networks", "neural network", "nlp", "natural language processing", "llm", "large language models"]
+    "aliases": ["ML", "deep learning", "AI", "data science", "ds", "ai/ml", "neural networks", "neural network", "nlp", "natural language processing", "llm", "large language models"],
+    "neighbors": {}
   },
   {
     "id": "a1b2c3d4-0018-4000-8000-000000000018",
     "name": "Product Management",
     "category": "domain",
-    "aliases": ["product owner", "PM"]
+    "aliases": ["product owner", "PM"],
+    "neighbors": {
+      "Communication": 0.5
+    }
   },
   {
     "id": "a1b2c3d4-0019-4000-8000-000000000019",
     "name": "DevOps",
     "category": "domain",
-    "aliases": ["site reliability", "SRE", "platform engineering"]
+    "aliases": ["site reliability", "SRE", "platform engineering"],
+    "neighbors": {
+      "Kubernetes": 0.4,
+      "Git": 0.5
+    }
   },
   {
     "id": "a1b2c3d4-0020-4000-8000-000000000020",
     "name": "Git",
     "category": "tool",
-    "aliases": ["version control", "github", "gitlab"]
+    "aliases": ["version control", "github", "gitlab"],
+    "neighbors": {}
   },
   {
     "id": "a1b2c3d4-0021-4000-8000-000000000021",
     "name": "PostgreSQL",
     "category": "tool",
-    "aliases": ["postgres", "psql", "relational database"]
+    "aliases": ["postgres", "psql", "relational database"],
+    "neighbors": {
+      "MySQL": 0.4,
+      "SQLite": 0.5
+    }
   },
   {
     "id": "a1b2c3d4-0022-4000-8000-000000000022",
     "name": "Kubernetes",
     "category": "tool",
-    "aliases": ["k8s", "kube", "container orchestration"]
+    "aliases": ["k8s", "kube", "container orchestration"],
+    "neighbors": {}
+  },
+  {
+    "id": "a1b2c3d4-0023-4000-8000-000000000023",
+    "name": "Vue",
+    "category": "technical",
+    "aliases": ["vuejs", "vue.js", "vue3"],
+    "neighbors": {
+      "Angular": 0.3
+    }
+  },
+  {
+    "id": "a1b2c3d4-0024-4000-8000-000000000024",
+    "name": "Angular",
+    "category": "technical",
+    "aliases": ["angularjs", "angular2"],
+    "neighbors": {}
+  },
+  {
+    "id": "a1b2c3d4-0025-4000-8000-000000000025",
+    "name": "MySQL",
+    "category": "tool",
+    "aliases": ["mariadb", "my-sql"],
+    "neighbors": {
+      "SQLite": 0.5
+    }
+  },
+  {
+    "id": "a1b2c3d4-0026-4000-8000-000000000026",
+    "name": "SQLite",
+    "category": "tool",
+    "aliases": ["sqlite3", "embedded database"],
+    "neighbors": {}
   }
 ]

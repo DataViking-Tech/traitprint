@@ -24,7 +24,7 @@ from mcp.server.fastmcp import FastMCP
 
 from traitprint import __version__
 from traitprint.schema import PhilosophySchema, StorySchema, VaultSchema
-from traitprint.taxonomy import TaxonomyEntry, load_taxonomy
+from traitprint.taxonomy import TaxonomyEntry, build_neighbor_index, load_taxonomy
 from traitprint.vault import VaultStore
 
 SERVER_NAME = "traitprint-local"
@@ -325,6 +325,28 @@ def _handle_get_profile_summary(vault: VaultSchema, depth: str) -> dict[str, Any
     return result
 
 
+def _graph_expansion(
+    direct_ids: set[UUID],
+    neighbor_index: dict[UUID, dict[UUID, float]],
+) -> dict[UUID, float]:
+    """Return ``{neighbor_id: best_distance}`` reachable from ``direct_ids``.
+
+    Only one-hop neighbors are included. Neighbors that are themselves in
+    ``direct_ids`` are excluded so a direct match always wins over a graph
+    match. When multiple ``direct_ids`` reach the same neighbor, the smaller
+    distance is kept.
+    """
+    expansion: dict[UUID, float] = {}
+    for direct_id in direct_ids:
+        for neighbor_id, distance in neighbor_index.get(direct_id, {}).items():
+            if neighbor_id in direct_ids:
+                continue
+            existing = expansion.get(neighbor_id)
+            if existing is None or distance < existing:
+                expansion[neighbor_id] = distance
+    return expansion
+
+
 def _handle_search_skills(
     vault: VaultSchema,
     taxonomy: list[TaxonomyEntry],
@@ -333,20 +355,33 @@ def _handle_search_skills(
     limit: int,
 ) -> dict[str, Any]:
     direct_ids, used_alias = _match_taxonomy(query, taxonomy)
+    neighbor_index = build_neighbor_index(taxonomy)
+    graph_distances = _graph_expansion(direct_ids, neighbor_index)
     normalized = _normalize_query(query)
     expanded_tokens = _expand_query_tokens(query, taxonomy, direct_ids)
 
     evidence = _story_evidence_by_skill(vault.stories)
 
+    used_distance_graph = False
     matches: list[dict[str, Any]] = []
     for skill in vault.skills:
         tax_hit = bool(skill.taxonomy_id and skill.taxonomy_id in direct_ids)
+        graph_hit = bool(
+            not tax_hit and skill.taxonomy_id and skill.taxonomy_id in graph_distances
+        )
         name_hit, name_distance = _skill_matches(
             skill.name, expanded_tokens, normalized
         )
-        if not (tax_hit or name_hit):
+        if not (tax_hit or graph_hit or name_hit):
             continue
-        distance = 0.0 if tax_hit else name_distance
+
+        if tax_hit:
+            distance = 0.0
+        elif graph_hit and skill.taxonomy_id is not None:
+            distance = graph_distances[skill.taxonomy_id]
+            used_distance_graph = True
+        else:
+            distance = name_distance
 
         prof = _map_proficiency(skill.proficiency)
         if min_proficiency and not _meets_proficiency(prof, min_proficiency):
@@ -380,7 +415,7 @@ def _handle_search_skills(
         "query_interpretation": {
             "matched_taxonomy_ids": [str(t) for t in direct_ids],
             "used_alias": used_alias,
-            "used_distance_graph": False,
+            "used_distance_graph": used_distance_graph,
         },
     }
 
