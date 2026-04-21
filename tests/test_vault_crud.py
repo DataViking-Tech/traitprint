@@ -321,8 +321,82 @@ class TestVaultShowCLI:
         store.add_skill(name="B", proficiency=3, category="y")
         result = runner.invoke(cli, ["--path", str(vault_dir), "vault", "show"])
         assert result.exit_code == 0
-        assert "2 skills" in result.output
-        assert "0 experiences" in result.output
+        out = result.output
+        assert "Skills (2):" in out
+        assert "A (5/10)" in out
+        assert "B (3/10)" in out
+        assert "Experiences (0)" in out
+        assert "Stories (0)" in out
+        assert "Philosophies (0)" in out
+        assert "--verbose" in out
+
+    def test_vault_show_sorts_skills_by_proficiency(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        store = VaultStore(vault_dir)
+        for name, prof in [
+            ("LowSkill", 2),
+            ("TopSkill", 9),
+            ("MidSkill", 5),
+            ("Other1", 7),
+            ("Other2", 6),
+            ("HiddenSkill", 1),
+        ]:
+            store.add_skill(name=name, proficiency=prof, category="x")
+        result = runner.invoke(cli, ["--path", str(vault_dir), "vault", "show"])
+        assert result.exit_code == 0
+        out = result.output
+        assert "Skills (6):" in out
+        assert "TopSkill (9/10)" in out
+        # Top 5 shown, 6th (HiddenSkill, lowest) should be omitted
+        assert "HiddenSkill" not in out
+        assert "... 1 more" in out
+        # Verify proficiency sort: TopSkill appears before MidSkill in output
+        assert out.index("TopSkill") < out.index("MidSkill")
+
+    def test_vault_show_profile_header(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        store = VaultStore(vault_dir)
+        store.set_profile(
+            display_name="Jane Doe",
+            headline="Staff Engineer",
+            location="San Francisco",
+        )
+        result = runner.invoke(cli, ["--path", str(vault_dir), "vault", "show"])
+        assert result.exit_code == 0
+        out = result.output
+        assert "Jane Doe — Staff Engineer" in out
+        assert "Location: San Francisco" in out
+
+    def test_vault_show_experience_and_story(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        store = VaultStore(vault_dir)
+        store.add_experience(
+            title="Staff Engineer",
+            company="Acme",
+            start_date="2020-01",
+            end_date="2024-06",
+        )
+        store.add_story(
+            title="Scaling to 10M users",
+            situation="s",
+            task="t",
+            action="a",
+            result="r",
+        )
+        store.add_philosophy(
+            title="Small PRs",
+            description="d",
+            category=PhilosophyCategory.TECHNICAL_APPROACH,
+        )
+        result = runner.invoke(cli, ["--path", str(vault_dir), "vault", "show"])
+        assert result.exit_code == 0
+        out = result.output
+        assert "Staff Engineer @ Acme (2020-01 — 2024-06)" in out
+        assert "Scaling to 10M users" in out
+        assert "Philosophies (1): technical-approach (1)" in out
 
     def test_no_vault(self, runner: CliRunner, tmp_path: Path) -> None:
         result = runner.invoke(cli, ["--path", str(tmp_path / "nope"), "vault", "show"])
