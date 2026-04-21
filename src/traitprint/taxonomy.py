@@ -10,12 +10,45 @@ from pydantic import BaseModel, Field
 
 
 class TaxonomyEntry(BaseModel):
-    """A single taxonomy skill entry."""
+    """A single taxonomy skill entry.
+
+    ``neighbors`` maps the canonical name of a related entry to an edge
+    distance in ``[0, 1]``. Smaller means closer. Edges are expected to be
+    declared once and are treated as symmetric by :func:`build_neighbor_index`.
+    """
 
     id: UUID
     name: str
     category: str
     aliases: list[str] = Field(default_factory=list)
+    neighbors: dict[str, float] = Field(default_factory=dict)
+
+
+def build_neighbor_index(
+    taxonomy: list[TaxonomyEntry],
+) -> dict[UUID, dict[UUID, float]]:
+    """Build a symmetric ``{id: {neighbor_id: distance}}`` adjacency index.
+
+    Neighbor names are resolved case-insensitively against canonical names.
+    Unresolved names are silently dropped (lets the taxonomy tolerate
+    forward/trailing references during edits). When both directions of an
+    edge are declared with different weights, the smaller distance wins.
+    """
+    name_to_id = {e.name.lower(): e.id for e in taxonomy}
+    index: dict[UUID, dict[UUID, float]] = {e.id: {} for e in taxonomy}
+    for entry in taxonomy:
+        for neighbor_name, distance in entry.neighbors.items():
+            neighbor_id = name_to_id.get(neighbor_name.lower())
+            if neighbor_id is None or neighbor_id == entry.id:
+                continue
+            bounded = max(0.0, min(1.0, float(distance)))
+            existing = index[entry.id].get(neighbor_id)
+            if existing is None or bounded < existing:
+                index[entry.id][neighbor_id] = bounded
+            reverse = index[neighbor_id].get(entry.id)
+            if reverse is None or bounded < reverse:
+                index[neighbor_id][entry.id] = bounded
+    return index
 
 
 def load_taxonomy() -> list[TaxonomyEntry]:

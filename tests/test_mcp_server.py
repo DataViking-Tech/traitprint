@@ -282,6 +282,98 @@ class TestSearchSkills:
         assert "Go services" in names
         assert out["query_interpretation"]["used_alias"] is True
 
+    def test_distance_graph_bridges_related_concepts(self, vault_dir: Path) -> None:
+        """Querying 'machine learning' surfaces a Python-tagged skill via the graph."""
+        store = VaultStore(vault_dir)
+        vault = VaultSchema(
+            schema_version=0,
+            profile=ProfileSchema(display_name="t"),
+        )
+        taxonomy = load_taxonomy()
+        python_tax = next(e for e in taxonomy if e.name == "Python")
+        vault.skills = [
+            SkillSchema(
+                name="Python",
+                category="technical",
+                proficiency=9,
+                taxonomy_id=python_tax.id,
+            ),
+        ]
+        store.save(vault)
+
+        out = _handle_search_skills(
+            store.load(), taxonomy, "machine learning", None, 10
+        )
+        names = [m["name"] for m in out["matches"]]
+        assert "Python" in names
+        qi = out["query_interpretation"]
+        assert qi["used_distance_graph"] is True
+        # Python is a one-hop neighbor of Machine Learning, so the match
+        # distance must be strictly positive (graph) and strictly below 1.
+        python_match = next(m for m in out["matches"] if m["name"] == "Python")
+        assert 0.0 < python_match["match_distance"] < 1.0
+
+    def test_distance_graph_prefers_direct_over_graph(self, vault_dir: Path) -> None:
+        """Direct taxonomy hit outranks a graph-only hit on the same query."""
+        store = VaultStore(vault_dir)
+        vault = VaultSchema(
+            schema_version=0,
+            profile=ProfileSchema(display_name="t"),
+        )
+        taxonomy = load_taxonomy()
+        react_tax = next(e for e in taxonomy if e.name == "React")
+        vue_tax = next(e for e in taxonomy if e.name == "Vue")
+        vault.skills = [
+            SkillSchema(
+                name="React",
+                category="technical",
+                proficiency=8,
+                taxonomy_id=react_tax.id,
+            ),
+            SkillSchema(
+                name="Vue",
+                category="technical",
+                proficiency=7,
+                taxonomy_id=vue_tax.id,
+            ),
+        ]
+        store.save(vault)
+
+        out = _handle_search_skills(store.load(), taxonomy, "react", None, 10)
+        names = [m["name"] for m in out["matches"]]
+        # React comes first (direct, distance 0); Vue is still present via graph.
+        assert names[0] == "React"
+        assert "Vue" in names
+        react_match = next(m for m in out["matches"] if m["name"] == "React")
+        vue_match = next(m for m in out["matches"] if m["name"] == "Vue")
+        assert react_match["match_distance"] == 0.0
+        assert vue_match["match_distance"] > 0.0
+        assert out["query_interpretation"]["used_distance_graph"] is True
+
+    def test_distance_graph_flag_false_when_only_direct_hits(
+        self, vault_dir: Path
+    ) -> None:
+        """used_distance_graph stays False when no graph-only skill surfaces."""
+        store = VaultStore(vault_dir)
+        vault = VaultSchema(
+            schema_version=0,
+            profile=ProfileSchema(display_name="t"),
+        )
+        taxonomy = load_taxonomy()
+        python_tax = next(e for e in taxonomy if e.name == "Python")
+        vault.skills = [
+            SkillSchema(
+                name="Python",
+                category="technical",
+                proficiency=9,
+                taxonomy_id=python_tax.id,
+            ),
+        ]
+        store.save(vault)
+
+        out = _handle_search_skills(store.load(), taxonomy, "python", None, 10)
+        assert out["query_interpretation"]["used_distance_graph"] is False
+
 
 class TestFindStory:
     def test_requires_at_least_one_filter(self, populated_store: VaultStore) -> None:
