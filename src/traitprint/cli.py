@@ -1448,6 +1448,21 @@ def mcp_serve(ctx: click.Context) -> None:
 # ------------------------------------------------------------------
 
 
+def _require_cloud_extras() -> None:
+    """Verify the [cloud] extras are installed; raise a friendly error if not.
+
+    The base ``pip install traitprint`` deliberately omits ``httpx`` so a
+    fresh install never makes a network call. Cloud sync (login/logout/push/
+    pull) lives behind the ``[cloud]`` extra.
+    """
+    try:
+        import httpx  # noqa: F401
+    except ImportError as exc:
+        raise click.ClickException(
+            "Cloud sync requires: pip install traitprint[cloud]"
+        ) from exc
+
+
 def _require_credentials(store: VaultStore) -> Credentials:
     from traitprint.credentials import CredentialsStore
 
@@ -1480,6 +1495,7 @@ def login_cmd(
     ctx: click.Context, email: str, password: str, api_url: str | None
 ) -> None:
     """Log in to Traitprint cloud and save a bearer token to .credentials."""
+    _require_cloud_extras()
     from traitprint.cloud import AuthError, CloudClient, CloudError
     from traitprint.credentials import DEFAULT_API_URL, CredentialsStore
 
@@ -1505,6 +1521,7 @@ def login_cmd(
 @click.pass_context
 def logout_cmd(ctx: click.Context) -> None:
     """Remove saved cloud credentials from the vault directory."""
+    _require_cloud_extras()
     from traitprint.credentials import CredentialsStore
 
     store = _get_store(ctx)
@@ -1522,6 +1539,7 @@ def logout_cmd(ctx: click.Context) -> None:
 @click.pass_context
 def push_cmd(ctx: click.Context, dry_run: bool) -> None:
     """Upload the local vault to Traitprint cloud (last-write-wins)."""
+    _require_cloud_extras()
     from traitprint.cloud import AuthError, CloudClient, CloudError, ConflictError
     from traitprint.sync import do_push
 
@@ -1569,6 +1587,7 @@ def push_cmd(ctx: click.Context, dry_run: bool) -> None:
 @click.pass_context
 def pull_cmd(ctx: click.Context, dry_run: bool) -> None:
     """Download the cloud vault to local disk (last-write-wins)."""
+    _require_cloud_extras()
     from traitprint.cloud import AuthError, CloudClient, CloudError
     from traitprint.sync import do_pull
 

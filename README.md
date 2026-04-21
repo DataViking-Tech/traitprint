@@ -6,6 +6,16 @@
 > of your skills, experience, stories, and philosophy — kept on your laptop,
 > shared on your terms.
 
+Traitprint ships as **two products**:
+
+- **Traitprint Local** (`pip install traitprint`) — a local-first vault and
+  MCP server. Zero accounts, zero network calls, MIT-licensed.
+- **Traitprint Cloud** (`pip install 'traitprint[cloud]'`) — opt-in cloud sync
+  on top of Local: a public profile at `traitprint.com/profile/you`, a hosted
+  MCP endpoint, and cross-device sync.
+
+## Traitprint Local
+
 ```
 pip install traitprint
 traitprint init
@@ -17,15 +27,26 @@ assistant you use can answer questions about your career: which projects used
 Postgres, what your management philosophy is, the story behind a job change.
 No account. No cloud. No vendor lock-in. Your vault is a file on your machine.
 
+A fresh `pip install traitprint` ships with **no networking dependency** —
+`httpx` is not even installed. The base CLI cannot make a network request.
+
+## Traitprint Cloud (opt-in)
+
 When you want a public profile, job matching, or a chat-ready twin that
-recruiters can talk to:
+recruiters can talk to, install the cloud extras:
 
 ```
+pip install 'traitprint[cloud]'
 traitprint login
 traitprint push
 ```
 
-…and you're live at `traitprint.com/profile/you`.
+…and you're live at `traitprint.com/profile/you`. Without the `[cloud]`
+extras, `traitprint login` / `logout` / `push` / `pull` print:
+
+```
+Error: Cloud sync requires: pip install traitprint[cloud]
+```
 
 ## Who it's for
 
@@ -73,7 +94,8 @@ from scratch each time.
   `rollback`, `export`, `import-resume`.
 - **Resume import** with BYOK LLM (Anthropic, OpenAI, Ollama, OpenRouter) —
   install with `pip install 'traitprint[import]'`.
-- **Optional cloud sync** — `login`, `logout`, `push`, `pull`.
+- **Optional cloud sync** — `login`, `logout`, `push`, `pull`. Install with
+  `pip install 'traitprint[cloud]'`.
 
 ## Local vs Cloud
 
