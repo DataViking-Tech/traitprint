@@ -391,11 +391,17 @@ def _handle_find_story(
     theme: str | None,
     outcome: str | None,
     limit: int,
+    query: str | None = None,
 ) -> dict[str, Any]:
-    if not situation and not theme and not outcome:
+    if not situation and not theme and not outcome and not query:
         raise ValueError(
-            "Invalid params: at least one of situation/theme/outcome is required"
+            "Provide at least one filter: query (free-text), "
+            "situation, theme, or outcome."
         )
+
+    # Structured params take precedence over free-text query.
+    if query and not (situation or theme or outcome):
+        situation = query
 
     complete = [
         s for s in vault.stories if s.situation and s.task and s.action and s.result
@@ -555,10 +561,13 @@ def create_server(store: VaultStore) -> FastMCP:
     @mcp.tool(
         description=(
             "STAR-pattern narrative retrieval. 'Tell me about a time "
-            "when…' At least one filter required."
+            "when…' Provide at least one filter: query (free-text, "
+            "searches across all STAR fields), situation, theme, or "
+            "outcome. Structured filters take precedence over query."
         )
     )
     def find_story(
+        query: str | None = None,
         situation: str | None = None,
         theme: str | None = None,
         outcome: Literal["win", "failure", "learning"] | None = None,
@@ -566,7 +575,9 @@ def create_server(store: VaultStore) -> FastMCP:
     ) -> dict[str, Any]:
         limit = max(1, min(limit, 5))
         vault = store.load()
-        return _envelope(_handle_find_story(vault, situation, theme, outcome, limit))
+        return _envelope(
+            _handle_find_story(vault, situation, theme, outcome, limit, query=query)
+        )
 
     @mcp.tool(
         description="Query stated beliefs and positions. 'What's their stance on X?'"
