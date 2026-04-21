@@ -1537,6 +1537,13 @@ def push_cmd(ctx: click.Context, dry_run: bool) -> None:
             raise click.ClickException(str(exc)) from exc
 
     click.echo(_render_plan(plan))
+    if plan.direction == "push":
+        click.echo(
+            "Uploading your full vault JSON to traitprint.com. "
+            "What leaves your machine, what we store, and how to delete "
+            "everything: https://github.com/DataViking-Tech/traitprint/"
+            "blob/main/docs/privacy.md"
+        )
     if dry_run:
         click.echo("Dry run: no data was uploaded.")
         return
