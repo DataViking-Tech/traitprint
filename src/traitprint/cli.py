@@ -72,10 +72,16 @@ def _parse_uuid_list(
 @click.group()
 @click.version_option(version=__version__, prog_name="traitprint")
 @click.option(
+    "--vault-dir",
     "--path",
+    "path",
     type=click.Path(),
     default=None,
-    help="Vault directory (default: ~/.traitprint).",
+    help=(
+        "Vault directory. Overrides $TRAITPRINT_VAULT_DIR and "
+        "any .traitprint/ found by walking up from the current directory. "
+        "Falls back to ~/.traitprint."
+    ),
 )
 @click.pass_context
 def cli(ctx: click.Context, path: str | None) -> None:
