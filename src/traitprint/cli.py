@@ -103,16 +103,71 @@ def vault_show(ctx: click.Context, verbose: bool) -> None:
         return
     v = store.load()
     if not verbose:
-        click.echo(
-            f"{len(v.skills)} skills, "
-            f"{len(v.experiences)} experiences, "
-            f"{len(v.stories)} stories, "
-            f"{len(v.philosophies)} philosophies, "
-            f"{len(v.education)} education"
-        )
+        _render_vault_summary(v)
         return
 
     _render_vault_verbose(store, v)
+
+
+def _render_vault_summary(v: VaultSchema) -> None:
+    """Render a concise summary of the vault — git-status style."""
+    # Profile header
+    p = v.profile
+    if p.display_name or p.headline:
+        header = p.display_name or ""
+        if p.headline:
+            header = f"{header} — {p.headline}" if header else p.headline
+        click.echo(header)
+    if p.location:
+        click.echo(f"Location: {p.location}")
+    if p.display_name or p.headline or p.location:
+        click.echo("")
+
+    # Skills: top 5 by proficiency
+    click.echo(f"Skills ({len(v.skills)}):")
+    top_skills = sorted(v.skills, key=lambda s: (-s.proficiency, s.name.lower()))[:5]
+    for s in top_skills:
+        click.echo(f"  - {s.name} ({s.proficiency}/10)")
+    if len(v.skills) > 5:
+        click.echo(f"  ... {len(v.skills) - 5} more")
+
+    # Experiences: title @ company, dates
+    click.echo("")
+    click.echo(f"Experiences ({len(v.experiences)}):")
+    for e in v.experiences:
+        header = e.title
+        if e.company:
+            header += f" @ {e.company}"
+        dates = f"{e.start_date or '?'} — {e.end_date or 'present'}"
+        click.echo(f"  - {header} ({dates})")
+
+    # Stories: titles
+    click.echo("")
+    click.echo(f"Stories ({len(v.stories)}):")
+    for st in v.stories:
+        click.echo(f"  - {st.title}")
+
+    # Philosophies: grouped by category
+    click.echo("")
+    if v.philosophies:
+        counts: dict[str, int] = {}
+        for ph in v.philosophies:
+            counts[ph.category.value] = counts.get(ph.category.value, 0) + 1
+        parts = ", ".join(f"{cat} ({n})" for cat, n in sorted(counts.items()))
+        click.echo(f"Philosophies ({len(v.philosophies)}): {parts}")
+    else:
+        click.echo("Philosophies (0)")
+
+    # Education: degree/field @ institution
+    click.echo("")
+    click.echo(f"Education ({len(v.education)}):")
+    for ed in v.education:
+        bits = " ".join(x for x in (ed.degree, ed.field_of_study) if x)
+        header = f"{bits} @ {ed.institution}" if bits else ed.institution
+        click.echo(f"  - {header}")
+
+    click.echo("")
+    click.echo("Run 'traitprint vault show --verbose' for full details.")
 
 
 def _render_vault_verbose(store: VaultStore, v: VaultSchema) -> None:
