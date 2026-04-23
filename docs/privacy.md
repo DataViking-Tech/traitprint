@@ -13,7 +13,7 @@ wins — please open an issue.
 There are two pieces:
 
 - **Local vault** — a directory on your machine (default `~/.traitprint`)
-  containing a `vault.json` file plus a Dolt-backed history. Created by
+  containing a `vault.json` file plus a git-backed history. Created by
   `traitprint init`. Nothing here depends on a network.
 - **Cloud sync** (opt-in) — a single HTTP edge function at
   `https://traitprint.com/vault-sync` that stores one vault snapshot per
@@ -70,7 +70,7 @@ When the server accepts a push, it persists:
 
 One vault snapshot per account. `push` overwrites the previous snapshot;
 there is no server-side version history of your vault. (Your *local* vault
-has full history via Dolt — the server does not.)
+has full history via git — the server does not.)
 
 ## 3. What traitprint.com does not do
 
@@ -173,7 +173,7 @@ We think it's useful to be explicit about this.
 
 ## BYOK LLMs (resume import)
 
-`traitprint import resume` sends your resume text to the LLM provider
+`traitprint vault import-resume` sends your resume text to the LLM provider
 *you* configure (Anthropic, OpenAI, Ollama, OpenRouter) using *your* API
 key. The request goes directly from your machine to that provider. We do
 not proxy it, see it, or log it. See `src/traitprint/providers/`.
@@ -186,7 +186,7 @@ The authoritative list of network calls made by the CLI is:
 - `traitprint push` → `GET /vault-sync` then `POST /vault-sync`
   (the LWW check, then the upload)
 - `traitprint pull` → `GET /vault-sync`
-- `traitprint import resume` → whichever URL your BYOK provider uses,
+- `traitprint vault import-resume` → whichever URL your BYOK provider uses,
   with your key
 
 That is the whole set. You can confirm by:
