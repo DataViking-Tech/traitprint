@@ -30,6 +30,38 @@ No account. No cloud. No vendor lock-in. Your vault is a file on your machine.
 A fresh `pip install traitprint` ships with **no networking dependency** —
 `httpx` is not even installed. The base CLI cannot make a network request.
 
+### Claude Desktop MCP config
+
+Add Traitprint to your Claude Desktop config file
+(`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS,
+`%APPDATA%\Claude\claude_desktop_config.json` on Windows):
+
+```json
+{
+  "mcpServers": {
+    "traitprint": {
+      "command": "traitprint",
+      "args": ["mcp-serve"],
+      "env": {
+        "TRAITPRINT_VAULT_DIR": "/Users/you/.traitprint"
+      }
+    }
+  }
+}
+```
+
+- `command` must resolve on Claude Desktop's `PATH`. If `pip install traitprint`
+  landed in a venv or a user-local `bin/` that Claude Desktop can't see, use the
+  absolute path (e.g. `/Users/you/.local/bin/traitprint` or
+  `/opt/homebrew/bin/traitprint`). Run `which traitprint` to find it.
+- `TRAITPRINT_VAULT_DIR` is optional — omit it to use the default `~/.traitprint`.
+- Restart Claude Desktop after editing the config. The `traitprint` server should
+  appear in the MCP tools list, exposing `get_profile_summary`, `search_skills`,
+  `find_story`, and `get_philosophy`.
+
+The same snippet works for any MCP client that accepts an `mcpServers` block
+(Cursor, Zed, Continue, etc.).
+
 ## Traitprint Cloud (opt-in)
 
 When you want a public profile, job matching, or a chat-ready twin that
