@@ -79,14 +79,14 @@ it pulls from the vault, not a hallucinated resume.
 > "I work with a dozen clients and I need their career data structured the
 > same way so I can compare, advise, and produce portfolios."
 
-Use `traitprint import-resume` (BYOK LLM) to pull each client's resume into
+Use `traitprint vault import-resume` (BYOK LLM) to pull each client's resume into
 a structured vault. Edit, version, and `export` polished portfolios. Same
 schema for every client means coaching workflows compose instead of starting
 from scratch each time.
 
 ## What's in the box
 
-- **Local vault** — versioned, SQL-queryable storage on your laptop.
+- **Local vault** — plain-JSON storage on your laptop, versioned with git.
 - **MCP server (stdio)** — `get_profile_summary`, `search_skills`,
   `find_story`, `get_philosophy`.
 - **CLI** — `traitprint init`, `traitprint vault add-skill`, `add-experience`,
@@ -108,7 +108,7 @@ account, no network calls, and no paywall.
 | Version history, diff, rollback | ✅ | — |
 | MCP server for Claude Desktop / any MCP client (stdio) | ✅ | — |
 | Resume import via BYOK LLM (Anthropic, OpenAI, Ollama, OpenRouter) | ✅ | — |
-| SQL-queryable Dolt-backed storage | ✅ | — |
+| Plain-JSON vault with git-backed version history | ✅ | — |
 | MIT-licensed source, fork and self-host | ✅ | — |
 | Public profile at `traitprint.com/profile/you` | — | ✅ |
 | Hosted MCP endpoint reachable by recruiter agents | — | ✅ |

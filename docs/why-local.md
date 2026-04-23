@@ -16,8 +16,8 @@ telemetry, no credit card.
 | Browse your vault | `traitprint vault show`, `vault list` |
 | Version history + diffs + rollback | `traitprint vault history`, `vault diff`, `vault rollback` |
 | MCP server for Claude Desktop / any MCP client | `traitprint mcp-serve` |
-| Resume import via BYOK LLM (Anthropic, OpenAI, Ollama, OpenRouter) | `traitprint import resume` |
-| SQL-queryable Dolt-backed storage | via vault directory |
+| Resume import via BYOK LLM (Anthropic, OpenAI, Ollama, OpenRouter) | `traitprint vault import-resume` |
+| Plain-JSON vault with git-backed version history | via vault directory |
 | MIT source, fork it, run it forever | — |
 
 **Free forever** is a commitment, not a pricing tier. These capabilities will
