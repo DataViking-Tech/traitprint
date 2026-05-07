@@ -41,9 +41,7 @@ def _read_json_items(source: IO[str]) -> list[dict[str, Any]]:
     except json.JSONDecodeError as exc:
         raise click.ClickException(f"Invalid JSON: {exc}") from exc
     if not isinstance(data, list):
-        raise click.ClickException(
-            f"Expected a JSON array, got {type(data).__name__}"
-        )
+        raise click.ClickException(f"Expected a JSON array, got {type(data).__name__}")
     for i, item in enumerate(data):
         if not isinstance(item, dict):
             raise click.ClickException(
@@ -52,9 +50,7 @@ def _read_json_items(source: IO[str]) -> list[dict[str, Any]]:
     return data
 
 
-def _parse_uuid_list(
-    raw: object, field: str, item_index: int
-) -> list[UUID]:
+def _parse_uuid_list(raw: object, field: str, item_index: int) -> list[UUID]:
     """Parse a list-of-UUID field from a JSON item. Returns [] for missing/None."""
     if raw is None:
         return []
@@ -1068,33 +1064,64 @@ def _batch_add_philosophies(store: VaultStore, items: list[dict[str, Any]]) -> i
     return errors
 
 
-# --- vault add-education (interactive) ---
+# --- vault add-education ---
 
 
 @vault.command(name="add-education")
+@click.option("--institution", default=None, help="Institution name.")
+@click.option("--degree", default=None, help="Degree (e.g. Bachelor, Master, PhD).")
+@click.option("--field", "field_of_study", default=None, help="Field of study.")
+@click.option("--start-date", default=None, help="Start date (YYYY).")
+@click.option(
+    "--end-date", default=None, help="End date (YYYY); blank/omitted means current."
+)
+@click.option("--description", default=None, help="Description of the entry.")
 @click.option("--interactive", "-i", is_flag=True, default=True, help="Guided prompts.")
 @click.pass_context
-def vault_add_education(ctx: click.Context, interactive: bool) -> None:
-    """Add an education entry to your vault (interactive)."""
+def vault_add_education(
+    ctx: click.Context,
+    institution: str | None,
+    degree: str | None,
+    field_of_study: str | None,
+    start_date: str | None,
+    end_date: str | None,
+    description: str | None,
+    interactive: bool,
+) -> None:
+    """Add an education entry to your vault.
+
+    Pass --institution (and optional fields) for non-interactive use.
+    Without --institution, falls back to interactive prompts.
+    """
     store = _get_store(ctx)
     if not store.exists():
         click.echo("No vault found. Run 'traitprint init' first.")
         return
 
-    institution = click.prompt("Institution")
-    degree = click.prompt("Degree (e.g. Bachelor, Master, PhD)", default="")
-    field_of_study = click.prompt("Field of study", default="")
-    start_date = click.prompt("Start date (YYYY)", default="")
-    end_date = click.prompt("End date (YYYY, blank for current)", default="")
-    description = click.prompt("Description", default="")
+    non_interactive = institution is not None
+    if non_interactive:
+        degree_val = degree if degree is not None else ""
+        field_val = field_of_study if field_of_study is not None else ""
+        start_val = start_date if start_date is not None else ""
+        end_val = end_date if end_date else None
+        desc_val = description if description is not None else ""
+    else:
+        institution = click.prompt("Institution")
+        degree_val = click.prompt("Degree (e.g. Bachelor, Master, PhD)", default="")
+        field_val = click.prompt("Field of study", default="")
+        start_val = click.prompt("Start date (YYYY)", default="")
+        end_prompt = click.prompt("End date (YYYY, blank for current)", default="")
+        end_val = end_prompt if end_prompt else None
+        desc_val = click.prompt("Description", default="")
 
+    assert institution is not None
     edu = store.add_education(
         institution=institution,
-        degree=degree,
-        field_of_study=field_of_study,
-        start_date=start_date,
-        end_date=end_date if end_date else None,
-        description=description,
+        degree=degree_val,
+        field_of_study=field_val,
+        start_date=start_val,
+        end_date=end_val,
+        description=desc_val,
     )
     click.echo(f"Added education: {edu.degree} at {edu.institution} [{edu.id}]")
 
@@ -1139,18 +1166,42 @@ def vault_remove(ctx: click.Context, item_id: str, yes: bool) -> None:
 # --- vault export ---
 
 
+_EXPORT_FORMAT_CHOICES = [
+    "json",
+    "markdown",
+    "jsonresume",
+    "json-resume",
+    "synthpanel-persona",
+]
+
+
+def _normalize_export_format(
+    ctx: click.Context, param: click.Parameter, value: str | None
+) -> str | None:
+    """Normalize ``json-resume`` to ``jsonresume`` and lowercase the choice.
+
+    Click's ``Choice`` validator runs before this callback, so any spelling
+    listed in ``_EXPORT_FORMAT_CHOICES`` reaches us. The exporter only
+    knows about the canonical names.
+    """
+    if value is None:
+        return value
+    v = value.lower()
+    if v == "json-resume":
+        return "jsonresume"
+    return v
+
+
 @vault.command(name="export")
 @click.option(
     "--format",
     "-f",
     "fmt",
-    type=click.Choice(
-        ["json", "markdown", "jsonresume", "synthpanel-persona"],
-        case_sensitive=False,
-    ),
+    type=click.Choice(_EXPORT_FORMAT_CHOICES, case_sensitive=False),
     default="json",
     show_default=True,
-    help="Export format.",
+    callback=_normalize_export_format,
+    help="Export format. ``json-resume`` is accepted as a synonym for ``jsonresume``.",
 )
 @click.option(
     "--output",
@@ -1159,8 +1210,15 @@ def vault_remove(ctx: click.Context, item_id: str, yes: bool) -> None:
     default=None,
     help="Write to file instead of stdout.",
 )
+@click.option(
+    "--pack-name",
+    default=None,
+    help="Override the pack name (synthpanel-persona only).",
+)
 @click.pass_context
-def vault_export(ctx: click.Context, fmt: str, output: str | None) -> None:
+def vault_export(
+    ctx: click.Context, fmt: str, output: str | None, pack_name: str | None
+) -> None:
     """Export the vault as JSON, Markdown, JSON Resume, or a SynthPanel persona."""
     from traitprint.export import export_vault
 
@@ -1169,7 +1227,7 @@ def vault_export(ctx: click.Context, fmt: str, output: str | None) -> None:
         click.echo("No vault found. Run 'traitprint init' first.")
         return
     v = store.load()
-    rendered = export_vault(v, fmt.lower())
+    rendered = export_vault(v, fmt, pack_name=pack_name)
     if output:
         from pathlib import Path
 
@@ -1357,19 +1415,19 @@ def vault_import_resume(
     click.echo(f"Imported {summary}. Run 'traitprint vault show' to review.")
 
 
-# --- export ---
-
-
-_EXPORT_FORMATS = ["synthpanel-persona"]
+# --- export (top-level alias of ``vault export``) ---
 
 
 @cli.command(name="export")
 @click.option(
     "--format",
+    "-f",
     "fmt",
-    type=click.Choice(_EXPORT_FORMATS, case_sensitive=False),
-    required=True,
-    help="Export target format.",
+    type=click.Choice(_EXPORT_FORMAT_CHOICES, case_sensitive=False),
+    default="json",
+    show_default=True,
+    callback=_normalize_export_format,
+    help="Export format. ``json-resume`` is accepted as a synonym for ``jsonresume``.",
 )
 @click.option(
     "--output",
@@ -1392,35 +1450,11 @@ def export_cmd(
 ) -> None:
     """Export the vault in a format consumable by other tools.
 
-    ``--format synthpanel-persona`` emits a SynthPanel persona pack
-    (YAML) that can be fed directly to ``synthpanel panel run
-    --personas <file>``.
+    Alias of ``traitprint vault export``. ``--format synthpanel-persona``
+    emits a SynthPanel persona pack (YAML) that can be fed directly to
+    ``synthpanel panel run --personas <file>``.
     """
-    store = _get_store(ctx)
-    if not store.exists():
-        raise click.ClickException(
-            f"No vault found at {store.directory}. Run 'traitprint init' first."
-        )
-
-    vault_obj = store.load()
-
-    if fmt == "synthpanel-persona":
-        import yaml
-
-        from traitprint.exporters.synthpanel import vault_to_synthpanel_pack
-
-        pack = vault_to_synthpanel_pack(vault_obj, pack_name=pack_name)
-        payload = yaml.safe_dump(pack, sort_keys=False, default_flow_style=False)
-    else:  # pragma: no cover — click.Choice guards this
-        raise click.ClickException(f"Unsupported format: {fmt}")
-
-    if output:
-        from pathlib import Path
-
-        Path(output).write_text(payload, encoding="utf-8")
-        click.echo(f"Wrote {fmt} export to {output}")
-    else:
-        click.echo(payload, nl=False)
+    ctx.invoke(vault_export, fmt=fmt, output=output, pack_name=pack_name)
 
 
 # --- mcp-serve ---

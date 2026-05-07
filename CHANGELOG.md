@@ -14,6 +14,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `TRAITPRINT_PASSWORD` env var fallback for the password prompt (tp-y45).
 - `push`/`pull` honor `TRAITPRINT_API_TOKEN` directly, no prior `login`
   required (tp-y45).
+- `vault add-education` now supports flag mode (`--institution`, `--degree`,
+  `--field`, `--start-date`, `--end-date`, `--description`) for parity with
+  the other `add-*` commands; interactive `-i` still works as a fallback
+  (tp-gas).
+- `--format json-resume` is accepted as a synonym for `--format jsonresume`
+  on both `traitprint export` and `traitprint vault export` (tp-gas).
+
+### Changed
+- `traitprint export` is now a thin alias of `traitprint vault export`: same
+  formats (`json`, `markdown`, `jsonresume`, `synthpanel-persona`), same
+  options, same output. The two commands previously diverged for
+  `synthpanel-persona`; both now emit the canonical SynthPanel pack
+  (`{name, source, personas: [...]}`) (tp-gas).
 
 ## [0.6.0] - 2026-04-20
 

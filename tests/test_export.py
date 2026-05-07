@@ -185,33 +185,34 @@ class TestExportJsonResume:
 
 
 class TestExportSynthpanelPersona:
-    def test_emits_valid_yaml_structure(self, sample_vault: VaultSchema) -> None:
-        rendered = export_vault(sample_vault, "synthpanel-persona")
-        assert rendered.startswith("personas:\n")
-        assert "- name: Ada Lovelace" in rendered
-        assert "occupation: Independent Researcher at Self" in rendered
-        # Background folded block
-        assert "background: >-" in rendered
-        assert "personality_traits:" in rendered
-        assert "- poetic Science" in rendered
-        assert "- teach By Example" in rendered
+    """``export_vault(..., "synthpanel-persona")`` delegates to
+    ``vault_to_synthpanel_pack``. These tests verify the YAML pack
+    contract; deeper persona-derivation tests live in
+    ``tests/test_export_synthpanel.py``."""
 
-    def test_traits_fall_back_to_skills_when_no_philosophies(self) -> None:
-        vault = VaultSchema(
-            profile=ProfileSchema(display_name="X"),
-            skills=[
-                SkillSchema(name="Python", proficiency=9, category="technical"),
-                SkillSchema(name="Mentoring", proficiency=8, category="soft"),
-            ],
+    def test_emits_valid_yaml_pack(self, sample_vault: VaultSchema) -> None:
+        import yaml
+
+        rendered = export_vault(sample_vault, "synthpanel-persona")
+        parsed = yaml.safe_load(rendered)
+        assert parsed["source"] == "traitprint"
+        assert parsed["personas"][0]["name"] == "Ada Lovelace"
+
+    def test_pack_name_kwarg_overrides_default(self, sample_vault: VaultSchema) -> None:
+        import yaml
+
+        rendered = export_vault(
+            sample_vault, "synthpanel-persona", pack_name="custom-pack"
         )
-        rendered = export_vault(vault, "synthpanel-persona")
-        assert "personality_traits:" in rendered
-        assert "- technical" in rendered
-        assert "- soft" in rendered
+        parsed = yaml.safe_load(rendered)
+        assert parsed["name"] == "custom-pack"
 
     def test_anonymous_empty_vault(self) -> None:
+        import yaml
+
         rendered = export_vault(VaultSchema(), "synthpanel-persona")
-        assert "- name: Anonymous" in rendered
+        parsed = yaml.safe_load(rendered)
+        assert parsed["personas"][0]["name"] == "Anonymous"
 
 
 class TestUnknownFormat:
@@ -291,6 +292,8 @@ class TestCliExport:
         assert "Wrote jsonresume export to" in result.output
 
     def test_persona_format_via_cli(self, vault_dir: Path) -> None:
+        import yaml
+
         runner = CliRunner()
         result = runner.invoke(
             cli,
@@ -304,7 +307,9 @@ class TestCliExport:
             ],
         )
         assert result.exit_code == 0, result.output
-        assert result.output.startswith("personas:")
+        parsed = yaml.safe_load(result.output)
+        assert parsed["source"] == "traitprint"
+        assert parsed["personas"][0]["name"] == "Ada Lovelace"
 
     def test_missing_vault_shows_hint(self, tmp_path: Path) -> None:
         runner = CliRunner()
@@ -313,6 +318,43 @@ class TestCliExport:
         )
         assert result.exit_code == 0
         assert "No vault found" in result.output
+
+    def test_json_resume_alias_for_jsonresume(self, vault_dir: Path) -> None:
+        """`--format json-resume` is normalized to `jsonresume`."""
+        runner = CliRunner()
+        canonical = runner.invoke(
+            cli,
+            ["--path", str(vault_dir), "vault", "export", "-f", "jsonresume"],
+        )
+        aliased = runner.invoke(
+            cli,
+            ["--path", str(vault_dir), "vault", "export", "-f", "json-resume"],
+        )
+        assert canonical.exit_code == 0, canonical.output
+        assert aliased.exit_code == 0, aliased.output
+        assert canonical.output == aliased.output
+
+    def test_top_level_export_aliases_vault_export(self, vault_dir: Path) -> None:
+        """Top-level `traitprint export` and `traitprint vault export`
+        produce identical output for every supported format."""
+        runner = CliRunner()
+        for fmt in ("json", "markdown", "jsonresume", "synthpanel-persona"):
+            top = runner.invoke(cli, ["--path", str(vault_dir), "export", "-f", fmt])
+            vault = runner.invoke(
+                cli, ["--path", str(vault_dir), "vault", "export", "-f", fmt]
+            )
+            assert top.exit_code == 0, top.output
+            assert vault.exit_code == 0, vault.output
+            assert top.output == vault.output, f"mismatch for {fmt}"
+
+    def test_top_level_export_json_resume_alias(self, vault_dir: Path) -> None:
+        runner = CliRunner()
+        result = runner.invoke(
+            cli, ["--path", str(vault_dir), "export", "-f", "json-resume"]
+        )
+        assert result.exit_code == 0, result.output
+        payload = json.loads(result.output)
+        assert payload["basics"]["name"] == "Ada Lovelace"
 
     def test_invalid_format_rejected(self, vault_dir: Path) -> None:
         runner = CliRunner()

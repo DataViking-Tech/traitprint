@@ -183,7 +183,9 @@ class TestExportCli:
                 "synthpanel-persona",
             ],
         )
-        assert result.exit_code != 0
+        # ``traitprint export`` aliases ``traitprint vault export``, which
+        # echoes a hint and exits cleanly when no vault exists.
+        assert result.exit_code == 0
         assert "No vault found" in result.output
 
     def test_export_to_stdout(self, tmp_path: Path) -> None:

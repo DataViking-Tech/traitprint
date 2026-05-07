@@ -12,7 +12,6 @@ from typing import Literal
 
 from traitprint.schema import (
     ExperienceSchema,
-    PhilosophySchema,
     SkillSchema,
     VaultSchema,
 )
@@ -27,8 +26,12 @@ SUPPORTED_FORMATS: tuple[str, ...] = (
 )
 
 
-def export_vault(vault: VaultSchema, fmt: str) -> str:
-    """Render the vault in the requested format."""
+def export_vault(vault: VaultSchema, fmt: str, *, pack_name: str | None = None) -> str:
+    """Render the vault in the requested format.
+
+    ``pack_name`` is only consulted by ``synthpanel-persona``; other
+    formats ignore it.
+    """
     if fmt == "json":
         return _export_json(vault)
     if fmt == "markdown":
@@ -36,7 +39,7 @@ def export_vault(vault: VaultSchema, fmt: str) -> str:
     if fmt == "jsonresume":
         return _export_jsonresume(vault)
     if fmt == "synthpanel-persona":
-        return _export_synthpanel_persona(vault)
+        return _export_synthpanel_persona(vault, pack_name=pack_name)
     raise ValueError(
         f"Unknown export format: {fmt!r}. Supported: {', '.join(SUPPORTED_FORMATS)}"
     )
@@ -284,183 +287,20 @@ def _story_summary(situation: str, task: str) -> str:
 
 
 # ------------------------------------------------------------------
-# SynthPanel persona — YAML
+# SynthPanel persona — YAML pack
 # ------------------------------------------------------------------
 
 
-def _export_synthpanel_persona(vault: VaultSchema) -> str:
-    """Project the vault into a SynthPanel-compatible persona YAML doc.
+def _export_synthpanel_persona(vault: VaultSchema, pack_name: str | None = None) -> str:
+    """Project the vault into a SynthPanel persona pack (YAML).
 
-    SynthPanel personas capture: name, age, occupation, background,
-    personality_traits. Traitprint has no age field, so we omit it.
-    Occupation comes from the most-recent experience. Background
-    blends profile.summary with experience/philosophy context.
-    Personality traits come from philosophy titles (falling back to
-    top-skill categories if no philosophies exist).
+    Delegates to :func:`traitprint.exporters.synthpanel.vault_to_synthpanel_pack`,
+    which is the canonical pack format consumed by ``synthpanel panel
+    run --personas``.
     """
-    profile = vault.profile
-    name = profile.display_name or "Anonymous"
-    occupation = _current_occupation(vault.experiences)
-    background = _persona_background(vault)
-    traits = _persona_traits(vault)
+    import yaml
 
-    persona: dict[str, object] = {
-        "name": name,
-        "occupation": occupation,
-        "background": background,
-        "personality_traits": traits,
-    }
+    from traitprint.exporters.synthpanel import vault_to_synthpanel_pack
 
-    lines = ["personas:", *_dump_yaml_item(persona)]
-    return "\n".join(lines) + "\n"
-
-
-def _current_occupation(experiences: list[ExperienceSchema]) -> str:
-    if not experiences:
-        return ""
-    current = [e for e in experiences if not e.end_date]
-    pick = current[0] if current else experiences[-1]
-    if pick.title and pick.company:
-        return f"{pick.title} at {pick.company}"
-    return pick.title or pick.company
-
-
-def _persona_background(vault: VaultSchema) -> str:
-    parts: list[str] = []
-    if vault.profile.summary:
-        parts.append(vault.profile.summary)
-    if vault.experiences:
-        exp_summary = _experience_summary(vault.experiences)
-        if exp_summary:
-            parts.append(exp_summary)
-    if vault.education:
-        edu = vault.education[0]
-        edu_bits = _compose(edu.degree, edu.field_of_study, sep=" in ")
-        if edu_bits and edu.institution:
-            parts.append(f"{edu_bits} from {edu.institution}.")
-        elif edu.institution:
-            parts.append(f"Studied at {edu.institution}.")
-    return " ".join(parts).strip()
-
-
-def _experience_summary(experiences: list[ExperienceSchema]) -> str:
-    total_years = _total_years(experiences)
-    companies = [e.company for e in experiences if e.company]
-    if total_years and companies:
-        return (
-            f"{total_years}+ years of experience across "
-            f"{len(experiences)} role(s) including {companies[0]}."
-        )
-    if companies:
-        return f"Experience across {len(experiences)} role(s)."
-    return ""
-
-
-def _total_years(experiences: list[ExperienceSchema]) -> int:
-    years: set[int] = set()
-    for exp in experiences:
-        for raw in (exp.start_date, exp.end_date):
-            if not raw:
-                continue
-            head = raw.split("-", 1)[0]
-            if head.isdigit() and len(head) == 4:
-                years.add(int(head))
-    if len(years) < 2:
-        return 0
-    return max(years) - min(years)
-
-
-def _persona_traits(vault: VaultSchema) -> list[str]:
-    traits: list[str] = []
-    for phi in vault.philosophies:
-        trait = _philosophy_to_trait(phi)
-        if trait and trait not in traits:
-            traits.append(trait)
-    if traits:
-        return traits
-    # Fallback: derive from top skills' categories
-    for skill in _sort_skills(vault.skills)[:5]:
-        label = skill.category or skill.name
-        if label and label not in traits:
-            traits.append(label)
-    return traits
-
-
-def _philosophy_to_trait(phi: PhilosophySchema) -> str:
-    title = phi.title.strip()
-    if title:
-        # Lowercase first character for YAML-style trait phrases
-        return title[0].lower() + title[1:] if title else title
-    return phi.category.value
-
-
-# ------------------------------------------------------------------
-# Minimal YAML emitter (strings, ints, lists of strings, dicts).
-# ------------------------------------------------------------------
-
-
-def _dump_yaml_item(item: dict[str, object]) -> list[str]:
-    """Emit a single list-item dict under a top-level key."""
-    lines: list[str] = []
-    first = True
-    for key, value in item.items():
-        prefix = "  - " if first else "    "
-        first = False
-        if isinstance(value, list):
-            lines.append(f"{prefix}{key}:")
-            for entry in value:
-                lines.append(f"      - {_yaml_scalar(entry)}")
-        elif isinstance(value, str) and ("\n" in value or len(value) > 70):
-            lines.append(f"{prefix}{key}: >-")
-            for chunk in _wrap_paragraph(value):
-                lines.append(f"      {chunk}")
-        else:
-            lines.append(f"{prefix}{key}: {_yaml_scalar(value)}")
-    return lines
-
-
-def _yaml_scalar(value: object) -> str:
-    if value is None:
-        return "null"
-    if isinstance(value, bool):
-        return "true" if value else "false"
-    if isinstance(value, (int, float)):
-        return str(value)
-    text = str(value)
-    if not text:
-        return '""'
-    needs_quote = any(c in text for c in (":", "#", "'", '"', "\n")) or text[0] in (
-        "-",
-        "?",
-        "&",
-        "*",
-        "!",
-        "|",
-        ">",
-        "%",
-        "@",
-        "`",
-    )
-    if needs_quote:
-        escaped = text.replace("\\", "\\\\").replace('"', '\\"')
-        return f'"{escaped}"'
-    return text
-
-
-def _wrap_paragraph(text: str, width: int = 70) -> list[str]:
-    # Collapse whitespace so the folded block flows cleanly.
-    flat = " ".join(text.split())
-    out: list[str] = []
-    line = ""
-    for word in flat.split(" "):
-        if not line:
-            line = word
-            continue
-        if len(line) + 1 + len(word) > width:
-            out.append(line)
-            line = word
-        else:
-            line = f"{line} {word}"
-    if line:
-        out.append(line)
-    return out or [""]
+    pack = vault_to_synthpanel_pack(vault, pack_name=pack_name)
+    return yaml.safe_dump(pack, sort_keys=False, default_flow_style=False)

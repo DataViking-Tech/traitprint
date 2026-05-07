@@ -789,6 +789,75 @@ class TestAddExperienceCLI:
         assert exp.accomplishments == ["Shipped X", "Reduced Y by 30%"]
 
 
+class TestAddEducationCLI:
+    def test_non_interactive_required_only(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-education",
+                "--institution",
+                "MIT",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        assert "Added education" in result.output
+        v = VaultStore(vault_dir).load()
+        assert len(v.education) == 1
+        assert v.education[0].institution == "MIT"
+
+    def test_non_interactive_full_fields(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-education",
+                "--institution",
+                "MIT",
+                "--degree",
+                "Master",
+                "--field",
+                "Computer Science",
+                "--start-date",
+                "2018",
+                "--end-date",
+                "2020",
+                "--description",
+                "Focus on ML",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        v = VaultStore(vault_dir).load()
+        edu = v.education[0]
+        assert edu.institution == "MIT"
+        assert edu.degree == "Master"
+        assert edu.field_of_study == "Computer Science"
+        assert edu.start_date == "2018"
+        assert edu.end_date == "2020"
+        assert edu.description == "Focus on ML"
+
+    def test_interactive_still_works(self, runner: CliRunner, vault_dir: Path) -> None:
+        # Without --institution, command falls back to prompts.
+        result = runner.invoke(
+            cli,
+            ["--path", str(vault_dir), "vault", "add-education"],
+            input="Stanford\nPhD\nCS\n2010\n2015\nDistributed systems\n",
+        )
+        assert result.exit_code == 0, result.output
+        v = VaultStore(vault_dir).load()
+        assert len(v.education) == 1
+        assert v.education[0].institution == "Stanford"
+        assert v.education[0].degree == "PhD"
+
+
 class TestAddStoryCLI:
     def test_non_interactive_star_fields(
         self, runner: CliRunner, vault_dir: Path
@@ -827,9 +896,7 @@ class TestAddStoryCLI:
     ) -> None:
         store = VaultStore(vault_dir)
         skill = store.add_skill(name="Go", proficiency=8, category="technical")
-        exp = store.add_experience(
-            title="Eng", company="Co", start_date="2020-01"
-        )
+        exp = store.add_experience(title="Eng", company="Co", start_date="2020-01")
         result = runner.invoke(
             cli,
             [
@@ -979,8 +1046,12 @@ class TestAddSkillBatch:
         result = runner.invoke(
             cli,
             [
-                "--path", str(vault_dir),
-                "vault", "add-skill", "--from-json", str(payload),
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-skill",
+                "--from-json",
+                str(payload),
             ],
         )
         assert result.exit_code == 0, result.output
@@ -1005,8 +1076,12 @@ class TestAddSkillBatch:
         result = runner.invoke(
             cli,
             [
-                "--path", str(vault_dir),
-                "vault", "add-skill", "--from-json", str(payload),
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-skill",
+                "--from-json",
+                str(payload),
             ],
         )
         assert result.exit_code == 1
@@ -1026,8 +1101,12 @@ class TestAddSkillBatch:
         result = runner.invoke(
             cli,
             [
-                "--path", str(vault_dir),
-                "vault", "add-skill", "--from-json", str(payload),
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-skill",
+                "--from-json",
+                str(payload),
             ],
         )
         assert result.exit_code == 1
@@ -1041,14 +1120,16 @@ class TestAddSkillBatch:
         self, runner: CliRunner, vault_dir: Path, tmp_path: Path
     ) -> None:
         payload = tmp_path / "skills.json"
-        payload.write_text(
-            '[{"name":"X","proficiency":99,"category":"technical"}]'
-        )
+        payload.write_text('[{"name":"X","proficiency":99,"category":"technical"}]')
         result = runner.invoke(
             cli,
             [
-                "--path", str(vault_dir),
-                "vault", "add-skill", "--from-json", str(payload),
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-skill",
+                "--from-json",
+                str(payload),
             ],
         )
         assert result.exit_code == 1
@@ -1056,14 +1137,16 @@ class TestAddSkillBatch:
         assert "Summary: added 0, errors 1" in result.output
         assert len(VaultStore(vault_dir).load().skills) == 0
 
-    def test_batch_from_stdin(
-        self, runner: CliRunner, vault_dir: Path
-    ) -> None:
+    def test_batch_from_stdin(self, runner: CliRunner, vault_dir: Path) -> None:
         result = runner.invoke(
             cli,
             [
-                "--path", str(vault_dir),
-                "vault", "add-skill", "--from-json", "-",
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-skill",
+                "--from-json",
+                "-",
             ],
             input='[{"name":"Bash","proficiency":9,"category":"tool"}]',
         )
@@ -1079,8 +1162,12 @@ class TestAddSkillBatch:
         result = runner.invoke(
             cli,
             [
-                "--path", str(vault_dir),
-                "vault", "add-skill", "--from-json", str(payload),
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-skill",
+                "--from-json",
+                str(payload),
             ],
         )
         assert result.exit_code != 0
@@ -1094,8 +1181,12 @@ class TestAddSkillBatch:
         result = runner.invoke(
             cli,
             [
-                "--path", str(vault_dir),
-                "vault", "add-skill", "--from-json", str(payload),
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-skill",
+                "--from-json",
+                str(payload),
             ],
         )
         assert result.exit_code != 0
@@ -1109,10 +1200,17 @@ class TestAddSkillBatch:
         result = runner.invoke(
             cli,
             [
-                "--path", str(vault_dir),
-                "vault", "add-skill", "Oops",
-                "--proficiency", "5", "--category", "x",
-                "--from-json", str(payload),
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-skill",
+                "Oops",
+                "--proficiency",
+                "5",
+                "--category",
+                "x",
+                "--from-json",
+                str(payload),
             ],
         )
         assert result.exit_code == 2
@@ -1133,8 +1231,12 @@ class TestAddExperienceBatch:
         result = runner.invoke(
             cli,
             [
-                "--path", str(vault_dir),
-                "vault", "add-experience", "--from-json", str(payload),
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-experience",
+                "--from-json",
+                str(payload),
             ],
         )
         assert result.exit_code == 0, result.output
@@ -1153,8 +1255,12 @@ class TestAddExperienceBatch:
         result = runner.invoke(
             cli,
             [
-                "--path", str(vault_dir),
-                "vault", "add-experience", "--from-json", str(payload),
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-experience",
+                "--from-json",
+                str(payload),
             ],
         )
         assert result.exit_code == 1
@@ -1179,8 +1285,12 @@ class TestAddStoryBatch:
         result = runner.invoke(
             cli,
             [
-                "--path", str(vault_dir),
-                "vault", "add-story", "--from-json", str(payload),
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-story",
+                "--from-json",
+                str(payload),
             ],
         )
         assert result.exit_code == 0, result.output
@@ -1194,14 +1304,16 @@ class TestAddStoryBatch:
         self, runner: CliRunner, vault_dir: Path, tmp_path: Path
     ) -> None:
         payload = tmp_path / "stories.json"
-        payload.write_text(
-            '[{"title":"Bad","skill_ids":["not-a-uuid"]}]'
-        )
+        payload.write_text('[{"title":"Bad","skill_ids":["not-a-uuid"]}]')
         result = runner.invoke(
             cli,
             [
-                "--path", str(vault_dir),
-                "vault", "add-story", "--from-json", str(payload),
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-story",
+                "--from-json",
+                str(payload),
             ],
         )
         assert result.exit_code == 1
@@ -1221,8 +1333,12 @@ class TestAddPhilosophyBatch:
         result = runner.invoke(
             cli,
             [
-                "--path", str(vault_dir),
-                "vault", "add-philosophy", "--from-json", str(payload),
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-philosophy",
+                "--from-json",
+                str(payload),
             ],
         )
         assert result.exit_code == 0, result.output
@@ -1235,14 +1351,16 @@ class TestAddPhilosophyBatch:
         self, runner: CliRunner, vault_dir: Path, tmp_path: Path
     ) -> None:
         payload = tmp_path / "phil.json"
-        payload.write_text(
-            '[{"title":"Bad","category":"not-a-real-category"}]'
-        )
+        payload.write_text('[{"title":"Bad","category":"not-a-real-category"}]')
         result = runner.invoke(
             cli,
             [
-                "--path", str(vault_dir),
-                "vault", "add-philosophy", "--from-json", str(payload),
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-philosophy",
+                "--from-json",
+                str(payload),
             ],
         )
         assert result.exit_code == 1
