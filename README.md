@@ -19,16 +19,23 @@ Traitprint ships as **two products**:
 ```
 pip install traitprint
 traitprint init
+traitprint vault set-profile --name "Your Name" --headline "Your Role"
 traitprint mcp-serve
 ```
+
+(Add some content first with `traitprint vault add-skill`, `add-experience`,
+or `vault import-resume` — otherwise every MCP query returns an empty vault.)
 
 Point Claude Desktop (or any MCP client) at `traitprint mcp-serve` and any AI
 assistant you use can answer questions about your career: which projects used
 Postgres, what your management philosophy is, the story behind a job change.
 No account. No cloud. No vendor lock-in. Your vault is a file on your machine.
 
-A fresh `pip install traitprint` ships with **no networking dependency** —
-`httpx` is not even installed. The base CLI cannot make a network request.
+A fresh `pip install traitprint` **never imports a network client at module
+load**. Only `cloud.py` and `providers/*` import `httpx`, and neither path is
+reachable without the `[cloud]` or `[import]` extras — so the base CLI cannot
+make a network request. (See [docs/privacy.md](docs/privacy.md) for the full
+threat model.)
 
 ### Claude Desktop MCP config
 
@@ -145,9 +152,9 @@ from scratch each time.
 - **Local vault** — plain-JSON storage on your laptop, versioned with git.
 - **MCP server (stdio)** — `get_profile_summary`, `search_skills`,
   `find_story`, `get_philosophy`.
-- **CLI** — `traitprint init`, `traitprint vault add-skill`, `add-experience`,
-  `add-story`, `add-philosophy`, `add-education`, `remove`, `history`, `diff`,
-  `rollback`, `export`, `import-resume`.
+- **CLI** — `traitprint init`, `traitprint vault set-profile`, `add-skill`,
+  `add-experience`, `add-story`, `add-philosophy`, `add-education`, `remove`,
+  `show`, `list`, `history`, `diff`, `rollback`, `export`, `import-resume`.
 - **Resume import** with BYOK LLM (Anthropic, OpenAI, Ollama, OpenRouter) —
   install with `pip install 'traitprint[import]'`.
 - **Optional cloud sync** — `login`, `logout`, `push`, `pull`. Install with
@@ -179,6 +186,12 @@ A fresh install never talks to traitprint.com. Cloud features are opt-in via
 
 **Privacy commitment (what leaves your machine on `push`, what we store,
 what we don't do, how to delete everything):** [docs/privacy.md](docs/privacy.md)
+
+## Contact
+
+- **Bugs and feature requests:** [GitHub Issues](https://github.com/DataViking-Tech/traitprint/issues)
+- **Privacy / data deletion:** `privacy@traitprint.com`
+- **Everything else:** `hello@traitprint.com`
 
 ## License
 

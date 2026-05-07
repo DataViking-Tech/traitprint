@@ -10,11 +10,11 @@ readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
 authors = [
-    { name = "DataViking Technologies", email = "hello@dataviking.tech" },
+    { name = "DataViking Technologies", email = "hello@traitprint.com" },
 ]
 keywords = ["mcp", "career", "identity", "vault", "local-first", "ai-agents"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Environment :: Console",
     "Intended Audience :: Developers",
     "Intended Audience :: End Users/Desktop",

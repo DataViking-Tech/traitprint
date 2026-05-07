@@ -7,7 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- README quickstart now includes `vault set-profile` and a prompt to add
+  content before running `mcp-serve`, so first-run MCP queries are not
+  empty (tp-1me).
+- README's networking-dependency claim now matches the code: `httpx` *is*
+  installed transitively via `mcp`; what's true is that no module imports
+  it at load time without the `[cloud]` or `[import]` extras (tp-1me).
+- Bumped PyPI classifier from `3 - Alpha` to `4 - Beta` (tp-1me).
+- Author/contact email consolidated on `@traitprint.com` (tp-1me).
+
 ### Added
+- README "Contact" section mapping addresses to purposes (tp-1me).
 - `traitprint login` now accepts an API token via `--token` or
   `TRAITPRINT_API_TOKEN`, skipping email/password — works in non-TTY shells,
   CI, and agentic flows (tp-y45).
@@ -28,7 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `synthpanel-persona`; both now emit the canonical SynthPanel pack
   (`{name, source, personas: [...]}`) (tp-gas).
 
-## [0.6.0] - 2026-04-20
+## [0.6.0] - 2026-04-21
 
 ### Added
 - Split into `traitprint` (local) and `traitprint[cloud]` extras (tp-5q2).
@@ -36,13 +47,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Use case examples and clearer audience framing in README (tp-vrc).
 - Explicit privacy commitment for cloud tier (tp-gn8).
 
-## [0.5.0] - 2026-04-20
+## [0.5.0] - 2026-04-21
 
 ### Added
 - Taxonomy distance graph for cross-concept skill search (tp-e5b).
 - Semantic search powered by the taxonomy distance graph.
 
-## [0.4.2] - 2026-04-20
+## [0.4.2] - 2026-04-21
 
 ### Added
 - Batch `add-{skill,experience,story,philosophy}` via `--from-json` (tp-apo).

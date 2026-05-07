@@ -1487,9 +1487,10 @@ def mcp_serve(ctx: click.Context) -> None:
 def _require_cloud_extras() -> None:
     """Verify the [cloud] extras are installed; raise a friendly error if not.
 
-    The base ``pip install traitprint`` deliberately omits ``httpx`` so a
-    fresh install never makes a network call. Cloud sync (login/logout/push/
-    pull) lives behind the ``[cloud]`` extra.
+    The base ``pip install traitprint`` never imports ``httpx`` at module
+    load — only ``cloud.py`` and ``providers/*`` import it, and neither
+    path is reachable without the ``[cloud]`` or ``[import]`` extras.
+    Cloud sync (login/logout/push/pull) lives behind the ``[cloud]`` extra.
     """
     try:
         import httpx  # noqa: F401
