@@ -16,7 +16,7 @@ from pathlib import Path
 from pydantic import BaseModel
 
 CREDENTIALS_FILENAME = ".credentials"
-DEFAULT_API_URL = "https://traitprint.com"
+DEFAULT_API_URL = "https://api.traitprint.com"
 
 
 class Credentials(BaseModel):

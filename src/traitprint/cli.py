@@ -1488,7 +1488,7 @@ def _render_plan(plan: SyncPlan) -> str:
 @click.option(
     "--api-url",
     default=None,
-    help="Override the cloud API URL (default: https://traitprint.com).",
+    help="Override the cloud API URL (default: https://api.traitprint.com).",
 )
 @click.pass_context
 def login_cmd(
