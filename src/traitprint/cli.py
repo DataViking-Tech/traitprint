@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import os
+import sys
 from typing import IO, TYPE_CHECKING, Any
 from uuid import UUID
 
@@ -1464,12 +1466,31 @@ def _require_cloud_extras() -> None:
 
 
 def _require_credentials(store: VaultStore) -> Credentials:
-    from traitprint.credentials import CredentialsStore
+    from traitprint.credentials import (
+        DEFAULT_API_URL,
+        Credentials,
+        CredentialsStore,
+    )
 
-    creds = CredentialsStore(store.directory).load()
-    if creds is None or not creds.token:
-        raise click.ClickException("Not logged in. Run 'traitprint login' first.")
-    return creds
+    stored = CredentialsStore(store.directory).load()
+
+    env_token = os.environ.get("TRAITPRINT_API_TOKEN")
+    if env_token:
+        # Env token wins over file token; reuse file's email/api_url metadata
+        # when present so output stays informative.
+        api_url = (
+            (stored.api_url if stored else None)
+            or os.environ.get("TRAITPRINT_API_URL")
+            or DEFAULT_API_URL
+        )
+        email = stored.email if stored else ""
+        return Credentials(api_url=api_url, email=email, token=env_token)
+
+    if stored is None or not stored.token:
+        raise click.ClickException(
+            "Not logged in. Run 'traitprint login' or set TRAITPRINT_API_TOKEN."
+        )
+    return stored
 
 
 def _render_plan(plan: SyncPlan) -> str:
@@ -1477,27 +1498,63 @@ def _render_plan(plan: SyncPlan) -> str:
 
 
 @cli.command(name="login")
-@click.option("--email", "-e", prompt=True, help="Your Traitprint account email.")
+@click.option(
+    "--email",
+    "-e",
+    default=None,
+    envvar="TRAITPRINT_EMAIL",
+    help="Account email (or set TRAITPRINT_EMAIL).",
+)
 @click.option(
     "--password",
     "-p",
-    prompt=True,
-    hide_input=True,
-    help="Your Traitprint account password.",
+    default=None,
+    envvar="TRAITPRINT_PASSWORD",
+    help=(
+        "Account password (or set TRAITPRINT_PASSWORD). "
+        "Avoid passing on the command line — it leaks via shell history. "
+        "Prefer --token for non-interactive use."
+    ),
+)
+@click.option(
+    "--token",
+    "-t",
+    default=None,
+    envvar="TRAITPRINT_API_TOKEN",
+    help=(
+        "API token (or set TRAITPRINT_API_TOKEN). "
+        "Skips email/password entirely — recommended for CI and agents."
+    ),
 )
 @click.option(
     "--api-url",
     default=None,
+    envvar="TRAITPRINT_API_URL",
     help="Override the cloud API URL (default: https://api.traitprint.com).",
 )
 @click.pass_context
 def login_cmd(
-    ctx: click.Context, email: str, password: str, api_url: str | None
+    ctx: click.Context,
+    email: str | None,
+    password: str | None,
+    token: str | None,
+    api_url: str | None,
 ) -> None:
-    """Log in to Traitprint cloud and save a bearer token to .credentials."""
+    """Log in to Traitprint cloud and save credentials to ``.credentials``.
+
+    \b
+    Auth precedence (highest first):
+      1. --token / TRAITPRINT_API_TOKEN  (skips email/password)
+      2. --password / TRAITPRINT_PASSWORD env var
+      3. Interactive password prompt (TTY only)
+    """
     _require_cloud_extras()
     from traitprint.cloud import AuthError, CloudClient, CloudError
-    from traitprint.credentials import DEFAULT_API_URL, CredentialsStore
+    from traitprint.credentials import (
+        DEFAULT_API_URL,
+        Credentials,
+        CredentialsStore,
+    )
 
     store = _get_store(ctx)
     if not store.exists():
@@ -1505,7 +1562,32 @@ def login_cmd(
             f"No vault found at {store.directory}. Run 'traitprint init' first."
         )
 
-    with CloudClient(api_url or DEFAULT_API_URL) as client:
+    final_api_url = api_url or DEFAULT_API_URL
+
+    if token:
+        creds = Credentials(api_url=final_api_url, email=email or "", token=token)
+        CredentialsStore(store.directory).save(creds)
+        ident = f" as {email}" if email else ""
+        click.echo(f"Logged in with API token{ident}.")
+        return
+
+    if not email:
+        if not sys.stdin.isatty():
+            raise click.ClickException(
+                "No email provided. In non-interactive shells, pass --email, "
+                "set TRAITPRINT_EMAIL, or use --token / TRAITPRINT_API_TOKEN."
+            )
+        email = click.prompt("Email")
+
+    if not password:
+        if not sys.stdin.isatty():
+            raise click.ClickException(
+                "No password provided. In non-interactive shells, set "
+                "TRAITPRINT_PASSWORD or — recommended — TRAITPRINT_API_TOKEN."
+            )
+        password = click.prompt("Password", hide_input=True)
+
+    with CloudClient(final_api_url) as client:
         try:
             creds = client.login(email, password)
         except AuthError as exc:

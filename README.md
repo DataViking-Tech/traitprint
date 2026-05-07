@@ -80,6 +80,30 @@ extras, `traitprint login` / `logout` / `push` / `pull` print:
 Error: Cloud sync requires: pip install traitprint[cloud]
 ```
 
+### Non-interactive auth (CI, agents, Docker)
+
+`traitprint login` accepts three credential sources, in this precedence order:
+
+1. **API token** — `--token <key>` or `TRAITPRINT_API_TOKEN`. Skips email and
+   password entirely. Generate a token in the web portal (Settings → API Keys).
+   Recommended for CI, AI agents, and any non-interactive shell.
+2. **Password env var** — `TRAITPRINT_PASSWORD` (paired with `--email` /
+   `TRAITPRINT_EMAIL`). Only consulted if no token is provided.
+3. **Interactive prompt** — used as a last resort, only when stdin is a TTY.
+
+```bash
+# Recommended: API token via env var
+export TRAITPRINT_API_TOKEN=tp_live_xxx
+traitprint login        # one-time: persists token to <vault>/.credentials
+traitprint push
+
+# Or skip login entirely — push/pull also honor TRAITPRINT_API_TOKEN directly
+TRAITPRINT_API_TOKEN=tp_live_xxx traitprint push
+```
+
+Avoid `--password <pw>` on the command line: it lands in shell history and
+process listings. Use `TRAITPRINT_PASSWORD` or, better, an API token.
+
 ## Who it's for
 
 Traitprint is useful if you want your career data to be structured, portable,

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `traitprint login` now accepts an API token via `--token` or
+  `TRAITPRINT_API_TOKEN`, skipping email/password — works in non-TTY shells,
+  CI, and agentic flows (tp-y45).
+- `TRAITPRINT_PASSWORD` env var fallback for the password prompt (tp-y45).
+- `push`/`pull` honor `TRAITPRINT_API_TOKEN` directly, no prior `login`
+  required (tp-y45).
+
 ## [0.6.0] - 2026-04-20
 
 ### Added

@@ -178,6 +178,119 @@ class TestLogin:
         assert "No vault found" in result.output
 
 
+class TestLoginToken:
+    def test_token_flag_skips_password_flow(
+        self, runner: CliRunner, vault_dir: Path, server: FakeServer
+    ) -> None:
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "login",
+                "--token",
+                "my-api-token",
+                "--api-url",
+                "http://test",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        assert "API token" in result.output
+
+        creds = CredentialsStore(vault_dir).load()
+        assert creds is not None
+        assert creds.token == "my-api-token"
+        assert creds.api_url == "http://test"
+        # No /auth/login call was made — server only handles login on POST.
+        # Token was trusted as-is and persisted.
+
+    def test_token_flag_records_email_when_provided(
+        self, runner: CliRunner, vault_dir: Path, server: FakeServer
+    ) -> None:
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "login",
+                "--email",
+                "ada@example.test",
+                "--token",
+                "my-api-token",
+                "--api-url",
+                "http://test",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        assert "ada@example.test" in result.output
+
+        creds = CredentialsStore(vault_dir).load()
+        assert creds is not None
+        assert creds.email == "ada@example.test"
+        assert creds.token == "my-api-token"
+
+    def test_env_token_skips_password_flow(
+        self,
+        runner: CliRunner,
+        vault_dir: Path,
+        server: FakeServer,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setenv("TRAITPRINT_API_TOKEN", "env-token")
+        result = runner.invoke(
+            cli,
+            ["--path", str(vault_dir), "login", "--api-url", "http://test"],
+        )
+        assert result.exit_code == 0, result.output
+        creds = CredentialsStore(vault_dir).load()
+        assert creds is not None
+        assert creds.token == "env-token"
+
+    def test_env_password_used_without_prompt(
+        self,
+        runner: CliRunner,
+        vault_dir: Path,
+        server: FakeServer,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setenv("TRAITPRINT_PASSWORD", "s3cret")
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "login",
+                "--email",
+                "ada@example.test",
+                "--api-url",
+                "http://test",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        creds = CredentialsStore(vault_dir).load()
+        assert creds is not None
+        assert creds.token == server.token
+
+    def test_token_takes_precedence_over_password(
+        self,
+        runner: CliRunner,
+        vault_dir: Path,
+        server: FakeServer,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setenv("TRAITPRINT_PASSWORD", "wrong")
+        monkeypatch.setenv("TRAITPRINT_API_TOKEN", "winning-token")
+        result = runner.invoke(
+            cli,
+            ["--path", str(vault_dir), "login", "--api-url", "http://test"],
+        )
+        assert result.exit_code == 0, result.output
+        creds = CredentialsStore(vault_dir).load()
+        assert creds is not None
+        # Token path won, so we never hit the bad-password branch.
+        assert creds.token == "winning-token"
+
+
 class TestLogout:
     def test_removes_credentials(self, runner: CliRunner, vault_dir: Path) -> None:
         CredentialsStore(vault_dir).save(
@@ -235,6 +348,21 @@ class TestPush:
         assert result.exit_code == 0, result.output
         assert "[push]" in result.output
         assert "Push complete" in result.output
+        assert server.vault is not None
+
+    def test_push_works_with_env_token_no_login(
+        self,
+        runner: CliRunner,
+        vault_dir: Path,
+        server: FakeServer,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        # No `traitprint login` was ever run — env token alone should be enough.
+        assert CredentialsStore(vault_dir).exists() is False
+        monkeypatch.setenv("TRAITPRINT_API_TOKEN", server.token)
+        monkeypatch.setenv("TRAITPRINT_API_URL", "http://test")
+        result = runner.invoke(cli, ["--path", str(vault_dir), "push"])
+        assert result.exit_code == 0, result.output
         assert server.vault is not None
 
     def test_push_dry_run_no_upload(
