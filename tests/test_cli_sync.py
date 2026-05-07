@@ -34,15 +34,24 @@ class FakeServer:
         path = request.url.path
         auth = request.headers.get("authorization", "")
 
-        if path == "/auth/login" and request.method == "POST":
+        if path == "/auth/v1/token" and request.method == "POST":
             body = json.loads(request.content)
             if body.get("password") == "wrong":
-                return httpx.Response(401, json={"error": "invalid"})
+                return httpx.Response(
+                    400,
+                    json={"error_code": "invalid_credentials", "msg": "bad creds"},
+                )
             return httpx.Response(
-                200, json={"token": self.token, "email": body.get("email", "")}
+                200,
+                json={
+                    "access_token": self.token,
+                    "refresh_token": "refresh-token",
+                    "expires_at": 9999999999,
+                    "user": {"email": body.get("email", "")},
+                },
             )
 
-        if path == "/vault-sync":
+        if path == "/functions/v1/vault-sync":
             if auth != f"Bearer {self.token}":
                 return httpx.Response(401)
             if request.method == "GET":

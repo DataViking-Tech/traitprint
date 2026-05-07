@@ -99,16 +99,34 @@ class FakeServer:
     def handler(self, request: httpx.Request) -> httpx.Response:
         path = request.url.path
         auth = request.headers.get("authorization", "")
+        apikey = request.headers.get("apikey", "")
 
-        if path == "/auth/login" and request.method == "POST":
+        if path == "/auth/v1/token" and request.method == "POST":
+            if not apikey:
+                return httpx.Response(
+                    401, json={"message": "No API key found in request"}
+                )
             body = json.loads(request.content)
             if body.get("password") == "wrong":
-                return httpx.Response(401, json={"error": "invalid"})
+                return httpx.Response(
+                    400,
+                    json={
+                        "code": 400,
+                        "error_code": "invalid_credentials",
+                        "msg": "Invalid login credentials",
+                    },
+                )
             return httpx.Response(
-                200, json={"token": self.token, "email": body.get("email", "")}
+                200,
+                json={
+                    "access_token": self.token,
+                    "refresh_token": "refresh-" + self.token,
+                    "expires_at": 9999999999,
+                    "user": {"email": body.get("email", "")},
+                },
             )
 
-        if path == "/vault-sync":
+        if path == "/functions/v1/vault-sync":
             if auth != f"Bearer {self.token}":
                 return httpx.Response(401, json={"error": "unauthorized"})
             if request.method == "GET":

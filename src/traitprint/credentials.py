@@ -20,11 +20,20 @@ DEFAULT_API_URL = "https://api.traitprint.com"
 
 
 class Credentials(BaseModel):
-    """Cloud sync credentials persisted on disk."""
+    """Cloud sync credentials persisted on disk.
+
+    ``token`` is the Supabase access token (JWT, ~1h lifetime). ``refresh_token``
+    is the longer-lived companion that can mint new access tokens — stored for
+    forward-compat with refresh-on-401, currently unused.
+    """
 
     api_url: str = DEFAULT_API_URL
     email: str = ""
     token: str = ""
+    refresh_token: str = ""
+    expires_at: str = ""
+
+    model_config = {"extra": "ignore"}
 
 
 class CredentialsStore:

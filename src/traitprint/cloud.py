@@ -1,15 +1,23 @@
-"""HTTP client for the Traitprint cloud vault-sync edge function.
+"""HTTP client for the Traitprint cloud auth + vault-sync edge function.
+
+The cloud is fronted by Supabase. Authentication uses the GoTrue native
+endpoint (``/auth/v1/token?grant_type=password``) and requires a public
+``apikey`` (anon JWT) header on every request. The anon key is embedded
+below — it is intentionally public, identical to the one shipped in the
+web portal's JS bundle.
 
 Protocol
 --------
-POST {api_url}/auth/login
+POST {api_url}/auth/v1/token?grant_type=password
+    headers  -> apikey: <anon>, Content-Type: application/json
     body     -> {"email", "password"}
-    returns  -> {"token", "email"}
+    returns  -> {"access_token", "refresh_token", "expires_at", "user": {"email"}}
 
-GET  {api_url}/vault-sync
+GET  {api_url}/functions/v1/vault-sync
+    headers  -> apikey: <anon>, Authorization: Bearer <access_token>
     returns  -> {"vault": <VaultSchema|null>, "updated_at": <iso8601|null>}
 
-POST {api_url}/vault-sync
+POST {api_url}/functions/v1/vault-sync
     body     -> {"vault": <VaultSchema>}
     returns  -> {"accepted": bool, "updated_at": <iso8601>}
     on 409   -> {"server_updated_at": <iso8601>}
@@ -30,6 +38,20 @@ import httpx
 
 from traitprint.credentials import Credentials
 from traitprint.schema import VaultSchema
+
+# Public Supabase anon key for the traitprint project. Mirrors what the web
+# portal at traitprint.com ships in its JS bundle. Safe to embed: the JWT
+# encodes role=anon and grants only the access GoTrue and the edge functions
+# already expose to unauthenticated origins.
+SUPABASE_ANON_KEY = (
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
+    "eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpucHV4bnNpb3RyZXpnZnVodHhpIiwicm9sZSI6"
+    "ImFub24iLCJpYXQiOjE3NzM0NDA3NTYsImV4cCI6MjA4OTAxNjc1Nn0."
+    "p7SkS3Lh4ZqFcVlPS0DLRAk9BcoykjRdUWrRSof0bCc"
+)
+
+AUTH_PATH = "/auth/v1/token"
+VAULT_SYNC_PATH = "/functions/v1/vault-sync"
 
 
 class CloudError(Exception):
@@ -77,7 +99,7 @@ def _parse_ts(value: Any) -> datetime | None:
 
 
 class CloudClient:
-    """Thin HTTP wrapper around the cloud vault-sync edge function."""
+    """Thin HTTP wrapper around Supabase auth and the vault-sync edge function."""
 
     def __init__(
         self,
@@ -125,20 +147,24 @@ class CloudClient:
     # ------------------------------------------------------------------
 
     def login(self, email: str, password: str) -> Credentials:
-        """Exchange email+password for a bearer token.
+        """Exchange email+password for a Supabase access token.
 
         Returns a ``Credentials`` object ready to be persisted via
         ``CredentialsStore.save``.
         """
-        url = f"{self.api_url}/auth/login"
+        url = f"{self.api_url}{AUTH_PATH}"
         try:
             response = self._client.post(
-                url, json={"email": email, "password": password}
+                url,
+                params={"grant_type": "password"},
+                headers={"apikey": SUPABASE_ANON_KEY},
+                json={"email": email, "password": password},
             )
         except httpx.HTTPError as exc:
             raise CloudError(f"Login request failed: {exc}") from exc
 
-        if response.status_code in (401, 403):
+        if response.status_code in (400, 401, 403):
+            # Supabase returns 400 invalid_credentials for bad email/password.
             raise AuthError("Invalid email or password.")
         if response.status_code >= 400:
             raise CloudError(
@@ -146,14 +172,19 @@ class CloudClient:
             )
 
         data = response.json()
-        token = data.get("token", "")
+        token = data.get("access_token") or data.get("token") or ""
         if not token:
             raise AuthError("Login succeeded but no token was returned.")
         self.token = token
+
+        user = data.get("user") or {}
+        resolved_email = user.get("email") or data.get("email") or email
         return Credentials(
             api_url=self.api_url,
-            email=data.get("email", email),
+            email=resolved_email,
             token=token,
+            refresh_token=data.get("refresh_token", "") or "",
+            expires_at=_format_expiry(data.get("expires_at")),
         )
 
     # ------------------------------------------------------------------
@@ -163,11 +194,14 @@ class CloudClient:
     def _auth_headers(self) -> dict[str, str]:
         if not self.token:
             raise AuthError("Not authenticated. Run 'traitprint login' first.")
-        return {"Authorization": f"Bearer {self.token}"}
+        return {
+            "apikey": SUPABASE_ANON_KEY,
+            "Authorization": f"Bearer {self.token}",
+        }
 
     def pull(self) -> PullResult:
         """Fetch the server's vault (if any)."""
-        url = f"{self.api_url}/vault-sync"
+        url = f"{self.api_url}{VAULT_SYNC_PATH}"
         try:
             response = self._client.get(url, headers=self._auth_headers())
         except httpx.HTTPError as exc:
@@ -192,7 +226,7 @@ class CloudClient:
 
     def push(self, vault: VaultSchema) -> PushResult:
         """Upload the vault. Raises ``ConflictError`` on 409."""
-        url = f"{self.api_url}/vault-sync"
+        url = f"{self.api_url}{VAULT_SYNC_PATH}"
         payload = {"vault": vault.model_dump(mode="json")}
         try:
             response = self._client.post(
@@ -220,3 +254,14 @@ class CloudClient:
             server_updated_at=_parse_ts(data.get("updated_at"))
             or _parse_ts(data.get("server_updated_at")),
         )
+
+
+def _format_expiry(value: Any) -> str:
+    """Normalize Supabase's ``expires_at`` (unix seconds) to an ISO-8601 string."""
+    if value in (None, ""):
+        return ""
+    if isinstance(value, (int, float)):
+        return datetime.fromtimestamp(int(value)).astimezone().isoformat()
+    if isinstance(value, str):
+        return value
+    return ""
