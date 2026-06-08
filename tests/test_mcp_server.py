@@ -521,20 +521,26 @@ class TestServerRegistration:
 
 
 class TestPrompts:
-    def test_three_prompts_registered(self, populated_store: VaultStore) -> None:
+    def test_five_prompts_registered(self, populated_store: VaultStore) -> None:
         server = create_server(populated_store)
         prompts = asyncio.run(server.list_prompts())
         names = {p.name for p in prompts}
-        assert names == {"fill_vault", "audit_coherence", "draft_star_story"}
+        assert names == {
+            "fill_vault",
+            "mine_story_gaps",
+            "discover_skills",
+            "draft_star_story",
+            "audit_coherence",
+        }
 
     def test_fill_vault_focus_argument(self, populated_store: VaultStore) -> None:
         server = create_server(populated_store)
         got = asyncio.run(server.get_prompt("fill_vault", {"focus": "stories"}))
         text = got.messages[0].content.text  # type: ignore[union-attr]
         assert "stories" in text
-        # References the write path (CLI) and a coherence rule.
+        # Canonical coach contract + the CLI write path.
+        assert "Socratic" in text
         assert "traitprint vault add-story" in text
-        assert "audit" in text
 
     def test_fill_vault_without_focus_covers_all_sections(
         self, populated_store: VaultStore
@@ -544,6 +550,15 @@ class TestPrompts:
         text = got.messages[0].content.text  # type: ignore[union-attr]
         assert "every section" in text
 
+    def test_mode_prompts_reference_their_missions(
+        self, populated_store: VaultStore
+    ) -> None:
+        server = create_server(populated_store)
+        gaps = asyncio.run(server.get_prompt("mine_story_gaps", {}))
+        assert "STORY OPPORTUNITY MODE" in gaps.messages[0].content.text  # type: ignore[union-attr]
+        disc = asyncio.run(server.get_prompt("discover_skills", {}))
+        assert "SKILL DISCOVERY MODE" in disc.messages[0].content.text  # type: ignore[union-attr]
+
     def test_audit_coherence_references_audit_command(
         self, populated_store: VaultStore
     ) -> None:
@@ -551,6 +566,8 @@ class TestPrompts:
         got = asyncio.run(server.get_prompt("audit_coherence", {}))
         text = got.messages[0].content.text  # type: ignore[union-attr]
         assert "traitprint vault audit" in text
+        # Cloud framing: tensions are nuance, never say "you failed".
+        assert "nuance" in text.lower()
 
     def test_draft_star_story_seeds_experience(
         self, populated_store: VaultStore

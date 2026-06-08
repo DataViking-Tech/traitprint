@@ -11,10 +11,11 @@ local and cloud is a URL swap. Four tools are exposed:
 
 Every tool returns a ``{"result": <payload>, "meta": {...}}`` envelope.
 
-It also exposes three *prompts* — ``fill_vault``, ``audit_coherence``, and
-``draft_star_story`` — that hand an agent a ready-made workflow for helping
-the user build out and tighten their vault. Prompts are local-only (the
-cloud server mirrors the four tools, not these prompts).
+It also exposes five *prompts* — ``fill_vault``, ``mine_story_gaps``,
+``discover_skills``, ``draft_star_story``, and ``audit_coherence`` — adapted
+from the Cloud Experience Mining engine. They hand an agent a ready-made
+workflow for helping the user build out and tighten their vault. Prompts are
+local-only (the cloud server mirrors the four tools, not these prompts).
 """
 
 from __future__ import annotations
@@ -551,14 +552,49 @@ def _handle_get_philosophy(
 
 # ── Prompt builders ─────────────────────────────────────────────────
 #
-# These power the MCP *prompts* an agent can pull to help a user fill out
-# and tighten their vault. They are pure string builders so they can be
-# unit-tested without an MCP client. Each describes a workflow over the
-# read-only tools above plus the ``traitprint`` CLI (for agents with shell
-# access); a chat-only client can follow the same steps and tell the user
-# which commands to run.
+# These power the MCP *prompts* an agent pulls to help a user fill out and
+# tighten their vault. They are adapted from the Traitprint Cloud Experience
+# Mining engine (``src/lib/vault/mining.ts``) — the canonical Socratic system
+# prompt plus its STORY OPPORTUNITY, SKILL DISCOVERY, and FOCUSED SKILL DEEP
+# DIVE modes — re-pointed at the local CLI as the write path (Cloud parses
+# [SKILLS_EXTRACTED] blocks from a chat; Local has the agent run the CLI
+# directly). Pure string builders so they unit-test without an MCP client.
 
 _SECTIONS_HINT = "skills, experiences, stories, philosophies, education"
+
+# Shared coaching contract, ported from the Cloud mining system prompt.
+_COACH_CONTRACT = """\
+You are an expert career coach conducting a Socratic interview to help the \
+user discover and articulate their professional experience. Your role:
+1. Ask thoughtful follow-up questions that dig deeper into their experiences.
+2. Help them identify specific skills they demonstrated (technical and soft).
+3. Draw out concrete examples and measurable outcomes.
+4. Be encouraging but thorough — don't accept vague answers.
+5. Structure their stories in STAR format (Situation, Task, Action, Result).
+6. Welcome clarifying questions — this is a two-way conversation.
+
+VOICE: Always use second person. Address the user as "you" ("Tell me about…", \
+"Walk me through how you…", "What was your role in…"). Keep follow-ups concise \
+(2-3 sentences). Rate proficiency on a 1-10 scale from DEMONSTRATED evidence, \
+not self-report — if they claim expertise but describe basic usage, rate at \
+the evidence-supported level."""
+
+# How the agent writes what it learns. Cloud emits tagged blocks a parser
+# ingests; Local has the agent run these CLI commands (itself if it has a
+# shell, otherwise by handing the user the exact command).
+_WRITE_PATH = """\
+Write each thing you learn to the vault with the CLI:
+- Skill: `traitprint vault add-skill "Postgres" --proficiency 8 --category technical`
+- Experience: `traitprint vault add-experience --title ... --company ... \
+--start-date YYYY-MM`
+- Story (STAR): `traitprint vault add-story --title ... --situation ... \
+--task ... --action ... --result ... --experience-id <UUID> --skill-id <UUID>`
+- Philosophy: `traitprint vault add-philosophy --title ... --category \
+leadership --description ... --evidence-id <STORY_UUID>`
+- Profile: `traitprint vault set-profile --name ... --headline ... --summary ...`
+Link aggressively: a story names the skills it proves (`--skill-id`) and the \
+experience it came from (`--experience-id`); a philosophy points at an \
+evidence story (`--evidence-id`). Those links are what make the vault cohere."""
 
 
 def _fill_vault_prompt(focus: str = "") -> str:
@@ -568,66 +604,69 @@ def _fill_vault_prompt(focus: str = "") -> str:
         else f"Cover every section: {_SECTIONS_HINT}."
     )
     return f"""\
-You are helping the user build out their Traitprint vault — a local, \
-structured record of their career that AI tools query over MCP. {target}
+{_COACH_CONTRACT}
 
-Start by reading what already exists so you don't ask about things they've \
-covered: call `get_profile_summary` (depth="detailed"), then `search_skills` \
-for their main areas. Then interview the user one topic at a time. Be \
-Socratic: ask for specifics (numbers, dates, what changed) rather than \
-adjectives.
+You are helping build out the user's Traitprint vault. {target}
 
-For each thing you learn, write it to the vault with the CLI (run it yourself \
-if you have a shell, otherwise hand the user the exact command):
+Start by reading what already exists so you don't re-ask: call \
+`get_profile_summary` (depth="detailed"), then `search_skills` for their main \
+areas. Then interview one topic at a time. Extract skills eagerly — if they \
+mention a skill, tool, or capability even once, add it (start conservative on \
+proficiency; refine as evidence emerges). When you have enough detail for all \
+four STAR components, capture the story too.
 
-- Profile: `traitprint vault set-profile --name ... --headline ... --summary ...`
-- Skill: `traitprint vault add-skill "Postgres" --proficiency 8 --category technical`
-- Experience: `traitprint vault add-experience --title ... --company ... \
---start-date YYYY-MM`
-- Story (STAR): `traitprint vault add-story --title ... --situation ... \
---task ... --action ... --result ... --experience-id <UUID> --skill-id <UUID>`
-- Philosophy: `traitprint vault add-philosophy --title ... --category \
-leadership --description ... --evidence-id <STORY_UUID>`
-- Education: `traitprint vault add-education --institution ... --degree ...`
-
-Rules that keep the vault coherent:
-1. Prefer evidence over claims. Every skill at 7/10 or higher should earn a \
-STAR story that demonstrates it — capture the story, then link it with \
-`--skill-id`.
-2. Every philosophy should point at an evidence story via `--evidence-id`.
-3. Link each story to the experience it came from with `--experience-id`.
-4. Quantify results ("cut spend 45%", "shipped in 6 weeks"), don't editorialize.
+{_WRITE_PATH}
 
 When you've added a batch, run `traitprint vault audit` to see what's still \
-thin, and close the gaps it reports."""
+thin or unsupported, and close the gaps it reports."""
 
 
-def _audit_coherence_prompt() -> str:
-    return """\
-You are auditing the user's Traitprint vault for narrative coherence — does \
-the story it tells hang together and back up its own claims?
+def _mine_story_gaps_prompt() -> str:
+    return f"""\
+{_COACH_CONTRACT}
 
-1. Run the mechanical pass first: `traitprint vault audit` (add `--json` if \
-you want to parse it). It flags unsupported skill claims, philosophies with no \
-evidence, incomplete or broken stories, dangling references, and roles with no \
-story attached. If you have no shell, reconstruct the same view from \
-`get_profile_summary` (depth="detailed"), `search_skills`, `find_story`, and \
-`get_philosophy`.
+STORY OPPORTUNITY MODE — you are mining specifically for STAR stories to \
+strengthen the user's profile.
 
-2. Then apply judgment the mechanical pass can't:
-   - **Consistency**: do the headline, summary, top skills, and stories \
-describe the same person? Flag a summary that sells "engineering leadership" \
-when no story or philosophy shows it.
-   - **Voice**: is the tone consistent across stories, or do some read like a \
-resume and others like a diary?
-   - **Recency & arc**: do the experiences form a coherent trajectory, or are \
-there unexplained gaps and jumps?
-   - **Evidence quality**: are STAR "results" actually outcomes (with numbers), \
-or just restatements of the task?
+First find the gaps: run `traitprint vault audit` and look for \
+`skill.unsupported_strength` findings (strong skills with no story) and \
+`experience.no_story` findings (roles with nothing attached). Those are your \
+worklist.
 
-3. Report findings grouped by severity, each with the concrete fix (the exact \
-`traitprint vault ...` command or the missing detail to ask the user for). \
-Do not edit the vault without confirming the change with the user first."""
+YOUR MISSION:
+- Work through the gaps one at a time, highest-proficiency / most-important \
+first.
+- For each, ask targeted questions to elicit a complete STAR story.
+- When you have all four components, save it and link it to the skill and \
+experience it belongs to (`--skill-id`, `--experience-id`).
+- Track progress out loud: "Great, that's 3 of 8 skills with stories now."
+- If the user genuinely can't recall a story for something, note it and move \
+on — don't force it.
+
+{_WRITE_PATH}"""
+
+
+def _discover_skills_prompt() -> str:
+    return f"""\
+{_COACH_CONTRACT}
+
+SKILL DISCOVERY MODE — you are mining for LATENT skills the user has but \
+hasn't added to their vault yet.
+
+Read their current skills first (`search_skills` across their domains, or \
+`get_profile_summary` depth="detailed") so you probe for what's missing, not \
+what's already there.
+
+YOUR MISSION:
+- Probe for experience adjacent to what they've listed — if they have \
+"Docker", ask about orchestration, CI/CD, infra automation; if they have \
+"React", ask about state management, testing, accessibility.
+- When you find real evidence of a skill, add it at an evidence-supported \
+proficiency, and mine for a STAR story that demonstrates it.
+- If they truly don't have experience with something, acknowledge it and move \
+on — don't pad the vault.
+
+{_WRITE_PATH}"""
 
 
 def _draft_star_story_prompt(experience: str = "") -> str:
@@ -637,25 +676,58 @@ def _draft_star_story_prompt(experience: str = "") -> str:
         else "Ask the user which experience or accomplishment the story is about."
     )
     return f"""\
-Help the user turn a raw accomplishment into a crisp STAR story for their \
-Traitprint vault. {about}
+{_COACH_CONTRACT}
 
-Draw it out one STAR field at a time, pushing for specifics:
-- **Situation**: the context and the stakes. What was at risk or broken?
-- **Task**: what *you specifically* were responsible for (not the team).
-- **Action**: the concrete steps you took, and the key decision you made.
-- **Result**: the measurable outcome — a number, a delta, a shipped thing. \
-If they only restate the task, push for the actual effect.
+FOCUSED STORY DEEP DIVE — help the user turn one raw accomplishment into a \
+crisp, well-linked STAR story. {about}
 
-Then check linkage before saving: which existing skills did this prove \
-(`search_skills` to find their UUIDs), and which experience did it happen \
-during? Save with:
+Draw it out one field at a time, pushing for specifics:
+- **Situation**: the context and the stakes — what was at risk or broken?
+- **Task**: what *you specifically* were responsible for (not "the team").
+- **Action**: the concrete steps and the key decision you made. Use active, \
+first-person language; replace vague phrasing ("helped with", "worked on") \
+with what you actually did.
+- **Result**: the measurable outcome — a number, a delta, a shipped thing. If \
+they only restate the task, push for the actual effect.
+
+Before saving, find which existing skills this proves (`search_skills` for \
+their UUIDs) and which experience it happened during, then save and link it:
 
 `traitprint vault add-story --title "..." --situation "..." --task "..." \
 --action "..." --result "..." --experience-id <UUID> --skill-id <UUID>`
 
-A complete, linked story is what makes `find_story` and `search_skills` \
-return real evidence instead of empty results."""
+A complete, linked story scores as "demonstrates"-level evidence — that's what \
+makes `find_story` and `search_skills` return proof instead of empty results."""
+
+
+def _audit_coherence_prompt() -> str:
+    return """\
+You are reviewing the user's Traitprint vault for narrative coherence — does \
+the story it tells hang together and back up its own claims?
+
+FRAMING: never say "you failed." Say "your profile doesn't yet demonstrate X." \
+Philosophy *tensions* are nuance (context-dependent thinking), not bugs — \
+present them as a strength, not a contradiction to fix.
+
+1. Run the mechanical pass: `traitprint vault audit` (add `--json` to parse). \
+It scores each STAR story (Polished/Strong/Solid/Draft + evidence level), and \
+flags unsupported skill claims, philosophies with no evidence, broken stories, \
+dangling references, roles with no story, and contradictions between stories \
+(conflicting metrics or leader-vs-IC role claims). With no shell, reconstruct \
+the view from `get_profile_summary` (depth="detailed"), `search_skills`, \
+`find_story`, and `get_philosophy`.
+
+2. Then apply judgment the mechanical pass can't:
+   - **Consistency**: do the headline, summary, top skills, and stories \
+describe the same person?
+   - **Voice**: is the tone consistent across stories?
+   - **Arc**: do the experiences form a coherent trajectory?
+   - **Evidence quality**: are STAR "results" real outcomes (with numbers), or \
+restatements of the task?
+
+3. Report findings grouped by severity (critical → major → minor), each with \
+the concrete fix — the exact `traitprint vault ...` command or the missing \
+detail to ask for. Don't edit the vault without confirming with the user."""
 
 
 # ── Server factory ──────────────────────────────────────────────────
@@ -738,10 +810,9 @@ def create_server(store: VaultStore) -> FastMCP:
 
     @mcp.prompt(
         description=(
-            "Guide an agent through interviewing the user and populating "
-            "their vault (skills, experiences, STAR stories, philosophies, "
-            "education) via the traitprint CLI. Optional 'focus' narrows to "
-            "one section."
+            "Socratic interview that populates the vault (skills, experiences, "
+            "STAR stories, philosophies, education) via the traitprint CLI. "
+            "Optional 'focus' narrows to one section."
         )
     )
     def fill_vault(focus: str = "") -> str:
@@ -749,23 +820,41 @@ def create_server(store: VaultStore) -> FastMCP:
 
     @mcp.prompt(
         description=(
-            "Guide an agent through auditing the vault for narrative "
-            "coherence: run 'traitprint vault audit', then apply judgment "
-            "on consistency, voice, and evidence quality."
+            "STORY OPPORTUNITY mode: mine STAR stories for the skills and "
+            "experiences the audit flags as having no story behind them."
         )
     )
-    def audit_coherence() -> str:
-        return _audit_coherence_prompt()
+    def mine_story_gaps() -> str:
+        return _mine_story_gaps_prompt()
 
     @mcp.prompt(
         description=(
-            "Guide an agent through drafting one well-formed STAR story and "
-            "linking it to the right skills and experience. Optional "
-            "'experience' seeds what the story is about."
+            "SKILL DISCOVERY mode: probe for latent skills the user has but "
+            "hasn't added to their vault yet."
+        )
+    )
+    def discover_skills() -> str:
+        return _discover_skills_prompt()
+
+    @mcp.prompt(
+        description=(
+            "FOCUSED deep dive: draft one well-formed STAR story and link it "
+            "to the right skills and experience. Optional 'experience' seeds "
+            "the topic."
         )
     )
     def draft_star_story(experience: str = "") -> str:
         return _draft_star_story_prompt(experience)
+
+    @mcp.prompt(
+        description=(
+            "Review the vault for narrative coherence: run 'traitprint vault "
+            "audit' (story scores, gaps, contradictions, tensions), then apply "
+            "judgment on consistency, voice, and evidence quality."
+        )
+    )
+    def audit_coherence() -> str:
+        return _audit_coherence_prompt()
 
     # Expose handles so tests can reach the raw logic without stdio.
     mcp._traitprint_store = store  # type: ignore[attr-defined]
@@ -790,8 +879,10 @@ __all__ = [
     "SERVER_NAME",
     "SERVER_VERSION",
     "_audit_coherence_prompt",
+    "_discover_skills_prompt",
     "_draft_star_story_prompt",
     "_fill_vault_prompt",
+    "_mine_story_gaps_prompt",
     "create_server",
     "run_stdio",
 ]

@@ -8,20 +8,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- `traitprint vault audit` — a deterministic, read-only narrative-coherence
-  pass that flags unsupported skill claims (proficiency ≥ 7 with no story),
-  philosophies citing no evidence, incomplete or broken STAR stories, dangling
-  references, and roles with no story attached. Supports `--json`,
-  `--severity`, and `--strict` (exit non-zero on errors/warnings).
-- Three MCP prompts on `traitprint mcp-serve`: `fill_vault` (Socratic
-  vault-building over the CLI), `audit_coherence` (run the audit, then apply
-  judgment), and `draft_star_story` (turn a raw accomplishment into one
-  well-linked STAR story). Local-only; the four query tools remain
-  cloud-parity.
+- **Narrative-coherence engine, ported from Traitprint Cloud** so Local and
+  Cloud agree on scoring and vocabulary:
+  - `traitprint.coherence` — a faithful port of Cloud's
+    `story-coherence.ts`: per-story STAR scoring (`Polished`/`Strong`/`Solid`/
+    `Draft` + `demonstrates`/`mentions`/`weak` evidence level) and cross-story
+    contradiction detection (conflicting metrics, leader-vs-IC role claims).
+  - `traitprint.tensions` — a port of Cloud's `philosophy-contradictions.ts`:
+    detects tensions between same-category philosophies, framed as nuance.
+- `traitprint vault audit` — a deterministic, read-only pass built on the
+  ported engine. Emits per-story coherence scores, findings at
+  `critical`/`major`/`minor` severity (unsupported strong skills, unbacked
+  philosophies, broken/thin stories, dangling references, orphaned roles,
+  cross-story contradictions), and philosophy tensions. Supports `--json`
+  (full report), `--severity`, and `--strict`.
+- Five MCP prompts on `traitprint mcp-serve`, adapted from Cloud's Experience
+  Mining engine (the Socratic coach + its mining modes): `fill_vault`,
+  `mine_story_gaps` (STORY OPPORTUNITY), `discover_skills` (SKILL DISCOVERY),
+  `draft_star_story` (FOCUSED deep dive), and `audit_coherence`. Local-only;
+  the four query tools remain cloud-parity.
 - `traitprint push` now runs the coherence audit before uploading and blocks
-  on error-level findings (broken stories, dangling references). New flags:
-  `--strict` (block on warnings too, matching `vault audit --strict`) and
-  `--skip-audit` (bypass the check). Warnings are advisory by default.
+  on critical findings (broken stories, dangling references, contradicting
+  roles). New flags: `--strict` (block on major findings too, matching `vault
+  audit --strict`) and `--skip-audit` (bypass). Major/minor are advisory by
+  default.
 
 ### Changed
 - README restructured around the vault concept and an agent-driven workflow

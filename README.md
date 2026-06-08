@@ -118,16 +118,19 @@ agent can swap local ↔ cloud by changing a URL):
 | `find_story` | "tell me about a time when…" — STAR narrative retrieval by situation, theme, or outcome |
 | `get_philosophy` | "what's their stance on X?" |
 
-**Three prompts** — ready-made workflows an agent can pull to drive the vault
-forward. In Claude Desktop they show up in the slash-command menu; in an
-agentic client (Claude Code, Cursor) they pair with shell access so the agent
-can run the CLI directly:
+**Five prompts** — ready-made workflows an agent can pull to drive the vault
+forward, adapted from the Traitprint Cloud Experience Mining engine (the same
+Socratic coach and its mining modes). In Claude Desktop they show up in the
+slash-command menu; in an agentic client (Claude Code, Cursor) they pair with
+shell access so the agent can run the CLI directly:
 
 | Prompt | What it does |
 |---|---|
-| `fill_vault` | Interviews you Socratically and writes what it learns to the vault via the CLI. Optional `focus` narrows to one section. |
+| `fill_vault` | Socratic interview that writes what it learns to the vault via the CLI. Optional `focus` narrows to one section. |
+| `mine_story_gaps` | STORY OPPORTUNITY mode — mines STAR stories for the skills and roles the audit flags as having none. |
+| `discover_skills` | SKILL DISCOVERY mode — probes for latent skills you have but haven't added yet. |
+| `draft_star_story` | FOCUSED deep dive — turns one raw accomplishment into a crisp, well-linked STAR story. Optional `experience` seeds the topic. |
 | `audit_coherence` | Runs the coherence audit, then applies judgment on consistency, voice, and evidence quality. |
-| `draft_star_story` | Turns a raw accomplishment into one crisp, well-linked STAR story. Optional `experience` seeds the topic. |
 
 ### Fill out the vault
 
@@ -159,36 +162,55 @@ Every write auto-commits to the vault's git history, so `vault history`,
 ### Audit the vault for coherence
 
 A vault full of unsupported claims reads worse than a short, honest one. The
-`audit` command is a deterministic, read-only pass that flags where the
-narrative doesn't hold together:
+`audit` command is a deterministic, read-only pass — the same heuristics
+Traitprint Cloud uses, ported to Python so Local and Cloud agree on what
+"coherent" means. It scores each STAR story and flags where the narrative
+doesn't hold together:
 
 ```
 traitprint vault audit
 ```
 
 ```
-[warn]  skills: Skill 'Kubernetes' is claimed at 9/10 but no story demonstrates it.
-[warn]  philosophies: Philosophy 'Bias to ship' cites no evidence story.
-[error] stories: Story 'The big migration' is missing STAR field(s): result.
-[info]  experiences: Experience 'Founding Engineer' has no description...
+[major] skills: Skill 'Kubernetes' is claimed at 9/10 but no story demonstrates it.
+[major] philosophies: Philosophy 'Bias to ship' cites no evidence story.
+[major] stories: 'The big migration': Result lacks measurable outcomes — add metrics
+[minor] experiences: Experience 'Founding Engineer' has no description...
 
-Summary: 1 error(s), 2 warning(s), 1 info.
+Story coherence:
+  Polished  (88%) The big migration
+  Draft     (24%) That one outage
+  Overall: 56%
+
+Philosophy tensions (nuance, not problems):
+  ~ Your philosophy on leadership shows nuance — you value both autonomy and structure…
+
+Summary: 0 critical, 3 major, 1 minor.
 ```
 
-It checks, among other things:
+What it produces:
 
-- **Unsupported strength** — a skill at 7/10 or higher with no story behind it.
-- **Unbacked philosophy** — a stated belief that cites no evidence story.
-- **Broken stories** — incomplete STAR (silently dropped by `find_story`) or
-  references to skills/experiences that no longer exist.
-- **Orphaned roles** — an experience with no story attached.
+- **Per-story coherence scores** — each STAR story is graded
+  `Polished` / `Strong` / `Solid` / `Draft` with an evidence level
+  (`demonstrates` / `mentions` / `weak`), checking field substance, active
+  language, measurable results, and the Situation→Task→Action→Result causal
+  chain.
+- **Findings** at `critical` / `major` / `minor` severity — unsupported strong
+  skills, philosophies with no evidence, broken or thin stories, dangling
+  references, orphaned roles, and **contradictions between stories** in the
+  same role (conflicting metrics, or one story claiming leadership while
+  another claims solo IC work).
+- **Philosophy tensions** — when two beliefs in the same category pull in
+  opposite directions, surfaced as *nuance* (context-dependent thinking), never
+  as a bug to fix.
 
 Flags:
 
-- `--json` — machine-readable `{findings, summary}` for an agent to act on.
-- `--severity error|warning|info` — minimum level to report.
-- `--strict` — exit non-zero when any error or warning remains (handy in CI or
-  a pre-`push` check).
+- `--json` — the full report (`findings`, `story_scores`, `tensions`,
+  `summary`) for an agent to act on.
+- `--severity critical|major|minor` — minimum level to report.
+- `--strict` — exit non-zero when any critical or major finding remains (handy
+  in CI or a pre-`push` check).
 
 Pair it with the `audit_coherence` prompt to go past the mechanical checks: an
 agent reads the findings, then judges the things a script can't — whether your
@@ -298,10 +320,11 @@ Error: Cloud sync requires: pip install traitprint[cloud]
 ```
 
 Before uploading, `push` runs the [coherence audit](#audit-the-vault-for-coherence)
-and **blocks on error-level findings** — broken stories, dangling references,
-anything you'd never want on a public profile. Warnings are advisory by default;
-pass `--strict` to block on them too (full `vault audit --strict` semantics), or
-`--skip-audit` to bypass the check entirely.
+and **blocks on critical findings** — broken stories, dangling references,
+contradicting roles, anything you'd never want on a public profile. Major and
+minor findings are advisory by default; pass `--strict` to block on major ones
+too (full `vault audit --strict` semantics), or `--skip-audit` to bypass the
+check entirely.
 
 ### Non-interactive auth (CI, agents, Docker)
 

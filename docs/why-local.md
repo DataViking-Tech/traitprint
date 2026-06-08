@@ -16,7 +16,7 @@ telemetry, no credit card.
 | Browse your vault | `traitprint vault show`, `vault list` |
 | Audit narrative coherence | `traitprint vault audit` |
 | Version history + diffs + rollback | `traitprint vault history`, `vault diff`, `vault rollback` |
-| MCP server (4 query tools + `fill_vault` / `audit_coherence` / `draft_star_story` prompts) | `traitprint mcp-serve` |
+| MCP server (4 query tools + 5 vault-building / audit prompts) | `traitprint mcp-serve` |
 | Resume import via BYOK LLM (Anthropic, OpenAI, Ollama, OpenRouter) | `traitprint vault import-resume` |
 | Plain-JSON vault with git-backed version history | via vault directory |
 | MIT source, fork it, run it forever | — |

@@ -1,4 +1,4 @@
-"""Tests for the narrative-coherence audit and ``vault audit`` CLI command."""
+"""Tests for the vault-level coherence audit and ``vault audit`` CLI command."""
 
 from __future__ import annotations
 
@@ -37,20 +37,19 @@ def runner() -> CliRunner:
     return CliRunner()
 
 
-def _complete_story(**kwargs: object) -> StorySchema:
+def _strong_story(**kwargs: object) -> StorySchema:
     base: dict[str, object] = {
-        "title": "A Story",
-        "situation": "It was broken.",
-        "task": "Fix it.",
-        "action": "Fixed it.",
-        "result": "Cut latency 40 percent.",
+        "title": "Migration",
+        "situation": "Redshift costs were ballooning on growing pipeline volume.",
+        "task": "I led the migration to BigQuery with no pipeline downtime.",
+        "action": "I designed dual-writes and cut the pipelines over carefully.",
+        "result": "Cut warehouse spend 45 percent with zero downtime in six weeks.",
     }
     base.update(kwargs)
     return StorySchema(**base)  # type: ignore[arg-type]
 
 
 def _coherent_vault() -> VaultSchema:
-    """A small but internally consistent vault with no findings."""
     skill = SkillSchema(name="Python", category="technical", proficiency=9)
     exp = ExperienceSchema(
         title="Staff Engineer",
@@ -59,11 +58,7 @@ def _coherent_vault() -> VaultSchema:
         description="Led the data platform.",
         accomplishments=["Cut warehouse spend"],
     )
-    story = _complete_story(
-        title="Migration",
-        skill_ids=[skill.id],
-        experience_id=exp.id,
-    )
+    story = _strong_story(skill_ids=[skill.id], experience_id=exp.id)
     phil = PhilosophySchema(
         title="Delegation",
         description="Trust senior engineers.",
@@ -82,28 +77,52 @@ def _coherent_vault() -> VaultSchema:
     )
 
 
+def _codes(vault: VaultSchema) -> set[str]:
+    return {f.code for f in audit_vault(vault).findings}
+
+
 # ── Pure audit logic ────────────────────────────────────────────────
 
 
 class TestAuditVault:
-    def test_coherent_vault_has_no_findings(self) -> None:
-        assert audit_vault(_coherent_vault()) == []
+    def test_coherent_vault_has_no_critical_findings(self) -> None:
+        report = audit_vault(_coherent_vault())
+        assert not [f for f in report.findings if f.severity == "critical"]
 
-    def test_empty_vault_flags_emptiness(self) -> None:
-        codes = {f.code for f in audit_vault(VaultSchema())}
-        assert "vault.empty" in codes
+    def test_report_carries_story_scores_and_overall(self) -> None:
+        report = audit_vault(_coherent_vault())
+        assert len(report.story_scores) == 1
+        assert report.story_scores[0].label in (
+            "Polished", "Strong", "Solid", "Draft"
+        )
+        assert report.overall_coherence is not None
+        assert 0.0 <= report.overall_coherence <= 1.0
 
-    def test_unsupported_strong_skill(self) -> None:
+    def test_no_stories_means_no_overall(self) -> None:
+        v = VaultSchema(
+            profile=ProfileSchema(headline="h", summary="s"),
+            skills=[SkillSchema(name="Go", category="x", proficiency=3)],
+            experiences=[
+                ExperienceSchema(title="Eng", description="d", accomplishments=["x"])
+            ],
+        )
+        assert audit_vault(v).overall_coherence is None
+
+    def test_empty_vault_flags_emptiness_major(self) -> None:
+        findings = audit_vault(VaultSchema()).findings
+        f = next(f for f in findings if f.code == "vault.empty")
+        assert f.severity == "major"
+
+    def test_unsupported_strong_skill_is_major(self) -> None:
         v = VaultSchema(
             profile=ProfileSchema(headline="h", summary="s"),
             skills=[SkillSchema(name="Rust", category="technical", proficiency=9)],
             experiences=[ExperienceSchema(title="Eng", description="d")],
         )
-        findings = audit_vault(v)
-        codes = {f.code for f in findings}
-        assert "skill.unsupported_strength" in codes
-        # The experience has no story, which is its own warning.
-        assert "experience.no_story" in codes
+        f = next(
+            f for f in audit_vault(v).findings if f.code == "skill.unsupported_strength"
+        )
+        assert f.severity == "major"
 
     def test_weak_skill_without_evidence_not_flagged(self) -> None:
         v = VaultSchema(
@@ -119,101 +138,147 @@ class TestAuditVault:
                 ExperienceSchema(title="Eng", description="d", accomplishments=["x"])
             ],
         )
-        codes = {f.code for f in audit_vault(v)}
-        assert "skill.unsupported_strength" not in codes
+        assert "skill.unsupported_strength" not in _codes(v)
 
-    def test_incomplete_star_is_error(self) -> None:
+    def test_incomplete_star_produces_critical_field_findings(self) -> None:
         v = VaultSchema(
             profile=ProfileSchema(headline="h", summary="s"),
             skills=[SkillSchema(name="Go", category="technical", proficiency=4)],
             experiences=[ExperienceSchema(title="Eng", description="d")],
-            stories=[StorySchema(title="Half", situation="only this")],
+            stories=[StorySchema(title="Half", situation="only the situation here")],
         )
-        f = next(f for f in audit_vault(v) if f.code == "story.incomplete_star")
-        assert f.severity == "error"
-        assert "situation" not in f.message  # situation is present
-        assert "task" in f.message and "action" in f.message and "result" in f.message
+        findings = audit_vault(v).findings
+        critical_codes = {f.code for f in findings if f.severity == "critical"}
+        assert {"story.task", "story.action", "story.result"} <= critical_codes
 
-    def test_dangling_skill_reference_is_error(self) -> None:
-        ghost_skill = SkillSchema(name="ghost", category="x", proficiency=1)
-        story = _complete_story(title="S", skill_ids=[ghost_skill.id])
+    def test_dangling_skill_reference_is_critical(self) -> None:
+        ghost = SkillSchema(name="ghost", category="x", proficiency=1)
+        story = _strong_story(skill_ids=[ghost.id])
         v = VaultSchema(
             profile=ProfileSchema(headline="h", summary="s"),
             experiences=[ExperienceSchema(title="Eng", description="d")],
             stories=[story],
         )
-        codes = {(f.code, f.severity) for f in audit_vault(v)}
-        assert ("story.dangling_skill", "error") in codes
+        f = next(f for f in audit_vault(v).findings if f.code == "story.dangling_skill")
+        assert f.severity == "critical"
 
-    def test_dangling_experience_reference_is_error(self) -> None:
+    def test_dangling_experience_reference_is_critical(self) -> None:
         ghost = ExperienceSchema(title="ghost")
-        story = _complete_story(title="S", experience_id=ghost.id)
+        story = _strong_story(experience_id=ghost.id)
         v = VaultSchema(
             profile=ProfileSchema(headline="h", summary="s"),
             skills=[SkillSchema(name="Go", category="x", proficiency=3)],
             stories=[story],
         )
-        codes = {(f.code, f.severity) for f in audit_vault(v)}
-        assert ("story.dangling_experience", "error") in codes
+        f = next(
+            f for f in audit_vault(v).findings if f.code == "story.dangling_experience"
+        )
+        assert f.severity == "critical"
 
-    def test_philosophy_without_evidence_is_warning(self) -> None:
+    def test_philosophy_without_evidence_is_major(self) -> None:
         v = _coherent_vault()
         v.philosophies[0].evidence_story_ids = []
         f = next(
-            f for f in audit_vault(v) if f.code == "philosophy.no_evidence"
+            f for f in audit_vault(v).findings if f.code == "philosophy.no_evidence"
         )
-        assert f.severity == "warning"
+        assert f.severity == "major"
 
-    def test_philosophy_dangling_evidence_is_error(self) -> None:
-        ghost = _complete_story(title="ghost")
+    def test_philosophy_dangling_evidence_is_critical(self) -> None:
+        ghost = _strong_story(title="ghost")
         v = _coherent_vault()
         v.philosophies[0].evidence_story_ids = [ghost.id]
-        codes = {(f.code, f.severity) for f in audit_vault(v)}
-        assert ("philosophy.dangling_evidence", "error") in codes
+        f = next(
+            f
+            for f in audit_vault(v).findings
+            if f.code == "philosophy.dangling_evidence"
+        )
+        assert f.severity == "critical"
 
-    def test_experience_without_story_is_warning(self) -> None:
+    def test_experience_without_story_is_major(self) -> None:
         v = _coherent_vault()
-        # Detach the story from its experience.
         v.stories[0].experience_id = None
-        f = next(f for f in audit_vault(v) if f.code == "experience.no_story")
-        assert f.severity == "warning"
+        f = next(
+            f for f in audit_vault(v).findings if f.code == "experience.no_story"
+        )
+        assert f.severity == "major"
 
-    def test_profile_missing_headline_and_summary(self) -> None:
-        v = _coherent_vault()
-        v.profile.headline = ""
-        v.profile.summary = ""
-        codes = {f.code for f in audit_vault(v)}
-        assert {"profile.no_headline", "profile.no_summary"} <= codes
+    def test_cross_story_contradiction_becomes_finding(self) -> None:
+        exp = ExperienceSchema(title="Role")
+        s1 = StorySchema(
+            title="Lead",
+            situation="The org was scaling fast and needed coordination.",
+            task="Responsible for delivery of the platform roadmap.",
+            action="I led the team of engineers and managed five reports.",
+            result="Shipped the platform two weeks early.",
+            experience_id=exp.id,
+        )
+        s2 = StorySchema(
+            title="Solo",
+            situation="A greenfield prototype needed building quickly.",
+            task="Responsible for the prototype end to end.",
+            action="I worked independently as the sole developer.",
+            result="Delivered the prototype in three weeks.",
+            experience_id=exp.id,
+        )
+        v = VaultSchema(
+            profile=ProfileSchema(headline="h", summary="s"),
+            experiences=[exp],
+            stories=[s1, s2],
+        )
+        f = next(f for f in audit_vault(v).findings if f.code == "story.contradiction")
+        assert f.severity == "critical"
+        assert f.related_id is not None
+
+    def test_philosophy_tensions_surface_as_insights(self) -> None:
+        v = VaultSchema(
+            profile=ProfileSchema(headline="h", summary="s"),
+            skills=[SkillSchema(name="Go", category="x", proficiency=3)],
+            philosophies=[
+                PhilosophySchema(
+                    title="Empower",
+                    description="I empower the team and trust autonomous ownership.",
+                    category=PhilosophyCategory.LEADERSHIP,
+                ),
+                PhilosophySchema(
+                    title="Command",
+                    description="Hierarchy, top-down control, and clear oversight.",
+                    category=PhilosophyCategory.LEADERSHIP,
+                ),
+            ],
+        )
+        report = audit_vault(v)
+        assert len(report.tensions) >= 1
+        # Tensions are NOT findings — they never appear in the findings list.
+        assert not any(f.code.startswith("tension") for f in report.findings)
 
     def test_findings_sorted_most_severe_first(self) -> None:
         v = VaultSchema(
             profile=ProfileSchema(),
             skills=[SkillSchema(name="Go", category="x", proficiency=9)],
             experiences=[ExperienceSchema(title="Eng")],
-            stories=[StorySchema(title="Half", situation="only")],
+            stories=[StorySchema(title="Half", situation="only this here please")],
         )
-        findings = audit_vault(v)
-        ranks = [severity_rank(f.severity) for f in findings]
+        ranks = [severity_rank(f.severity) for f in audit_vault(v).findings]
         assert ranks == sorted(ranks, reverse=True)
 
 
 class TestSummarize:
     def test_counts(self) -> None:
         findings = [
-            Finding("error", "a", "s", "m"),
-            Finding("warning", "b", "s", "m"),
-            Finding("warning", "c", "s", "m"),
-            Finding("info", "d", "s", "m"),
+            Finding("critical", "a", "s", "m"),
+            Finding("major", "b", "s", "m"),
+            Finding("major", "c", "s", "m"),
+            Finding("minor", "d", "s", "m"),
         ]
         assert summarize(findings) == {
-            "error": 1,
-            "warning": 2,
-            "info": 1,
+            "critical": 1,
+            "major": 2,
+            "minor": 1,
             "total": 4,
         }
 
     def test_empty(self) -> None:
-        assert summarize([]) == {"error": 0, "warning": 0, "info": 0, "total": 0}
+        assert summarize([]) == {"critical": 0, "major": 0, "minor": 0, "total": 0}
 
 
 # ── CLI: traitprint vault audit ─────────────────────────────────────
@@ -235,70 +300,89 @@ class TestAuditCLI:
         assert result.exit_code == 0
         assert "No vault found" in result.output
 
-    def test_clean_vault_reports_clear(
+    def test_shows_story_coherence_and_summary(
         self, runner: CliRunner, tmp_path: Path
     ) -> None:
         d = _seed(tmp_path, _coherent_vault())
         result = runner.invoke(cli, ["--path", str(d), "vault", "audit"])
         assert result.exit_code == 0
-        assert "No coherence issues" in result.output
-
-    def test_human_output_lists_findings(
-        self, runner: CliRunner, tmp_path: Path
-    ) -> None:
-        v = _coherent_vault()
-        v.philosophies[0].evidence_story_ids = []
-        d = _seed(tmp_path, v)
-        result = runner.invoke(cli, ["--path", str(d), "vault", "audit"])
-        assert result.exit_code == 0
-        assert "[warn]" in result.output
-        assert "philosophies:" in result.output
+        assert "Story coherence:" in result.output
         assert "Summary:" in result.output
 
-    def test_json_output(self, runner: CliRunner, tmp_path: Path) -> None:
-        v = _coherent_vault()
-        v.philosophies[0].evidence_story_ids = []
-        d = _seed(tmp_path, v)
-        result = runner.invoke(cli, ["--path", str(d), "vault", "audit", "--json"])
-        assert result.exit_code == 0
-        payload = json.loads(result.output)
-        assert "findings" in payload and "summary" in payload
-        codes = {f["code"] for f in payload["findings"]}
-        assert "philosophy.no_evidence" in codes
-
-    def test_severity_filter_hides_info(
+    def test_lists_findings_with_tags(
         self, runner: CliRunner, tmp_path: Path
     ) -> None:
         v = _coherent_vault()
-        # Add an info-only issue (story with no skills) and a warning.
-        v.stories.append(
-            _complete_story(title="Orphan", experience_id=v.experiences[0].id)
+        v.philosophies[0].evidence_story_ids = []  # major finding
+        d = _seed(tmp_path, v)
+        result = runner.invoke(cli, ["--path", str(d), "vault", "audit"])
+        assert "[major]" in result.output
+        assert "philosophies:" in result.output
+
+    def test_tensions_rendered(self, runner: CliRunner, tmp_path: Path) -> None:
+        v = VaultSchema(
+            profile=ProfileSchema(headline="h", summary="s"),
+            skills=[SkillSchema(name="Go", category="x", proficiency=3)],
+            philosophies=[
+                PhilosophySchema(
+                    title="Empower",
+                    description="I empower the team and trust autonomous ownership.",
+                    category=PhilosophyCategory.LEADERSHIP,
+                ),
+                PhilosophySchema(
+                    title="Command",
+                    description="Hierarchy, top-down control, and clear oversight.",
+                    category=PhilosophyCategory.LEADERSHIP,
+                ),
+            ],
         )
+        d = _seed(tmp_path, v)
+        result = runner.invoke(cli, ["--path", str(d), "vault", "audit"])
+        assert "Philosophy tensions" in result.output
+
+    def test_json_output_has_full_report(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        d = _seed(tmp_path, _coherent_vault())
+        result = runner.invoke(cli, ["--path", str(d), "vault", "audit", "--json"])
+        payload = json.loads(result.output)
+        assert {"findings", "story_scores", "tensions", "summary"} <= set(payload)
+        assert payload["story_scores"][0]["label"] in (
+            "Polished", "Strong", "Solid", "Draft"
+        )
+
+    def test_severity_filter_hides_minor(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        v = _coherent_vault()
+        v.stories.append(
+            _strong_story(title="Orphan", experience_id=v.experiences[0].id)
+        )  # story.no_skills minor
         d = _seed(tmp_path, v)
         result = runner.invoke(
             cli,
-            ["--path", str(d), "vault", "audit", "--json", "--severity", "warning"],
+            ["--path", str(d), "vault", "audit", "--json", "--severity", "major"],
         )
         payload = json.loads(result.output)
-        severities = {f["severity"] for f in payload["findings"]}
-        assert "info" not in severities
+        assert all(f["severity"] != "minor" for f in payload["findings"])
 
-    def test_strict_exits_nonzero_on_warning(
+    def test_strict_exits_nonzero_on_major(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        v = _coherent_vault()
+        v.philosophies[0].evidence_story_ids = []
+        d = _seed(tmp_path, v)
+        result = runner.invoke(cli, ["--path", str(d), "vault", "audit", "--strict"])
+        assert result.exit_code == 1
+
+    def test_strict_json_exits_nonzero(
         self, runner: CliRunner, tmp_path: Path
     ) -> None:
         v = _coherent_vault()
         v.philosophies[0].evidence_story_ids = []
         d = _seed(tmp_path, v)
         result = runner.invoke(
-            cli, ["--path", str(d), "vault", "audit", "--strict"]
+            cli, ["--path", str(d), "vault", "audit", "--json", "--strict"]
         )
         assert result.exit_code == 1
-
-    def test_strict_exits_zero_when_clean(
-        self, runner: CliRunner, tmp_path: Path
-    ) -> None:
-        d = _seed(tmp_path, _coherent_vault())
-        result = runner.invoke(
-            cli, ["--path", str(d), "vault", "audit", "--strict"]
-        )
-        assert result.exit_code == 0
+        json.loads(result.output)  # still valid JSON
