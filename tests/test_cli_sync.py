@@ -388,6 +388,62 @@ class TestPush:
         assert "conflict" in result.output.lower() or "newer" in result.output.lower()
 
 
+def _seed_broken_story(vault_dir: Path) -> None:
+    """Add an incomplete STAR story (an error-level audit finding)."""
+    from traitprint.schema import StorySchema
+
+    store = VaultStore(vault_dir)
+    v = store.load()
+    v.stories.append(StorySchema(title="Broken", situation="only the situation"))
+    store.save(v)
+
+
+class TestPrePushAudit:
+    def test_error_findings_block_push(
+        self, runner: CliRunner, vault_dir: Path, server: FakeServer
+    ) -> None:
+        _do_login(runner, vault_dir)
+        _seed_broken_story(vault_dir)
+        result = runner.invoke(cli, ["--path", str(vault_dir), "push"])
+        assert result.exit_code != 0
+        assert "Pre-push coherence audit failed" in result.output
+        # Nothing was uploaded.
+        assert server.vault is None
+
+    def test_skip_audit_bypasses_the_gate(
+        self, runner: CliRunner, vault_dir: Path, server: FakeServer
+    ) -> None:
+        _do_login(runner, vault_dir)
+        _seed_broken_story(vault_dir)
+        result = runner.invoke(
+            cli, ["--path", str(vault_dir), "push", "--skip-audit"]
+        )
+        assert result.exit_code == 0, result.output
+        assert "Push complete" in result.output
+        assert server.vault is not None
+
+    def test_strict_blocks_on_warning_only_vault(
+        self, runner: CliRunner, vault_dir: Path, server: FakeServer
+    ) -> None:
+        # A freshly-init'd empty vault has only a 'vault.empty' warning, no
+        # errors — so it pushes by default but is blocked under --strict.
+        _do_login(runner, vault_dir)
+        result = runner.invoke(cli, ["--path", str(vault_dir), "push", "--strict"])
+        assert result.exit_code != 0
+        assert "Pre-push coherence audit failed" in result.output
+        assert server.vault is None
+
+    def test_warnings_do_not_block_default_push(
+        self, runner: CliRunner, vault_dir: Path, server: FakeServer
+    ) -> None:
+        # Same empty vault, default mode: warning is advisory, push proceeds.
+        _do_login(runner, vault_dir)
+        result = runner.invoke(cli, ["--path", str(vault_dir), "push"])
+        assert result.exit_code == 0, result.output
+        assert "Coherence note" in result.output
+        assert server.vault is not None
+
+
 class TestPull:
     def test_pull_requires_login(
         self, runner: CliRunner, vault_dir: Path, server: FakeServer

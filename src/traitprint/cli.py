@@ -1302,6 +1302,98 @@ def vault_rollback_cmd(ctx: click.Context, yes: bool) -> None:
     click.echo("Vault rolled back to previous state.")
 
 
+# --- vault audit ---
+
+
+_SEVERITY_TAG = {"critical": "[crit] ", "major": "[major]", "minor": "[minor]"}
+
+
+@vault.command(name="audit")
+@click.option(
+    "--json",
+    "as_json",
+    is_flag=True,
+    default=False,
+    help="Emit the full report as JSON (findings, story_scores, tensions, summary).",
+)
+@click.option(
+    "--severity",
+    type=click.Choice(["critical", "major", "minor"], case_sensitive=False),
+    default="minor",
+    show_default=True,
+    help="Minimum severity to report (minor shows everything).",
+)
+@click.option(
+    "--strict",
+    is_flag=True,
+    default=False,
+    help="Exit non-zero when any critical- or major-level finding remains.",
+)
+@click.pass_context
+def vault_audit(
+    ctx: click.Context, as_json: bool, severity: str, strict: bool
+) -> None:
+    """Audit the vault for narrative coherence.
+
+    Scores each STAR story (Polished/Strong/Solid/Draft), flags unsupported
+    skill claims, philosophies without evidence, broken stories, dangling
+    references, and roles with no story, and detects contradictions between
+    stories. Philosophy tensions are surfaced as nuance, not problems.
+    Read-only: it never modifies the vault.
+    """
+    from traitprint.audit import audit_vault, severity_rank, summarize
+    from traitprint.tensions import format_tension_insight
+
+    store = _get_store(ctx)
+    if not store.exists():
+        click.echo("No vault found. Run 'traitprint init' first.")
+        return
+
+    report = audit_vault(store.load())
+    threshold = severity_rank(severity)  # type: ignore[arg-type]
+    shown = [f for f in report.findings if severity_rank(f.severity) >= threshold]
+    summary = summarize(shown)
+
+    if as_json:
+        payload = report.to_dict()
+        payload["findings"] = [f.to_dict() for f in shown]
+        payload["summary"] = summary
+        click.echo(json.dumps(payload, indent=2))
+        if strict and (summary["critical"] or summary["major"]):
+            ctx.exit(1)
+        return
+
+    if shown:
+        for f in shown:
+            click.echo(f"{_SEVERITY_TAG[f.severity]} {f.section}: {f.message}")
+        click.echo("")
+    else:
+        click.echo("No coherence issues found at this severity. ✨")
+        click.echo("")
+
+    if report.story_scores:
+        click.echo("Story coherence:")
+        for s in report.story_scores:
+            click.echo(f"  {s.label:<9} ({s.overall:.0%}) {s.title}")
+        if report.overall_coherence is not None:
+            click.echo(f"  Overall: {report.overall_coherence:.0%}")
+        click.echo("")
+
+    if report.tensions:
+        click.echo("Philosophy tensions (nuance, not problems):")
+        for t in report.tensions:
+            click.echo(f"  ~ {format_tension_insight(t)}")
+        click.echo("")
+
+    click.echo(
+        f"Summary: {summary['critical']} critical, "
+        f"{summary['major']} major, {summary['minor']} minor."
+    )
+
+    if strict and (summary["critical"] or summary["major"]):
+        ctx.exit(1)
+
+
 # --- vault import-resume ---
 
 
@@ -1467,7 +1559,9 @@ def mcp_serve(ctx: click.Context) -> None:
 
     Exposes four tools (get_profile_summary, search_skills, find_story,
     get_philosophy) with response schemas that mirror the cloud MCP
-    server so agents can swap local ↔ cloud by changing a URL.
+    server so agents can swap local ↔ cloud by changing a URL, plus five
+    local-only prompts (fill_vault, mine_story_gaps, discover_skills,
+    draft_star_story, audit_coherence) adapted from the Cloud mining engine.
     """
     from traitprint.mcp_server import run_stdio
 
@@ -1530,6 +1624,50 @@ def _require_credentials(store: VaultStore) -> Credentials:
 
 def _render_plan(plan: SyncPlan) -> str:
     return f"[{plan.direction}] {plan.reason}"
+
+
+def _pre_push_audit(
+    ctx: click.Context, store: VaultStore, *, strict: bool, enforce: bool
+) -> None:
+    """Run the coherence audit before a push.
+
+    Blocks (exit 1) on critical findings — broken stories, dangling
+    references, contradicting roles, anything you should never publish. When
+    ``strict`` is set, major findings block too, matching ``traitprint vault
+    audit --strict``. Non-blocking findings are summarized as an advisory
+    line. When ``enforce`` is False (a dry run) nothing blocks; findings are
+    advisory only.
+    """
+    from traitprint.audit import audit_vault, severity_rank, summarize
+
+    findings = audit_vault(store.load()).findings
+    if not findings:
+        return
+
+    block_floor = severity_rank("major") if strict else severity_rank("critical")
+    blocking = [f for f in findings if severity_rank(f.severity) >= block_floor]
+
+    if enforce and blocking:
+        click.echo("Pre-push coherence audit failed:")
+        for f in blocking:
+            click.echo(f"{_SEVERITY_TAG[f.severity]} {f.section}: {f.message}")
+        s = summarize(blocking)
+        click.echo("")
+        click.echo(
+            f"Blocking: {s['critical']} critical, {s['major']} major. "
+            "Fix these, or re-run with 'traitprint push --skip-audit'."
+        )
+        ctx.exit(1)
+
+    # Nothing blocked — surface remaining findings as a one-line advisory.
+    advisory = findings if not enforce else [f for f in findings if f not in blocking]
+    counts = summarize(advisory)
+    if counts["total"]:
+        click.echo(
+            f"Coherence note: {counts['critical']} critical, "
+            f"{counts['major']} major, {counts['minor']} minor — "
+            "run 'traitprint vault audit' to review."
+        )
 
 
 @cli.command(name="login")
@@ -1653,9 +1791,29 @@ def logout_cmd(ctx: click.Context) -> None:
     default=False,
     help="Show what would happen without uploading.",
 )
+@click.option(
+    "--strict",
+    is_flag=True,
+    default=False,
+    help="Run the pre-push audit in strict mode — warnings block too, "
+    "not just errors.",
+)
+@click.option(
+    "--skip-audit",
+    is_flag=True,
+    default=False,
+    help="Skip the pre-push coherence audit entirely.",
+)
 @click.pass_context
-def push_cmd(ctx: click.Context, dry_run: bool) -> None:
-    """Upload the local vault to Traitprint cloud (last-write-wins)."""
+def push_cmd(
+    ctx: click.Context, dry_run: bool, strict: bool, skip_audit: bool
+) -> None:
+    """Upload the local vault to Traitprint cloud (last-write-wins).
+
+    Before uploading, runs a coherence audit and blocks on error-level
+    findings (broken stories, dangling references). Pass --strict to block
+    on warnings too, or --skip-audit to bypass the check.
+    """
     _require_cloud_extras()
     from traitprint.cloud import AuthError, CloudClient, CloudError, ConflictError
     from traitprint.sync import do_push
@@ -1666,6 +1824,9 @@ def push_cmd(ctx: click.Context, dry_run: bool) -> None:
             f"No vault found at {store.directory}. Run 'traitprint init' first."
         )
     creds = _require_credentials(store)
+
+    if not skip_audit:
+        _pre_push_audit(ctx, store, strict=strict, enforce=not dry_run)
 
     with CloudClient.from_credentials(creds) as client:
         try:
