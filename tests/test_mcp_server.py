@@ -517,6 +517,52 @@ class TestServerRegistration:
         assert opts.server_version == SERVER_VERSION
 
 
+# ── Prompts ─────────────────────────────────────────────────────────
+
+
+class TestPrompts:
+    def test_three_prompts_registered(self, populated_store: VaultStore) -> None:
+        server = create_server(populated_store)
+        prompts = asyncio.run(server.list_prompts())
+        names = {p.name for p in prompts}
+        assert names == {"fill_vault", "audit_coherence", "draft_star_story"}
+
+    def test_fill_vault_focus_argument(self, populated_store: VaultStore) -> None:
+        server = create_server(populated_store)
+        got = asyncio.run(server.get_prompt("fill_vault", {"focus": "stories"}))
+        text = got.messages[0].content.text  # type: ignore[union-attr]
+        assert "stories" in text
+        # References the write path (CLI) and a coherence rule.
+        assert "traitprint vault add-story" in text
+        assert "audit" in text
+
+    def test_fill_vault_without_focus_covers_all_sections(
+        self, populated_store: VaultStore
+    ) -> None:
+        server = create_server(populated_store)
+        got = asyncio.run(server.get_prompt("fill_vault", {}))
+        text = got.messages[0].content.text  # type: ignore[union-attr]
+        assert "every section" in text
+
+    def test_audit_coherence_references_audit_command(
+        self, populated_store: VaultStore
+    ) -> None:
+        server = create_server(populated_store)
+        got = asyncio.run(server.get_prompt("audit_coherence", {}))
+        text = got.messages[0].content.text  # type: ignore[union-attr]
+        assert "traitprint vault audit" in text
+
+    def test_draft_star_story_seeds_experience(
+        self, populated_store: VaultStore
+    ) -> None:
+        server = create_server(populated_store)
+        got = asyncio.run(
+            server.get_prompt("draft_star_story", {"experience": "a tricky migration"})
+        )
+        text = got.messages[0].content.text  # type: ignore[union-attr]
+        assert "a tricky migration" in text
+
+
 # ── JSON-RPC round-trip over stdio ──────────────────────────────────
 
 

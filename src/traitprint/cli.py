@@ -1302,6 +1302,78 @@ def vault_rollback_cmd(ctx: click.Context, yes: bool) -> None:
     click.echo("Vault rolled back to previous state.")
 
 
+# --- vault audit ---
+
+
+_SEVERITY_TAG = {"error": "[error]", "warning": "[warn] ", "info": "[info] "}
+
+
+@vault.command(name="audit")
+@click.option(
+    "--json",
+    "as_json",
+    is_flag=True,
+    default=False,
+    help="Emit findings as JSON ({findings: [...], summary: {...}}).",
+)
+@click.option(
+    "--severity",
+    type=click.Choice(["error", "warning", "info"], case_sensitive=False),
+    default="info",
+    show_default=True,
+    help="Minimum severity to report (info shows everything).",
+)
+@click.option(
+    "--strict",
+    is_flag=True,
+    default=False,
+    help="Exit non-zero when any error- or warning-level finding remains.",
+)
+@click.pass_context
+def vault_audit(
+    ctx: click.Context, as_json: bool, severity: str, strict: bool
+) -> None:
+    """Audit the vault for narrative coherence.
+
+    Flags unsupported skill claims, philosophies without evidence, broken or
+    incomplete stories, dangling references, and roles with no story attached.
+    Read-only: it never modifies the vault.
+    """
+    from traitprint.audit import audit_vault, severity_rank, summarize
+
+    store = _get_store(ctx)
+    if not store.exists():
+        click.echo("No vault found. Run 'traitprint init' first.")
+        return
+
+    findings = audit_vault(store.load())
+    threshold = severity_rank(severity)  # type: ignore[arg-type]
+    shown = [f for f in findings if severity_rank(f.severity) >= threshold]
+    summary = summarize(shown)
+
+    if as_json:
+        click.echo(
+            json.dumps(
+                {"findings": [f.to_dict() for f in shown], "summary": summary},
+                indent=2,
+            )
+        )
+    elif not shown:
+        click.echo("No coherence issues found at this severity. ✨")
+    else:
+        for f in shown:
+            tag = _SEVERITY_TAG[f.severity]
+            click.echo(f"{tag} {f.section}: {f.message}")
+        click.echo("")
+        click.echo(
+            f"Summary: {summary['error']} error(s), "
+            f"{summary['warning']} warning(s), {summary['info']} info."
+        )
+
+    if strict and (summary["error"] or summary["warning"]):
+        ctx.exit(1)
+
+
 # --- vault import-resume ---
 
 
@@ -1467,7 +1539,9 @@ def mcp_serve(ctx: click.Context) -> None:
 
     Exposes four tools (get_profile_summary, search_skills, find_story,
     get_philosophy) with response schemas that mirror the cloud MCP
-    server so agents can swap local ↔ cloud by changing a URL.
+    server so agents can swap local ↔ cloud by changing a URL, plus three
+    local-only prompts (fill_vault, audit_coherence, draft_star_story) that
+    walk an agent through building out and tightening the vault.
     """
     from traitprint.mcp_server import run_stdio
 

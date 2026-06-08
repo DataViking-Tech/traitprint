@@ -14,8 +14,9 @@ telemetry, no credit card.
 | Create a vault | `traitprint init` |
 | Add skills, stories, philosophy, experience, education | `traitprint vault add-*` |
 | Browse your vault | `traitprint vault show`, `vault list` |
+| Audit narrative coherence | `traitprint vault audit` |
 | Version history + diffs + rollback | `traitprint vault history`, `vault diff`, `vault rollback` |
-| MCP server for Claude Desktop / any MCP client | `traitprint mcp-serve` |
+| MCP server (4 query tools + `fill_vault` / `audit_coherence` / `draft_star_story` prompts) | `traitprint mcp-serve` |
 | Resume import via BYOK LLM (Anthropic, OpenAI, Ollama, OpenRouter) | `traitprint vault import-resume` |
 | Plain-JSON vault with git-backed version history | via vault directory |
 | MIT source, fork it, run it forever | — |

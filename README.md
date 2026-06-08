@@ -1,6 +1,7 @@
 # Traitprint
 
-**A structured career profile that AI tools can query.**
+**A structured career profile that AI tools can query — and that an AI agent
+can help you build.**
 
 > Your resume is a lossy snapshot. Your Traitprint is a live, queryable record
 > of your skills, experience, stories, and philosophy — kept on your laptop,
@@ -9,22 +10,54 @@
 Traitprint ships as **two products**:
 
 - **Traitprint Local** (`pip install traitprint`) — a local-first vault and
-  MCP server. Zero accounts, zero network calls, MIT-licensed.
-- **Traitprint Cloud** (`pip install 'traitprint[cloud]'`) — opt-in cloud sync
-  on top of Local: a public profile at `traitprint.com/profile/you`, a hosted
-  MCP endpoint, and cross-device sync.
+  MCP server. Zero accounts, zero network calls, MIT-licensed. This README is
+  about Local.
+- **Traitprint Cloud** (`pip install 'traitprint[cloud]'`) — the hosted version
+  of exactly this, plus the few features that genuinely need a server: a public
+  profile, a hosted MCP endpoint recruiters' agents can reach, job matching, and
+  cross-device sync. Everything you can do locally, you can still do; cloud only
+  *adds*. See [Traitprint Cloud (opt-in)](#traitprint-cloud-opt-in).
 
-## Traitprint Local
+## The vault
+
+The vault is the whole product: a directory on your machine (default
+`~/.traitprint`) holding a single `vault.json`, versioned as a git repo. It is
+plain, inspectable JSON — no database, no proprietary format. Six kinds of
+entry make up the structure agents read:
+
+| Entry | What it captures | CLI |
+|---|---|---|
+| **Profile** | Name, headline, summary, location | `vault set-profile` |
+| **Skills** | What you can do, with a 1–10 proficiency and an O*NET taxonomy link | `vault add-skill` |
+| **Experiences** | Roles you've held — title, company, dates, accomplishments | `vault add-experience` |
+| **Stories** | STAR-format narratives (Situation, Task, Action, Result), linked to the skills and experience they prove | `vault add-story` |
+| **Philosophies** | Stated beliefs on leadership, collaboration, technical approach, culture, decision-making — each backed by evidence stories | `vault add-philosophy` |
+| **Education** | Institutions, degrees, fields of study | `vault add-education` |
+
+The payoff is the cross-links: a **skill** is credible because a **story**
+demonstrates it; a **philosophy** lands because a story shows you living it; a
+story is grounded because it belongs to a real **experience**. Those links are
+what the MCP tools traverse, and what the [coherence audit](#audit-the-vault-for-coherence)
+checks.
+
+## Quickstart
 
 ```
 pip install traitprint
 traitprint init
 traitprint vault set-profile --name "Your Name" --headline "Your Role"
+traitprint vault add-skill "Postgres" --proficiency 8 --category technical
 traitprint mcp-serve
 ```
 
-(Add some content first with `traitprint vault add-skill`, `add-experience`,
-or `vault import-resume` — otherwise every MCP query returns an empty vault.)
+Add some content before running `mcp-serve` — otherwise every MCP query returns
+an empty vault. The fastest way to bootstrap is to point an LLM at your existing
+resume:
+
+```
+pip install 'traitprint[import]'
+traitprint vault import-resume ~/Downloads/resume.pdf   # BYOK: Anthropic / OpenAI / Ollama / OpenRouter
+```
 
 Point Claude Desktop (or any MCP client) at `traitprint mcp-serve` and any AI
 assistant you use can answer questions about your career: which projects used
@@ -63,11 +96,188 @@ Add Traitprint to your Claude Desktop config file
   `/opt/homebrew/bin/traitprint`). Run `which traitprint` to find it.
 - `TRAITPRINT_VAULT_DIR` is optional — omit it to use the default `~/.traitprint`.
 - Restart Claude Desktop after editing the config. The `traitprint` server should
-  appear in the MCP tools list, exposing `get_profile_summary`, `search_skills`,
-  `find_story`, and `get_philosophy`.
+  appear in the MCP tools list, exposing the four query tools and three prompts
+  described below.
 
 The same snippet works for any MCP client that accepts an `mcpServers` block
 (Cursor, Zed, Continue, etc.).
+
+## Working with an AI agent
+
+Traitprint is designed so an AI agent does most of the heavy lifting — both
+*reading* your vault and *helping you fill it out and keep it honest*. The MCP
+server exposes two kinds of primitive:
+
+**Four query tools** (read-only, schema-identical to the cloud server, so an
+agent can swap local ↔ cloud by changing a URL):
+
+| Tool | "Ask it…" |
+|---|---|
+| `get_profile_summary` | a one-shot identity primer — headline, bio, top skills |
+| `search_skills` | "what do they know about X?" — taxonomy- and graph-aware skill search |
+| `find_story` | "tell me about a time when…" — STAR narrative retrieval by situation, theme, or outcome |
+| `get_philosophy` | "what's their stance on X?" |
+
+**Three prompts** — ready-made workflows an agent can pull to drive the vault
+forward. In Claude Desktop they show up in the slash-command menu; in an
+agentic client (Claude Code, Cursor) they pair with shell access so the agent
+can run the CLI directly:
+
+| Prompt | What it does |
+|---|---|
+| `fill_vault` | Interviews you Socratically and writes what it learns to the vault via the CLI. Optional `focus` narrows to one section. |
+| `audit_coherence` | Runs the coherence audit, then applies judgment on consistency, voice, and evidence quality. |
+| `draft_star_story` | Turns a raw accomplishment into one crisp, well-linked STAR story. Optional `experience` seeds the topic. |
+
+### Fill out the vault
+
+Hand an agent the `fill_vault` prompt (or just ask it to "help me build my
+Traitprint"). The intended loop:
+
+1. The agent reads what's already there (`get_profile_summary`, `search_skills`)
+   so it doesn't re-ask.
+2. It interviews you one topic at a time, pushing for specifics — numbers,
+   dates, what changed — rather than adjectives.
+3. It writes each item with the CLI. Every `add-*` command takes flags for
+   non-interactive use and a `--from-json` batch mode, so an agent can add a
+   dozen items in one pass:
+
+   ```bash
+   traitprint vault add-skill --from-json - <<'JSON'
+   [{"name": "Postgres", "proficiency": 8, "category": "technical"},
+    {"name": "Incident Response", "proficiency": 7, "category": "soft"}]
+   JSON
+   ```
+
+4. It links the pieces: a story gets `--skill-id` and `--experience-id`; a
+   philosophy gets `--evidence-id` pointing at a story. Those links are what
+   make later queries return real evidence instead of bare claims.
+
+Every write auto-commits to the vault's git history, so `vault history`,
+`vault diff`, and `vault rollback` give you (and the agent) a safety net.
+
+### Audit the vault for coherence
+
+A vault full of unsupported claims reads worse than a short, honest one. The
+`audit` command is a deterministic, read-only pass that flags where the
+narrative doesn't hold together:
+
+```
+traitprint vault audit
+```
+
+```
+[warn]  skills: Skill 'Kubernetes' is claimed at 9/10 but no story demonstrates it.
+[warn]  philosophies: Philosophy 'Bias to ship' cites no evidence story.
+[error] stories: Story 'The big migration' is missing STAR field(s): result.
+[info]  experiences: Experience 'Founding Engineer' has no description...
+
+Summary: 1 error(s), 2 warning(s), 1 info.
+```
+
+It checks, among other things:
+
+- **Unsupported strength** — a skill at 7/10 or higher with no story behind it.
+- **Unbacked philosophy** — a stated belief that cites no evidence story.
+- **Broken stories** — incomplete STAR (silently dropped by `find_story`) or
+  references to skills/experiences that no longer exist.
+- **Orphaned roles** — an experience with no story attached.
+
+Flags:
+
+- `--json` — machine-readable `{findings, summary}` for an agent to act on.
+- `--severity error|warning|info` — minimum level to report.
+- `--strict` — exit non-zero when any error or warning remains (handy in CI or
+  a pre-`push` check).
+
+Pair it with the `audit_coherence` prompt to go past the mechanical checks: an
+agent reads the findings, then judges the things a script can't — whether your
+headline, skills, and stories describe the same person, whether the voice is
+consistent, whether "results" are real outcomes.
+
+## Who it's for
+
+Traitprint is useful if you want your career data to be structured, portable,
+and queryable — not locked inside a PDF or a recruiter platform. Three concrete
+examples:
+
+### 🎯 The job seeker
+
+> "I'm tired of rewriting my resume for every application, and I want recruiters
+> who use AI tools to actually find me."
+
+Build your vault once — import your resume, then have an agent run `fill_vault`
+and `audit` to round it out. Export tailored resumes with `traitprint export`,
+or (with the cloud extra) `traitprint push` to publish a profile recruiters'
+agents query directly — skills, dates, stories — instead of guessing from
+keyword-matched PDFs.
+
+### 🧑‍💻 The developer using Claude Desktop / Cursor / any MCP client
+
+> "I want my AI assistant to know my actual stack, projects, and decisions —
+> not generic advice."
+
+Run `traitprint mcp-serve` and add it to your MCP client config. Your assistant
+can now call `search_skills`, `find_story`, and `get_philosophy` to ground its
+suggestions in your real history. Ask "draft a cover letter for this role" and
+it pulls from the vault, not a hallucinated resume.
+
+### 🧭 The career coach
+
+> "I work with a dozen clients and I need their career data structured the
+> same way so I can compare, advise, and produce portfolios."
+
+Use `traitprint vault import-resume` (BYOK LLM) to pull each client's resume into
+a structured vault, then `vault audit` to spot the gaps to coach on. Edit,
+version, and `export` polished portfolios. Same schema for every client means
+coaching workflows compose instead of starting from scratch each time.
+
+## What's in the box
+
+- **Local vault** — plain-JSON storage on your laptop, versioned with git.
+- **MCP server (stdio)** — four query tools (`get_profile_summary`,
+  `search_skills`, `find_story`, `get_philosophy`) and three workflow prompts
+  (`fill_vault`, `audit_coherence`, `draft_star_story`).
+- **CLI** — `traitprint init`, `traitprint vault set-profile`, `add-skill`,
+  `add-experience`, `add-story`, `add-philosophy`, `add-education`, `remove`,
+  `show`, `list`, `audit`, `history`, `diff`, `rollback`, `export`,
+  `import-resume`.
+- **Coherence audit** — `traitprint vault audit` flags unsupported claims,
+  unbacked philosophies, and broken stories (text, `--json`, or `--strict`).
+- **Resume import** with BYOK LLM (Anthropic, OpenAI, Ollama, OpenRouter) —
+  install with `pip install 'traitprint[import]'`.
+- **Optional cloud sync** — `login`, `logout`, `push`, `pull`. Install with
+  `pip install 'traitprint[cloud]'`.
+
+## Local vs Cloud
+
+Traitprint is local-first. The design rule is simple: **a feature belongs in
+local unless it can't work locally.** Everything below the line runs on your
+laptop with no account, no network calls, and no paywall — and cloud is the same
+thing, hosted, plus the handful of features that genuinely need a server.
+
+| Capability | Free forever, no account | Requires traitprint.com account |
+|---|---|---|
+| Create + edit your vault (`init`, `vault add-*`, `remove`) | ✅ | — |
+| MCP query tools + fill/audit/draft prompts | ✅ | — |
+| Narrative-coherence audit (`vault audit`) | ✅ | — |
+| Version history, diff, rollback | ✅ | — |
+| Resume import via BYOK LLM | ✅ | — |
+| Export (`json`, `markdown`, `jsonresume`, `synthpanel-persona`) | ✅ | — |
+| MIT-licensed source, fork and self-host | ✅ | — |
+| Public profile at `traitprint.com/profile/you` | — | ✅ |
+| Hosted MCP endpoint reachable by recruiter agents | — | ✅ |
+| Job matching against a shared job index | — | ✅ |
+| Digital-twin chat | — | ✅ |
+| Cross-device sync | — | ✅ |
+
+A fresh install never talks to traitprint.com. Cloud features are opt-in via
+`traitprint login` and `traitprint push`.
+
+**Full details and migration guide:** [docs/why-local.md](docs/why-local.md)
+
+**Privacy commitment (what leaves your machine on `push`, what we store,
+what we don't do, how to delete everything):** [docs/privacy.md](docs/privacy.md)
 
 ## Traitprint Cloud (opt-in)
 
@@ -110,82 +320,6 @@ TRAITPRINT_API_TOKEN=tp_live_xxx traitprint push
 
 Avoid `--password <pw>` on the command line: it lands in shell history and
 process listings. Use `TRAITPRINT_PASSWORD` or, better, an API token.
-
-## Who it's for
-
-Traitprint is useful if you want your career data to be structured, portable,
-and queryable — not locked inside a PDF or a recruiter platform. Three concrete
-examples:
-
-### 🎯 The job seeker
-
-> "I'm tired of rewriting my resume for every application, and I want recruiters
-> who use AI tools to actually find me."
-
-Build your vault once with `traitprint init` and `vault add-*`. Run
-`traitprint push` to publish a profile at `traitprint.com/profile/you`.
-Recruiters' agents query your structured profile directly — skills, dates,
-stories — instead of guessing from keyword-matched PDFs.
-
-### 🧑‍💻 The developer using Claude Desktop / Cursor / any MCP client
-
-> "I want my AI assistant to know my actual stack, projects, and decisions —
-> not generic advice."
-
-Run `traitprint mcp-serve` and add it to your MCP client config. Your assistant
-can now call `search_skills`, `find_story`, and `get_philosophy` to ground its
-suggestions in your real history. Ask "draft a cover letter for this role" and
-it pulls from the vault, not a hallucinated resume.
-
-### 🧭 The career coach
-
-> "I work with a dozen clients and I need their career data structured the
-> same way so I can compare, advise, and produce portfolios."
-
-Use `traitprint vault import-resume` (BYOK LLM) to pull each client's resume into
-a structured vault. Edit, version, and `export` polished portfolios. Same
-schema for every client means coaching workflows compose instead of starting
-from scratch each time.
-
-## What's in the box
-
-- **Local vault** — plain-JSON storage on your laptop, versioned with git.
-- **MCP server (stdio)** — `get_profile_summary`, `search_skills`,
-  `find_story`, `get_philosophy`.
-- **CLI** — `traitprint init`, `traitprint vault set-profile`, `add-skill`,
-  `add-experience`, `add-story`, `add-philosophy`, `add-education`, `remove`,
-  `show`, `list`, `history`, `diff`, `rollback`, `export`, `import-resume`.
-- **Resume import** with BYOK LLM (Anthropic, OpenAI, Ollama, OpenRouter) —
-  install with `pip install 'traitprint[import]'`.
-- **Optional cloud sync** — `login`, `logout`, `push`, `pull`. Install with
-  `pip install 'traitprint[cloud]'`.
-
-## Local vs Cloud
-
-Traitprint is local-first. Everything below runs on your laptop with no
-account, no network calls, and no paywall.
-
-| Capability | Free forever, no account | Requires traitprint.com account |
-|---|---|---|
-| Create + edit your vault (`init`, `vault add-*`, `remove`) | ✅ | — |
-| Version history, diff, rollback | ✅ | — |
-| MCP server for Claude Desktop / any MCP client (stdio) | ✅ | — |
-| Resume import via BYOK LLM (Anthropic, OpenAI, Ollama, OpenRouter) | ✅ | — |
-| Plain-JSON vault with git-backed version history | ✅ | — |
-| MIT-licensed source, fork and self-host | ✅ | — |
-| Public profile at `traitprint.com/profile/you` | — | ✅ |
-| Hosted MCP endpoint reachable by recruiter agents | — | ✅ |
-| Job matching against a shared job index | — | ✅ |
-| Digital-twin chat | — | ✅ |
-| Cross-device sync | — | ✅ |
-
-A fresh install never talks to traitprint.com. Cloud features are opt-in via
-`traitprint login` and `traitprint push`.
-
-**Full details and migration guide:** [docs/why-local.md](docs/why-local.md)
-
-**Privacy commitment (what leaves your machine on `push`, what we store,
-what we don't do, how to delete everything):** [docs/privacy.md](docs/privacy.md)
 
 ## Contact
 

@@ -7,7 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `traitprint vault audit` — a deterministic, read-only narrative-coherence
+  pass that flags unsupported skill claims (proficiency ≥ 7 with no story),
+  philosophies citing no evidence, incomplete or broken STAR stories, dangling
+  references, and roles with no story attached. Supports `--json`,
+  `--severity`, and `--strict` (exit non-zero on errors/warnings).
+- Three MCP prompts on `traitprint mcp-serve`: `fill_vault` (Socratic
+  vault-building over the CLI), `audit_coherence` (run the audit, then apply
+  judgment), and `draft_star_story` (turn a raw accomplishment into one
+  well-linked STAR story). Local-only; the four query tools remain
+  cloud-parity.
+
 ### Changed
+- README restructured around the vault concept and an agent-driven workflow
+  (fill out → audit → publish), with cloud framed as "hosted local + a few
+  server-only extras."
 - README quickstart now includes `vault set-profile` and a prompt to add
   content before running `mcp-serve`, so first-run MCP queries are not
   empty (tp-1me).
