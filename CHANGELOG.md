@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   judgment), and `draft_star_story` (turn a raw accomplishment into one
   well-linked STAR story). Local-only; the four query tools remain
   cloud-parity.
+- `traitprint push` now runs the coherence audit before uploading and blocks
+  on error-level findings (broken stories, dangling references). New flags:
+  `--strict` (block on warnings too, matching `vault audit --strict`) and
+  `--skip-audit` (bypass the check). Warnings are advisory by default.
 
 ### Changed
 - README restructured around the vault concept and an agent-driven workflow

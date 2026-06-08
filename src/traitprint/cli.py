@@ -1606,6 +1606,50 @@ def _render_plan(plan: SyncPlan) -> str:
     return f"[{plan.direction}] {plan.reason}"
 
 
+def _pre_push_audit(
+    ctx: click.Context, store: VaultStore, *, strict: bool, enforce: bool
+) -> None:
+    """Run the coherence audit before a push.
+
+    Blocks (exit 1) on error-level findings — broken stories, dangling
+    references, anything you should never publish. When ``strict`` is set,
+    warnings block too, matching ``traitprint vault audit --strict``.
+    Non-blocking findings are summarized as an advisory line. When
+    ``enforce`` is False (a dry run) nothing blocks; findings are advisory
+    only.
+    """
+    from traitprint.audit import audit_vault, severity_rank, summarize
+
+    findings = audit_vault(store.load())
+    if not findings:
+        return
+
+    block_floor = severity_rank("warning") if strict else severity_rank("error")
+    blocking = [f for f in findings if severity_rank(f.severity) >= block_floor]
+
+    if enforce and blocking:
+        click.echo("Pre-push coherence audit failed:")
+        for f in blocking:
+            click.echo(f"{_SEVERITY_TAG[f.severity]} {f.section}: {f.message}")
+        s = summarize(blocking)
+        click.echo("")
+        click.echo(
+            f"Blocking: {s['error']} error(s), {s['warning']} warning(s). "
+            "Fix these, or re-run with 'traitprint push --skip-audit'."
+        )
+        ctx.exit(1)
+
+    # Nothing blocked — surface remaining findings as a one-line advisory.
+    advisory = findings if not enforce else [f for f in findings if f not in blocking]
+    counts = summarize(advisory)
+    if counts["total"]:
+        click.echo(
+            f"Coherence note: {counts['error']} error(s), "
+            f"{counts['warning']} warning(s), {counts['info']} info — "
+            "run 'traitprint vault audit' to review."
+        )
+
+
 @cli.command(name="login")
 @click.option(
     "--email",
@@ -1727,9 +1771,29 @@ def logout_cmd(ctx: click.Context) -> None:
     default=False,
     help="Show what would happen without uploading.",
 )
+@click.option(
+    "--strict",
+    is_flag=True,
+    default=False,
+    help="Run the pre-push audit in strict mode — warnings block too, "
+    "not just errors.",
+)
+@click.option(
+    "--skip-audit",
+    is_flag=True,
+    default=False,
+    help="Skip the pre-push coherence audit entirely.",
+)
 @click.pass_context
-def push_cmd(ctx: click.Context, dry_run: bool) -> None:
-    """Upload the local vault to Traitprint cloud (last-write-wins)."""
+def push_cmd(
+    ctx: click.Context, dry_run: bool, strict: bool, skip_audit: bool
+) -> None:
+    """Upload the local vault to Traitprint cloud (last-write-wins).
+
+    Before uploading, runs a coherence audit and blocks on error-level
+    findings (broken stories, dangling references). Pass --strict to block
+    on warnings too, or --skip-audit to bypass the check.
+    """
     _require_cloud_extras()
     from traitprint.cloud import AuthError, CloudClient, CloudError, ConflictError
     from traitprint.sync import do_push
@@ -1740,6 +1804,9 @@ def push_cmd(ctx: click.Context, dry_run: bool) -> None:
             f"No vault found at {store.directory}. Run 'traitprint init' first."
         )
     creds = _require_credentials(store)
+
+    if not skip_audit:
+        _pre_push_audit(ctx, store, strict=strict, enforce=not dry_run)
 
     with CloudClient.from_credentials(creds) as client:
         try:

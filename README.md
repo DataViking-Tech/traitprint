@@ -297,6 +297,12 @@ extras, `traitprint login` / `logout` / `push` / `pull` print:
 Error: Cloud sync requires: pip install traitprint[cloud]
 ```
 
+Before uploading, `push` runs the [coherence audit](#audit-the-vault-for-coherence)
+and **blocks on error-level findings** — broken stories, dangling references,
+anything you'd never want on a public profile. Warnings are advisory by default;
+pass `--strict` to block on them too (full `vault audit --strict` semantics), or
+`--skip-audit` to bypass the check entirely.
+
 ### Non-interactive auth (CI, agents, Docker)
 
 `traitprint login` accepts three credential sources, in this precedence order:
