@@ -194,9 +194,17 @@ companion spec. Wave-1 distribution (D7) closes the loop.
 - **tp-an-013** Update coherence audit + exports + stdio MCP server for the file-tree store.
 
 ### Phase 2 — Git-native sync
-- **tp-an-020** Local side: replace `push`/`pull` whole-vault sync with git remote add/push/pull against the hosted remote; conflict UX = standard git with guidance.
-- **tp-an-021** Proposal review in CLI: `traitprint proposals list|show|approve|reject` (reads `proposals/`, approval applies the change + commits).
-- *(Cloud: hosted remotes, ingest pipeline, commit-through writes — see companion spec.)*
+
+The wire contract both repos implement is published in
+[`docs/schema/sync-v1/`](schema/sync-v1/README.md) (git-bundle-over-HTTP:
+`/vault-git/push|fetch|info`, fast-forward-only server, D10
+accept+quarantine ingest).
+
+- **tp-an-020** Local side: replace `push`/`pull` whole-vault sync with the
+  sync-v1 bundle client against the hosted remote; conflict UX = standard
+  git merge with guidance (409 → fetch → merge → re-push).
+- **tp-an-021** Proposal review in CLI: `traitprint proposals list|show|approve|reject` (reads `proposals/`, approval applies the change + commits). *(Shipped in 0.9.0.)*
+- *(Cloud: hosted bare repos, sync-v1 server endpoints, ingest pipeline, commit-through writes — see companion spec Workstream A.)*
 
 ### Phase 3 — Hosted MCP v2 (cloud spec owns detail)
 - OAuth 2.1 + RFC 9728/8707; keep `sk_*` keys for headless use.
