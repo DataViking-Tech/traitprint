@@ -202,7 +202,9 @@ accept+quarantine ingest).
 
 - **tp-an-020** Local side: replace `push`/`pull` whole-vault sync with the
   sync-v1 bundle client against the hosted remote; conflict UX = standard
-  git merge with guidance (409 → fetch → merge → re-push).
+  git merge with guidance (409 → fetch → merge → re-push). *(Shipped in
+  0.10.0 as the `traitprint sync push|pull|status` group; legacy
+  `push`/`pull` remain, deprecated, until the hosted endpoints land.)*
 - **tp-an-021** Proposal review in CLI: `traitprint proposals list|show|approve|reject` (reads `proposals/`, approval applies the change + commits). *(Shipped in 0.9.0.)*
 - *(Cloud: hosted bare repos, sync-v1 server endpoints, ingest pipeline, commit-through writes — see companion spec Workstream A.)*
 
