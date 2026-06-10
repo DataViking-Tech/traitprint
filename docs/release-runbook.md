@@ -44,9 +44,11 @@ If the project already exists on PyPI:
 # 1. On an up-to-date main
 git checkout main && git pull
 
-# 2. Version is correct in BOTH places
+# 2. Version is correct in ALL THREE places
 grep '^version' pyproject.toml          # e.g. version = "0.9.0"
 head -20 CHANGELOG.md                   # has a dated ## [0.9.0] section
+grep '"version"' gemini-extension.json  # Gemini extension manifest tracks pyproject
+                                        # (tests/test_distribution.py enforces the match)
 
 # 3. Quality gates
 pytest -q                               # all green

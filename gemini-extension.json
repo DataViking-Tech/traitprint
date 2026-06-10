@@ -1,0 +1,11 @@
+{
+  "name": "traitprint",
+  "version": "0.10.0",
+  "description": "Portable, user-owned career vault. Query skills, STAR stories, and philosophies via the hosted Traitprint MCP server, and build the vault with the bundled agent skills.",
+  "contextFileName": "GEMINI.md",
+  "mcpServers": {
+    "traitprint": {
+      "httpUrl": "https://api.traitprint.com/functions/v1/mcp-server"
+    }
+  }
+}
