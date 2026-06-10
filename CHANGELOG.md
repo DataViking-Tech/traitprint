@@ -5,6 +5,51 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-06-10
+
+### Added
+
+- **Agent-assist mode for `vault import-resume` (architecture D11).**
+  Provider resolution is now: explicit `--provider` flag → configured
+  BYOK key (env or `.credentials`, including an explicit `OLLAMA_HOST`)
+  → ambient agent → actionable error. With no resolvable provider the
+  command no longer fails: it prints a clearly delimited ASSIST PAYLOAD
+  (exit 0) containing instructions to the wrapping agent, the exact
+  extraction contract the BYOK system prompt uses (JSON shape + rules,
+  factored so the two paths cannot drift), the D9 proposal rules
+  (extracted skills at modest proficiency 2-3, never invent taxonomy
+  ids, 1-5 scale), the extracted resume text, and write-back
+  instructions through the validated batch commands ending with
+  `vault audit --json`. New flags: `--assist` forces the payload even
+  when a key is configured, `--no-assist` restores the hard error
+  (headless runs keep requiring BYOK), `--json` emits the payload as
+  `{"mode": "agent-assist", "contract": ..., "text": ...,
+  "write_back": ...}`. The BYOK path is byte-for-byte unchanged when a
+  key is configured.
+- **`traitprint vault extract-text FILE [--json]`** — the deterministic
+  half of resume import as its own command: PDF (pypdf), DOCX
+  (python-docx), TXT, or MD to plain text on stdout, no LLM, no vault
+  writes. `--json` wraps it as `{"file", "format", "chars", "text"}`.
+  Missing optional dependencies name the extra to install
+  (`pip install 'traitprint[import]'`).
+- **`vault add-education --from-json`** — education entries gain the
+  same batch path as the other sections
+  (`[{"institution", "degree"?, "field_of_study"?, "start_date"?,
+  "end_date"?, "description"?}]`), closing the "no batch mode" gap and
+  completing the assist-mode write-back surface.
+- **New Agent Skill `traitprint-import-resume`** — teaches a wrapping
+  agent the full assist loop: extract text, do the extraction reasoning
+  against the contract, propose to the user (D9, with approve-all),
+  write back via the batch commands, audit, and report.
+
+### Changed
+
+- Default-host Ollama is no longer an implicit auto-detect signal for
+  `import-resume`: without `OLLAMA_HOST` (env or `.credentials`) a
+  keyless run enters agent-assist mode instead of attempting a network
+  call to `localhost:11434`. Pass `--provider ollama` or set
+  `OLLAMA_HOST` to keep using a local default-port server.
+
 ## [0.7.1] - 2026-06-10
 
 ### Fixed
