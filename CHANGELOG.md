@@ -5,6 +5,50 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2026-06-10
+
+### Added
+
+- **Git-native cloud sync (sync-v1, architecture D5, tp-an-020).** New
+  `traitprint sync` command group implementing the client half of the
+  [sync-v1 wire contract](docs/schema/sync-v1/README.md) — git bundles
+  over HTTPS to `/vault-git/push|fetch|info`, replacing whole-vault
+  last-write-wins with real git history transfer:
+  - `sync push [--json]` — commits uncommitted hand edits, then
+    uploads a thin bundle against the last-known server head (full
+    bundle on first push). The basis sha is persisted in
+    `.git/traitprint/server-head` and refreshed from every push,
+    fetch, and 409 response. A 422 `missing_prerequisites` rejection
+    auto-retries once with a full bundle. A 422 `schema_violation`
+    prints every server violation verbatim
+    (`[err] <file> @ <pointer>: <message>` + `hint:`) — they are
+    agent-actionable; the ref is not advanced. `--json` emits
+    `{pushed, head, server_head, ingest_status}`.
+  - `sync pull [--json]` — fetches the server's bundle
+    (`?since=<last-known head>` for an incremental bundle, 204 when up
+    to date), verifies and applies it with `git bundle verify` +
+    `git fetch`, then fast-forwards or merges. Merge conflicts exit 1,
+    leave the merge in progress, and print the conflicted files plus
+    the exact `git add`/`git commit` commands to finish — resolve with
+    file tools, commit, then `sync push`. Re-running `sync pull`
+    mid-conflict re-prints the report and never commits conflict
+    markers. `--json` emits `{fetched, result, conflicts, head}`.
+  - `sync status [--json]` — `GET /vault-git/info` probe: local vs
+    server heads, relation (in-sync/ahead/behind/diverged/...), ingest
+    state, and D10 quarantined entities. `--json` emits `{local_head,
+    server_head, ingest_status, quarantine_summary, relation}`.
+  - Only `refs/heads/main` syncs; vaults on another local branch get a
+    local `main` ref mirroring HEAD so bundles always carry the ref
+    the server expects. Auth reuses the existing credentials plumbing
+    (`traitprint login` / `TRAITPRINT_API_TOKEN`); a 401 answers with
+    the re-login hint.
+
+### Changed
+
+- Legacy `traitprint push` / `traitprint pull` (whole-vault
+  last-write-wins) still work unchanged but are marked deprecated in
+  their help text, pointing at `traitprint sync push|pull`.
+
 ## [0.9.0] - 2026-06-10
 
 ### Added

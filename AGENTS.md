@@ -215,6 +215,43 @@ them as context-dependent thinking.
  "proficiency_remaps": [{"id": "...", "name": "...", "from": 8, "to": 4}]}
 ```
 
+### Cloud sync (git-native, sync-v1)
+
+`traitprint sync` syncs the vault's **git history** with a hosted
+per-user remote (git bundles over HTTPS; wire contract in
+`docs/schema/sync-v1/`). Concurrent edits to different files merge
+cleanly; real conflicts surface as standard git conflicts in the
+affected files only. Requires `pip install 'traitprint[cloud]'` and
+`traitprint login` (or `TRAITPRINT_API_TOKEN`). The legacy whole-vault
+`traitprint push` / `traitprint pull` (last-write-wins) still work but
+are deprecated in favor of `sync`.
+
+| Command | Notes |
+|---|---|
+| `traitprint sync push [--json]` | Commits uncommitted hand edits, then uploads a thin bundle against the last-known server head (full bundle on first push; auto-retries full on `missing_prerequisites`). `--json` → `{pushed, head, server_head, ingest_status}` |
+| `traitprint sync pull [--json]` | Fetches the server's bundle, then fast-forwards or merges locally. `--json` → `{fetched, result: "up_to_date"\|"fast_forward"\|"merged"\|"conflicts", conflicts: [files], head}` |
+| `traitprint sync status [--json]` | No writes; probes `/vault-git/info`. `--json` → `{local_head, server_head, ingest_status, quarantine_summary: {count, items}, relation}` |
+
+Sync flow rules (the server is fast-forward-only and never merges):
+
+- **A 409 push rejection means the server has commits you don't.**
+  Run `traitprint sync push` again only after
+  `traitprint sync pull` — the CLI prints exactly this.
+- **Merge conflicts exit 1 and leave the merge in progress.** The
+  output lists the conflicted files plus the exact `git -C <vault>
+  add -A` / `git -C <vault> commit` commands. Resolve the
+  `<<<<<<</=======/>>>>>>>` markers with your file tools, run those
+  commands, then `traitprint sync push`. Re-running `sync pull` while
+  conflicts are unresolved re-prints the report; it never commits
+  conflict markers.
+- **A 422 push rejection means the server's Layer-0 validation failed**
+  (ref not advanced). Every violation prints as
+  `[err] <file> @ <pointer>: <message>` + `hint:` — fix the listed
+  files, commit, push again.
+- **`ingest_status: quarantined`** means the push was accepted but
+  some entities have dangling UUID references (D10) — the items list
+  the file and reason; fix the links in a follow-up commit.
+
 ## Validation policy (how writes are governed)
 
 The vault is a repo; the audit is its CI. Layered (full table in
@@ -290,17 +327,24 @@ they also ship inside the wheel as `traitprint/data/skills/`.
   `--force-category` to keep yours.
 - **Hand-edited frontmatter**: allowed keys only; unknown keys violate the
   schema. Dangling UUID references become audit findings, not errors.
-- **Cloud commands need extras**: `login`/`logout`/`push`/`pull` require
-  `pip install 'traitprint[cloud]'`; PDF/DOCX in `import-resume` and
-  `extract-text` require `'traitprint[import]'`. A base install makes
-  zero network calls.
+- **Cloud commands need extras**: `login`/`logout`/`sync`/`push`/`pull`
+  require `pip install 'traitprint[cloud]'`; PDF/DOCX in `import-resume`
+  and `extract-text` require `'traitprint[import]'`. A base install
+  makes zero network calls.
+- **Prefer `traitprint sync` over legacy `push`/`pull`.** `sync` moves
+  git history (real merges); the legacy commands move the whole vault
+  JSON with last-write-wins and remain only for servers without the
+  `/vault-git` endpoints.
 - **Default-host Ollama is not an auto-detect signal.** `import-resume`
   only counts Ollama as configured when `OLLAMA_HOST` (env or
   `.credentials`) is set; otherwise a keyless run enters agent-assist
   mode. Pass `--provider ollama` or set `OLLAMA_HOST` to use a local
   default-port server.
-- **`push` runs a pre-push audit** and blocks on critical findings
-  (`--strict` blocks on major too; `--skip-audit` bypasses). Token auth:
-  `TRAITPRINT_API_TOKEN` beats `TRAITPRINT_PASSWORD` beats the prompt.
+- **Legacy `push` runs a pre-push audit** and blocks on critical findings
+  (`--strict` blocks on major too; `--skip-audit` bypasses). `sync push`
+  runs no client-side audit — the server hard-rejects Layer-0 violations
+  (422) instead; run `traitprint vault audit` yourself before pushing.
+  Token auth: `TRAITPRINT_API_TOKEN` beats `TRAITPRINT_PASSWORD` beats
+  the prompt.
 - **`vault export -f json`** emits the lossless single-document form for
   v0 consumers; the on-disk tree stays v1.

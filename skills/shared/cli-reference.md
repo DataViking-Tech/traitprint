@@ -155,6 +155,32 @@ Unknown payload keys are rejected with the allowed-key list. Pending
 proposals show up in `traitprint vault audit` as a `proposals.pending`
 finding.
 
+### Cloud sync (git-native, sync-v1 — needs `pip install 'traitprint[cloud]'`)
+
+The `sync` group syncs the vault's git history with the hosted remote
+(git bundles over HTTPS). Edits to different files merge cleanly; real
+conflicts surface as standard git conflicts. Log in first
+(`traitprint login`, or set `TRAITPRINT_API_TOKEN`). The legacy
+whole-vault `traitprint push` / `traitprint pull` are deprecated.
+
+```bash
+traitprint sync status              # local vs server heads + ingest state;
+                                    # --json -> {local_head, server_head,
+                                    #   ingest_status, quarantine_summary, relation}
+traitprint sync push                # commit pending hand edits, upload new commits;
+                                    # --json -> {pushed, head, server_head,
+                                    #   ingest_status}; 409 -> pull first; 422 ->
+                                    #   per-file [err] lines to fix, then re-push
+traitprint sync pull                # fetch + fast-forward or merge server commits;
+                                    # --json -> {fetched, result, conflicts, head};
+                                    # conflicts exit 1 and print the exact
+                                    # git add/commit commands to finish the merge
+```
+
+On merge conflicts: resolve the `<<<<<<</=======/>>>>>>>` markers in the
+listed files with your file tools, run the printed `git -C <vault> add
+-A` and `git -C <vault> commit` commands, then `traitprint sync push`.
+
 ### Batch mode (preferred for 3+ items)
 
 `add-skill`, `add-experience`, `add-story`, `add-philosophy`, and
