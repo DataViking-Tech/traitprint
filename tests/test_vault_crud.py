@@ -1004,6 +1004,134 @@ class TestAddPhilosophyCLI:
 
 
 # ------------------------------------------------------------------
+# CLI: add-story lesson / outcome / theme tags write surface
+# ------------------------------------------------------------------
+
+
+class TestAddStoryExtendedFields:
+    def test_flags_persist_lesson_outcome_theme_tags(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-story",
+                "--title",
+                "Pager Storm",
+                "--situation",
+                "Cascading outage.",
+                "--task",
+                "Restore service.",
+                "--action",
+                "Rolled back, ran the bridge.",
+                "--result",
+                "Restored in 40 minutes.",
+                "--lesson",
+                "Stage rollouts behind flags.",
+                "--outcome",
+                "learning",
+                "--theme-tag",
+                "incident-response",
+                "--theme-tag",
+                "process-change",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        story = VaultStore(vault_dir).load().stories[0]
+        assert story.lesson == "Stage rollouts behind flags."
+        assert story.outcome == "learning"
+        assert story.theme_tags == ["incident-response", "process-change"]
+
+    def test_invalid_outcome_is_usage_error(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-story",
+                "--title",
+                "T",
+                "--outcome",
+                "triumph",
+            ],
+        )
+        assert result.exit_code == 2
+        assert "triumph" in result.output
+
+    def test_show_verbose_displays_extended_fields(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        store = VaultStore(vault_dir)
+        store.add_story(
+            title="Pager Storm",
+            situation="s",
+            task="t",
+            action="a",
+            result="r",
+            lesson="Stage rollouts behind flags.",
+            outcome="learning",
+            theme_tags=["incident-response"],
+        )
+        result = runner.invoke(cli, ["--path", str(vault_dir), "vault", "show", "-v"])
+        assert result.exit_code == 0, result.output
+        assert "lesson:    Stage rollouts behind flags." in result.output
+        assert "outcome:   learning" in result.output
+        assert "theme_tags: incident-response" in result.output
+
+    def test_batch_accepts_extended_keys(
+        self, runner: CliRunner, vault_dir: Path, tmp_path: Path
+    ) -> None:
+        payload = tmp_path / "stories.json"
+        payload.write_text(
+            '[{"title":"Tagged","situation":"s","task":"t","action":"a",'
+            '"result":"r","lesson":"L","outcome":"win",'
+            '"theme_tags":["incident-response"]}]'
+        )
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-story",
+                "--from-json",
+                str(payload),
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        story = VaultStore(vault_dir).load().stories[0]
+        assert story.lesson == "L"
+        assert story.outcome == "win"
+        assert story.theme_tags == ["incident-response"]
+
+    def test_batch_rejects_invalid_outcome(
+        self, runner: CliRunner, vault_dir: Path, tmp_path: Path
+    ) -> None:
+        payload = tmp_path / "stories.json"
+        payload.write_text('[{"title":"Bad","outcome":"triumph"}]')
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-story",
+                "--from-json",
+                str(payload),
+            ],
+        )
+        assert result.exit_code == 1
+        assert "[err] Bad" in result.output
+        assert "outcome" in result.output
+
+
+# ------------------------------------------------------------------
 # CLI: UUID flag validation (no raw tracebacks)
 # ------------------------------------------------------------------
 

@@ -312,6 +312,12 @@ def _render_vault_verbose(store: VaultStore, v: VaultSchema) -> None:
             click.echo(f"      action:    {st.action}")
         if st.result:
             click.echo(f"      result:    {st.result}")
+        if st.lesson:
+            click.echo(f"      lesson:    {st.lesson}")
+        if st.outcome:
+            click.echo(f"      outcome:   {st.outcome}")
+        if st.theme_tags:
+            click.echo(f"      theme_tags: {', '.join(st.theme_tags)}")
         if st.skill_ids:
             click.echo(f"      skill_ids: {', '.join(str(x) for x in st.skill_ids)}")
         if st.experience_id:
@@ -797,6 +803,23 @@ def _batch_add_experiences(store: VaultStore, items: list[dict[str, Any]]) -> in
 @click.option("--action", default=None, help="STAR: action.")
 @click.option("--result", default=None, help="STAR: result.")
 @click.option(
+    "--lesson",
+    default=None,
+    help="Lesson learned (rendered as an optional '## Lesson' section).",
+)
+@click.option(
+    "--outcome",
+    type=click.Choice(["win", "failure", "learning"], case_sensitive=False),
+    default=None,
+    help="Outcome classification (win, failure, or learning).",
+)
+@click.option(
+    "--theme-tag",
+    "theme_tags_opt",
+    multiple=True,
+    help="Theme tag, e.g. incident-response (repeatable).",
+)
+@click.option(
     "--skill-id",
     "skill_ids_opt",
     multiple=True,
@@ -819,7 +842,7 @@ def _batch_add_experiences(store: VaultStore, items: list[dict[str, Any]]) -> in
     default=None,
     help="Batch mode: load stories from a JSON file (or '-' for stdin). "
     "Expects a JSON array of {title, situation?, task?, action?, result?, "
-    "skill_ids?, experience_id?} objects.",
+    "lesson?, outcome?, theme_tags?, skill_ids?, experience_id?} objects.",
 )
 @click.pass_context
 def vault_add_story(
@@ -829,6 +852,9 @@ def vault_add_story(
     task: str | None,
     action: str | None,
     result: str | None,
+    lesson: str | None,
+    outcome: str | None,
+    theme_tags_opt: tuple[str, ...],
     skill_ids_opt: tuple[UUID, ...],
     experience_id: UUID | None,
     interactive: bool,
@@ -836,7 +862,8 @@ def vault_add_story(
 ) -> None:
     """Add a STAR-format story to your vault.
 
-    Pass --title and STAR fields for non-interactive use. Any missing field
+    Pass --title and STAR fields for non-interactive use (--lesson,
+    --outcome, and --theme-tag are optional extras). Any missing field
     will be prompted for when --title is omitted.
     """
     store = _get_store(ctx)
@@ -895,6 +922,9 @@ def vault_add_story(
         task=task or "",
         action=action or "",
         result=result or "",
+        lesson=lesson or "",
+        outcome=(outcome or "").lower(),
+        theme_tags=[t for t in theme_tags_opt if t and t.strip()],
         skill_ids=skill_ids,
         experience_id=experience_uuid,
     )
@@ -928,6 +958,13 @@ def _batch_add_stories(store: VaultStore, items: list[dict[str, Any]]) -> int:
             click.echo(f"[err] {title}: {exc}")
             errors += 1
             continue
+        theme_tags_raw = item.get("theme_tags") or []
+        if not isinstance(theme_tags_raw, list) or not all(
+            isinstance(t, str) for t in theme_tags_raw
+        ):
+            click.echo(f"[err] {title}: theme_tags: must be a list of strings")
+            errors += 1
+            continue
         try:
             story = store.add_story(
                 title=title,
@@ -935,6 +972,9 @@ def _batch_add_stories(store: VaultStore, items: list[dict[str, Any]]) -> int:
                 task=str(item.get("task", "") or ""),
                 action=str(item.get("action", "") or ""),
                 result=str(item.get("result", "") or ""),
+                lesson=str(item.get("lesson", "") or ""),
+                outcome=str(item.get("outcome", "") or ""),
+                theme_tags=list(theme_tags_raw),
                 skill_ids=skill_ids,
                 experience_id=experience_uuid,
             )
