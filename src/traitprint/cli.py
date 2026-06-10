@@ -16,6 +16,11 @@ from traitprint.git_ops import commit, head_sha, init_repo, rev_sha
 from traitprint.git_ops import diff as git_diff
 from traitprint.git_ops import log as git_log
 from traitprint.git_ops import rollback as git_rollback
+from traitprint.proposals import (
+    PROPOSAL_KINDS,
+    LoadedProposal,
+    ProposalFileIssue,
+)
 from traitprint.schema import PhilosophyCategory, VaultSchema
 from traitprint.taxonomy import find_exact, suggest_matches
 from traitprint.vault import DuplicateSkillError, VaultStore
@@ -1773,6 +1778,7 @@ def vault_audit(
     Read-only: it never modifies the vault.
     """
     from traitprint.audit import audit_vault, severity_rank, summarize
+    from traitprint.proposals import ProposalStore
     from traitprint.tensions import format_tension_insight
 
     store = _get_store(ctx)
@@ -1780,7 +1786,15 @@ def vault_audit(
         click.echo("No vault found. Run 'traitprint init' first.")
         return
 
-    report = audit_vault(store.load())
+    loaded_proposals, proposal_issues = ProposalStore(store.directory).load_all()
+    pending_count = sum(
+        1 for lp in loaded_proposals if lp.proposal.status == "pending"
+    )
+    report = audit_vault(
+        store.load(),
+        pending_proposals=pending_count,
+        proposal_issues=[f"{i.file}: {i.problem}" for i in proposal_issues],
+    )
     threshold = severity_rank(severity)  # type: ignore[arg-type]
     shown = [f for f in report.findings if severity_rank(f.severity) >= threshold]
     summary = summarize(shown)
@@ -1915,6 +1929,16 @@ def vault_extract_text(ctx: click.Context, path: str, as_json: bool) -> None:
     "configured; with --no-assist and no provider the command errors.",
 )
 @click.option(
+    "--propose",
+    is_flag=True,
+    default=False,
+    help="Stage extracted items as pending proposals (proposals/*.json) "
+    "instead of writing them to the vault (D9 staged path). Review with "
+    "'traitprint proposals list', apply with 'traitprint proposals "
+    "approve'. In agent-assist mode the write-back instructions switch "
+    "to 'traitprint proposals add' commands.",
+)
+@click.option(
     "--json",
     "as_json",
     is_flag=True,
@@ -1932,6 +1956,7 @@ def vault_import_resume(
     yes: bool,
     dry_run: bool,
     assist: bool | None,
+    propose: bool,
     as_json: bool,
 ) -> None:
     """Import a resume via a BYOK LLM provider — or your wrapping agent.
@@ -2010,12 +2035,18 @@ def vault_import_resume(
         if as_json:
             click.echo(
                 json.dumps(
-                    build_assist_payload(truncated, path, store.directory),
+                    build_assist_payload(
+                        truncated, path, store.directory, propose=propose
+                    ),
                     indent=2,
                 )
             )
         else:
-            click.echo(render_assist_payload(truncated, path, store.directory))
+            click.echo(
+                render_assist_payload(
+                    truncated, path, store.directory, propose=propose
+                )
+            )
         return
 
     click.echo(f"Using provider: {llm.name} (model: {llm.model})")
@@ -2048,9 +2079,42 @@ def vault_import_resume(
 
     if not yes:
         click.echo("")
-        if not click.confirm("Import these items into your vault?", default=True):
+        prompt = (
+            "Stage these items as proposals for review?"
+            if propose
+            else "Import these items into your vault?"
+        )
+        if not click.confirm(prompt, default=True):
             click.echo("Cancelled — vault unchanged.")
             return
+
+    if propose:
+        from traitprint.mining import draft_to_proposals
+        from traitprint.proposals import ProposalStore
+
+        pairs = draft_to_proposals(draft)
+        if not pairs:
+            click.echo("Nothing extracted — no proposals staged.")
+            return
+        pstore = ProposalStore(store.directory)
+        file_name = _Path(path).name
+        for kind, payload in pairs:
+            pstore.create(
+                kind,
+                payload,
+                rationale=f"Extracted from resume {file_name}",
+                source="import-resume",
+            )
+        commit(
+            store.directory,
+            f"Propose resume import: {file_name} ({len(pairs)} proposals)",
+        )
+        click.echo(
+            f"Staged {len(pairs)} proposals — the vault is unchanged. "
+            "Review with 'traitprint proposals list', then "
+            "'traitprint proposals approve --all' (or per-id approve/reject)."
+        )
+        return
 
     counts = store.import_from_draft(
         profile=draft.profile,
@@ -2062,6 +2126,427 @@ def vault_import_resume(
 
     summary = ", ".join(f"{v} {k}" for k, v in counts.items()) or "no new items"
     click.echo(f"Imported {summary}. Run 'traitprint vault show' to review.")
+
+
+# ------------------------------------------------------------------
+# proposals command group — review staged writes (contract rule 7)
+# ------------------------------------------------------------------
+
+
+def _require_vault(ctx: click.Context) -> VaultStore:
+    """Get the vault store, erroring (exit 1) when no vault exists."""
+    store = _get_store(ctx)
+    if not store.exists():
+        raise click.ClickException(
+            f"No vault found at {store.directory}. Run 'traitprint init' first."
+        )
+    return store
+
+
+def _fmt_diff_value(value: Any, *, max_len: int = 60) -> str:
+    """Render a diff value for one-line display."""
+    if value is None or value == "":
+        return "—"
+    if isinstance(value, list):
+        text = ", ".join(str(v) for v in value)
+    elif isinstance(value, dict):
+        text = json.dumps(value, ensure_ascii=False)
+    else:
+        text = str(value)
+    text = " ".join(text.split())  # collapse newlines/runs of whitespace
+    if len(text) > max_len:
+        text = text[: max_len - 1] + "…"
+    return text
+
+
+def _proposal_dict(lp: LoadedProposal) -> dict[str, Any]:
+    """JSON row for a loaded proposal: the document plus its filename."""
+    doc = lp.proposal.model_dump(mode="json")
+    doc["file"] = lp.path.name
+    return doc
+
+
+def _echo_proposal_issues(issues: list[ProposalFileIssue]) -> None:
+    """Print unreadable-proposal-file findings to stderr (never crash)."""
+    for issue in issues:
+        click.echo(f"[warn] proposals/{issue.file}: {issue.problem}", err=True)
+
+
+def _find_proposal(store: VaultStore, ident: str) -> LoadedProposal:
+    from traitprint.proposals import ProposalLookupError, ProposalStore
+
+    try:
+        return ProposalStore(store.directory).find(ident)
+    except ProposalLookupError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+
+@cli.group()
+def proposals() -> None:
+    """Review staged writes awaiting approval (proposals/*.json).
+
+    Proposals are how agents on any surface (hosted MCP, web app, or a
+    local agent via 'proposals add') stage changes without mutating the
+    vault. Approval applies the payload and deletes the proposal file in
+    the same git commit; rejection keeps the file with status=rejected.
+    """
+
+
+@proposals.command(name="list")
+@click.option(
+    "--status",
+    type=click.Choice(
+        ["pending", "approved", "rejected", "withdrawn"], case_sensitive=False
+    ),
+    default=None,
+    help="Only show proposals with this status.",
+)
+@click.option(
+    "--json",
+    "as_json",
+    is_flag=True,
+    default=False,
+    help="Emit a JSON array of full proposal documents (plus 'file').",
+)
+@click.pass_context
+def proposals_list(ctx: click.Context, status: str | None, as_json: bool) -> None:
+    """List proposals (table format, or JSON with --json)."""
+    from traitprint.proposals import ProposalStore
+
+    store = _require_vault(ctx)
+    loaded, issues = ProposalStore(store.directory).load_all()
+    if status:
+        loaded = [lp for lp in loaded if lp.proposal.status == status.lower()]
+
+    _echo_proposal_issues(issues)
+    if as_json:
+        click.echo(json.dumps([_proposal_dict(lp) for lp in loaded], indent=2))
+        return
+
+    if not loaded:
+        suffix = f" with status {status!r}" if status else ""
+        click.echo(f"No proposals found{suffix}.")
+        return
+
+    click.echo(f"{'ID':<8} {'Kind':<18} {'Status':<9} {'Created':<10} Summary")
+    click.echo("-" * 80)
+    for lp in loaded:
+        p = lp.proposal
+        click.echo(
+            f"{p.id.hex[:8]:<8} {p.kind:<18} {p.status:<9} "
+            f"{p.created_at.date().isoformat():<10} {p.summary()}"
+        )
+    click.echo("")
+    click.echo(
+        "Use 'traitprint proposals show <id>' (8-char id or full UUID) "
+        "to review one."
+    )
+
+
+@proposals.command(name="show")
+@click.argument("ident", metavar="ID")
+@click.option(
+    "--json",
+    "as_json",
+    is_flag=True,
+    default=False,
+    help="Emit a {proposal, file, diff} JSON object.",
+)
+@click.pass_context
+def proposals_show(ctx: click.Context, ident: str, as_json: bool) -> None:
+    """Show one proposal: payload, rationale, and a current→proposed diff."""
+    from traitprint.proposals import proposal_diff
+
+    store = _require_vault(ctx)
+    lp = _find_proposal(store, ident)
+    p = lp.proposal
+    diff_rows = proposal_diff(store.load(), p)
+
+    if as_json:
+        click.echo(
+            json.dumps(
+                {
+                    "proposal": p.model_dump(mode="json"),
+                    "file": lp.path.name,
+                    "diff": diff_rows,
+                },
+                indent=2,
+            )
+        )
+        return
+
+    click.echo(f"Proposal {p.id}")
+    click.echo(f"  file:        proposals/{lp.path.name}")
+    click.echo(f"  kind:        {p.kind}")
+    click.echo(f"  status:      {p.status}")
+    if p.target_id is not None:
+        click.echo(f"  target_id:   {p.target_id}")
+    click.echo(f"  source:      {p.source or '-'}")
+    click.echo(f"  created_at:  {p.created_at.isoformat()}")
+    if p.resolved_at is not None:
+        click.echo(f"  resolved_at: {p.resolved_at.isoformat()}")
+    click.echo(f"  rationale:   {p.rationale or '-'}")
+
+    click.echo("")
+    click.echo("Payload:")
+    for line in json.dumps(p.payload, indent=2, ensure_ascii=False).splitlines():
+        click.echo(f"  {line}")
+
+    click.echo("")
+    if p.kind.startswith("update_"):
+        click.echo("Diff (current → proposed):")
+    else:
+        click.echo("Diff (new entity):")
+    if not diff_rows:
+        click.echo("  (nothing to apply)")
+    for row in diff_rows:
+        if p.kind.startswith("update_"):
+            click.echo(
+                f"  {row['field']}: {_fmt_diff_value(row['current'])} "
+                f"→ {_fmt_diff_value(row['proposed'])}"
+            )
+        else:
+            click.echo(f"  {row['field']}: {_fmt_diff_value(row['proposed'])}")
+
+
+def _approve_one(store: VaultStore, lp: LoadedProposal, *, yes: bool) -> None:
+    """Approve a single proposal: apply + delete the file, one commit."""
+    from traitprint.proposals import ProposalApplyError, apply_proposal
+
+    p = lp.proposal
+    if p.status != "pending":
+        raise click.ClickException(
+            f"Proposal {p.id} is {p.status}, not pending — nothing to approve."
+        )
+
+    if not yes:
+        click.echo(f"{p.kind}: {p.summary()}")
+        if p.rationale:
+            click.echo(f"  rationale: {p.rationale}")
+        if not click.confirm("Approve this proposal?"):
+            click.echo("Cancelled.")
+            return
+
+    vault_obj = store.load()
+    try:
+        description = apply_proposal(vault_obj, p)
+    except ProposalApplyError as exc:
+        raise click.ClickException(f"Cannot apply proposal {p.id}: {exc}") from exc
+
+    # Contract rule 7: apply the payload and delete the proposal file in
+    # the SAME commit.
+    store.save(vault_obj)
+    lp.path.unlink()
+    commit(store.directory, f"Approve proposal: {p.kind} {p.summary()}".rstrip())
+    click.echo(f"Approved {p.id}: {description}")
+
+
+@proposals.command(name="approve")
+@click.argument("ident", metavar="[ID]", required=False)
+@click.option(
+    "--all",
+    "approve_all",
+    is_flag=True,
+    default=False,
+    help="Approve every pending proposal in one batch commit (D9 approve-all).",
+)
+@click.option(
+    "--yes", "-y", is_flag=True, default=False, help="Skip confirmation prompt."
+)
+@click.pass_context
+def proposals_approve(
+    ctx: click.Context, ident: str | None, approve_all: bool, yes: bool
+) -> None:
+    """Approve a proposal: apply it to the vault, delete the file, commit.
+
+    The payload is validated against the entity schema before anything is
+    written (Layer 0 — hard reject); update_* proposals whose target no
+    longer exists fail with an actionable error. '--all' applies every
+    pending proposal and records ONE batch commit ('Approve N proposals');
+    failed items are reported per-line and left pending.
+    """
+    from traitprint.proposals import ProposalApplyError, ProposalStore, apply_proposal
+
+    store = _require_vault(ctx)
+
+    if approve_all:
+        if ident is not None:
+            click.echo("--all cannot be combined with a proposal ID.")
+            ctx.exit(2)
+            return
+        pending = ProposalStore(store.directory).pending()
+        if not pending:
+            click.echo("No pending proposals.")
+            return
+        if not yes and not click.confirm(
+            f"Approve all {len(pending)} pending proposals?"
+        ):
+            click.echo("Cancelled.")
+            return
+
+        vault_obj = store.load()
+        applied: list[LoadedProposal] = []
+        errors = 0
+        for lp in pending:
+            p = lp.proposal
+            label = f"{p.kind} {p.summary()}".rstrip()
+            try:
+                description = apply_proposal(vault_obj, p)
+            except ProposalApplyError as exc:
+                click.echo(f"[err] {label}: {exc}")
+                errors += 1
+                continue
+            click.echo(f"[ok] {label}: {description}")
+            applied.append(lp)
+        if applied:
+            store.save(vault_obj)
+            for lp in applied:
+                lp.path.unlink()
+            noun = "proposal" if len(applied) == 1 else "proposals"
+            commit(store.directory, f"Approve {len(applied)} {noun}")
+        click.echo(f"Summary: approved {len(applied)}, errors {errors}")
+        if errors:
+            ctx.exit(1)
+        return
+
+    if ident is None:
+        click.echo("Pass a proposal ID, or --all to approve every pending one.")
+        ctx.exit(2)
+        return
+    _approve_one(store, _find_proposal(store, ident), yes=yes)
+
+
+@proposals.command(name="reject")
+@click.argument("ident", metavar="ID")
+@click.option(
+    "--yes", "-y", is_flag=True, default=False, help="Skip confirmation prompt."
+)
+@click.pass_context
+def proposals_reject(ctx: click.Context, ident: str, yes: bool) -> None:
+    """Reject a proposal: set status=rejected + resolved_at, keep the file."""
+    from datetime import datetime, timezone
+
+    from traitprint.proposals import ProposalStore
+
+    store = _require_vault(ctx)
+    lp = _find_proposal(store, ident)
+    p = lp.proposal
+    if p.status != "pending":
+        raise click.ClickException(
+            f"Proposal {p.id} is {p.status}, not pending — nothing to reject."
+        )
+
+    if not yes:
+        click.echo(f"{p.kind}: {p.summary()}")
+        if not click.confirm("Reject this proposal?"):
+            click.echo("Cancelled.")
+            return
+
+    p.status = "rejected"
+    p.resolved_at = datetime.now(timezone.utc)
+    ProposalStore(store.directory).save(p, path=lp.path)
+    commit(store.directory, f"Reject proposal: {p.kind} {p.summary()}".rstrip())
+    click.echo(f"Rejected {p.id} (file kept: proposals/{lp.path.name}).")
+
+
+@proposals.command(name="add")
+@click.option(
+    "--kind",
+    "-k",
+    required=True,
+    type=click.Choice(list(PROPOSAL_KINDS), case_sensitive=False),
+    help="Proposal kind (add_* / update_* / update_profile).",
+)
+@click.option(
+    "--target-id",
+    type=UUID_PARAM,
+    default=None,
+    help="UUID of the entity being changed (required for update_* kinds).",
+)
+@click.option(
+    "--rationale",
+    "-r",
+    default="",
+    help="Why this change is right; shown at review time.",
+)
+@click.option(
+    "--source",
+    default="cli",
+    show_default=True,
+    help="Proposer identity (e.g. 'cli', 'import-resume', an agent name).",
+)
+@click.option(
+    "--payload-json",
+    "payload_json",
+    type=click.File("r"),
+    required=True,
+    help="Payload as a JSON object, from a file or '-' for stdin: the full "
+    "entity for add_*, only the changed fields for update_*. Narrative "
+    "text travels in payload.body for experiences/stories/philosophies.",
+)
+@click.option(
+    "--json",
+    "as_json",
+    is_flag=True,
+    default=False,
+    help="Emit the created proposal document (plus 'file') as JSON.",
+)
+@click.pass_context
+def proposals_add(
+    ctx: click.Context,
+    kind: str,
+    target_id: UUID | None,
+    rationale: str,
+    source: str,
+    payload_json: IO[str],
+    as_json: bool,
+) -> None:
+    """Stage a new pending proposal (the local 'propose' write path).
+
+    Validates the kind/target rules and the payload keys against the
+    vault v1 proposal contract — the same checks the hosted MCP server's
+    vault_propose tool runs — then writes proposals/<kind>-<id8>.json and
+    commits. Nothing touches the vault until the proposal is approved.
+    """
+    from traitprint.proposals import ProposalStore, ProposalValidationError
+
+    store = _require_vault(ctx)
+    try:
+        data = json.loads(payload_json.read())
+    except json.JSONDecodeError as exc:
+        raise click.ClickException(f"Invalid JSON payload: {exc}") from exc
+    if not isinstance(data, dict):
+        raise click.ClickException(
+            f"Payload must be a JSON object, got {type(data).__name__}"
+        )
+
+    try:
+        lp = ProposalStore(store.directory).create(
+            kind.lower(),
+            data,
+            target_id=target_id,
+            rationale=rationale,
+            source=source,
+        )
+    except ProposalValidationError as exc:
+        for problem in str(exc).split("; "):
+            click.echo(f"[err] proposal: {problem}")
+        ctx.exit(1)
+        return
+
+    p = lp.proposal
+    commit(store.directory, f"Add proposal: {p.kind} {p.summary()}".rstrip())
+    if as_json:
+        click.echo(json.dumps(_proposal_dict(lp), indent=2))
+        return
+    click.echo(
+        f"Created pending proposal {p.kind} [{p.id}] "
+        f"→ proposals/{lp.path.name}"
+    )
+    click.echo(
+        "Review with 'traitprint proposals show' / approve with "
+        "'traitprint proposals approve'."
+    )
 
 
 # --- export (top-level alias of ``vault export``) ---

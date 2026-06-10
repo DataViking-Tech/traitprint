@@ -245,6 +245,78 @@ WRITE_BACK_STEPS = (
 
 WRITE_BACK_VERIFY = "vault audit --json"
 
+#: Instructions to the wrapping agent in --propose mode (D9 staged path).
+PROPOSE_INSTRUCTIONS = (
+    "No LLM provider is configured on this machine, so this command did not "
+    "call a model. If you are an AI agent reading this output, YOU are the "
+    "model: read the resume text below, produce a single JSON object matching "
+    "the extraction contract exactly, validate it yourself against the rules, "
+    "then STAGE every extracted item as a pending proposal using the "
+    "'traitprint proposals add' commands shown — one command per item, never "
+    "any direct write path. Nothing enters the vault until the user reviews: "
+    "tell them to run 'traitprint proposals list' and approve with "
+    "'traitprint proposals approve <id>' (or 'traitprint proposals approve "
+    "--all' for one-step approve-all). Finish by listing the staged "
+    "proposals back to the user."
+)
+
+#: Exact stdin shapes for the ``proposals add --payload-json -`` commands.
+#: One JSON OBJECT per invocation (one proposal per item), unlike the
+#: direct ``--from-json`` batch arrays.
+PROPOSAL_STDIN_SHAPES = {
+    "profile": (
+        '{"basics": {"name"?: str, "label"?: str, "summary"?: str, '
+        '"email"?: str, "location"?: str}}'
+    ),
+    "skills": (
+        '{"name": str, "proficiency": int 1-5, "category"?: str, '
+        '"notes"?: str}'
+    ),
+    "experiences": (
+        '{"title": str, "company"?: str, "start_date"?: "YYYY-MM", '
+        '"end_date"?: "YYYY-MM", "accomplishments"?: [str], '
+        '"body"?: str  # role description}'
+    ),
+    "education": (
+        '{"institution": str, "degree"?: str, "field_of_study"?: str, '
+        '"start_date"?: "YYYY", "end_date"?: "YYYY", "description"?: str}'
+    ),
+}
+
+#: --propose write-back: stage proposals instead of writing directly.
+PROPOSE_WRITE_BACK_STEPS = (
+    (
+        "profile",
+        "proposals add --kind update_profile --source import-resume "
+        '--rationale "<why>" --payload-json -  '
+        "# one JSON object on stdin; only extracted non-empty basics keys",
+        PROPOSAL_STDIN_SHAPES["profile"],
+    ),
+    (
+        "skills",
+        "proposals add --kind add_skill --source import-resume "
+        '--rationale "<why>" --payload-json -  '
+        "# run once PER skill; one JSON object on stdin",
+        PROPOSAL_STDIN_SHAPES["skills"],
+    ),
+    (
+        "experiences",
+        "proposals add --kind add_experience --source import-resume "
+        '--rationale "<why>" --payload-json -  '
+        "# run once PER experience; one JSON object on stdin",
+        PROPOSAL_STDIN_SHAPES["experiences"],
+    ),
+    (
+        "education",
+        "proposals add --kind add_education --source import-resume "
+        '--rationale "<why>" --payload-json -  '
+        "# run once PER education entry; one JSON object on stdin",
+        PROPOSAL_STDIN_SHAPES["education"],
+    ),
+)
+
+PROPOSE_WRITE_BACK_VERIFY = "proposals list --json"
+
 
 def _resolved_vault_dir(vault_dir: Path) -> Path:
     """Normalize the vault directory to an absolute path for the payload."""
@@ -275,25 +347,29 @@ def extraction_contract() -> dict[str, str]:
     }
 
 
-def assist_write_back(vault_dir: Path) -> dict[str, Any]:
+def assist_write_back(vault_dir: Path, *, propose: bool = False) -> dict[str, Any]:
     """The machine-readable write-back plan for agent-assist mode.
 
     ``vault_dir`` is the resolved directory of the vault the payload was
-    produced for; every command (including the audit verify line) carries
-    it as an explicit ``--vault-dir`` selector.
+    produced for; every command (including the verify line) carries it as
+    an explicit ``--vault-dir`` selector. With ``propose=True`` the plan
+    stages proposals (``traitprint proposals add``) instead of writing
+    directly; the verify step becomes ``proposals list --json``.
     """
     resolved = _resolved_vault_dir(vault_dir)
+    plan = PROPOSE_WRITE_BACK_STEPS if propose else WRITE_BACK_STEPS
+    verify = PROPOSE_WRITE_BACK_VERIFY if propose else WRITE_BACK_VERIFY
     steps: list[dict[str, str]] = []
-    for section, command, stdin_shape in WRITE_BACK_STEPS:
+    for section, command, stdin_shape in plan:
         step = {"section": section, "command": _assist_command(resolved, command)}
         if stdin_shape is not None:
             step["stdin"] = stdin_shape
         steps.append(step)
-    return {"steps": steps, "verify": _assist_command(resolved, WRITE_BACK_VERIFY)}
+    return {"steps": steps, "verify": _assist_command(resolved, verify)}
 
 
 def build_assist_payload(
-    text: str, file_name: str, vault_dir: Path
+    text: str, file_name: str, vault_dir: Path, *, propose: bool = False
 ) -> dict[str, Any]:
     """Structured (``--json``) form of the agent-assist payload."""
     resolved = _resolved_vault_dir(vault_dir)
@@ -301,31 +377,36 @@ def build_assist_payload(
         "mode": "agent-assist",
         "file": file_name,
         "vault_dir": str(resolved),
-        "instructions": ASSIST_INSTRUCTIONS,
+        "propose": propose,
+        "instructions": PROPOSE_INSTRUCTIONS if propose else ASSIST_INSTRUCTIONS,
         "contract": extraction_contract(),
         "text": text,
-        "write_back": assist_write_back(resolved),
+        "write_back": assist_write_back(resolved, propose=propose),
     }
 
 
-def render_assist_payload(text: str, file_name: str, vault_dir: Path) -> str:
+def render_assist_payload(
+    text: str, file_name: str, vault_dir: Path, *, propose: bool = False
+) -> str:
     """Human/agent-readable text form of the agent-assist payload."""
     resolved = _resolved_vault_dir(vault_dir)
+    plan = PROPOSE_WRITE_BACK_STEPS if propose else WRITE_BACK_STEPS
+    verify = PROPOSE_WRITE_BACK_VERIFY if propose else WRITE_BACK_VERIFY
     write_back_lines: list[str] = [f"vault: {resolved}"]
-    for section, command, stdin_shape in WRITE_BACK_STEPS:
+    for section, command, stdin_shape in plan:
         write_back_lines.append(f"{section}:")
         write_back_lines.append(f"  {_assist_command(resolved, command)}")
         if stdin_shape is not None:
             write_back_lines.append(f"  stdin: {stdin_shape}")
     write_back_lines.append("then verify:")
-    write_back_lines.append(f"  {_assist_command(resolved, WRITE_BACK_VERIFY)}")
+    write_back_lines.append(f"  {_assist_command(resolved, verify)}")
 
     return "\n".join(
         [
             "=== TRAITPRINT AGENT-ASSIST PAYLOAD ===",
             "",
             "--- INSTRUCTIONS (for the wrapping agent) ---",
-            ASSIST_INSTRUCTIONS,
+            PROPOSE_INSTRUCTIONS if propose else ASSIST_INSTRUCTIONS,
             "",
             "--- EXTRACTION CONTRACT ---",
             "Return ONLY a JSON object with this exact shape — no prose, "
@@ -342,7 +423,11 @@ def render_assist_payload(text: str, file_name: str, vault_dir: Path) -> str:
             f"--- RESUME TEXT ({file_name}, {len(text)} chars) ---",
             text,
             "",
-            "--- WRITE-BACK (validated batch path only) ---",
+            (
+                "--- WRITE-BACK (staged proposals — user approves) ---"
+                if propose
+                else "--- WRITE-BACK (validated batch path only) ---"
+            ),
             *write_back_lines,
             "",
             "=== END TRAITPRINT AGENT-ASSIST PAYLOAD ===",
@@ -529,6 +614,72 @@ def draft_from_dict(
         raw_response=raw_response,
         usage=usage,
     )
+
+
+def draft_to_proposals(draft: ResumeDraft) -> list[tuple[str, dict[str, Any]]]:
+    """Map a :class:`ResumeDraft` onto vault v1 proposal (kind, payload) pairs.
+
+    The D9 staged path for the BYOK import (``import-resume --propose``):
+    instead of writing extracted items directly, each becomes one pending
+    proposal. Payload keys follow the proposal contract exactly —
+    experience narrative travels in ``payload.body``; empty optional
+    fields are omitted so review diffs stay minimal.
+    """
+    proposals: list[tuple[str, dict[str, Any]]] = []
+
+    basics: dict[str, Any] = {}
+    for key, value in (
+        ("name", draft.profile.display_name),
+        ("label", draft.profile.headline),
+        ("summary", draft.profile.summary),
+        ("email", draft.profile.contact_email),
+        ("location", draft.profile.location),
+    ):
+        if value:
+            basics[key] = value
+    if basics:
+        proposals.append(("update_profile", {"basics": basics}))
+
+    for skill in draft.skills:
+        payload: dict[str, Any] = {
+            "name": skill.name,
+            "proficiency": skill.proficiency,
+        }
+        if skill.category:
+            payload["category"] = skill.category
+        if skill.notes:
+            payload["notes"] = skill.notes
+        proposals.append(("add_skill", payload))
+
+    for exp in draft.experiences:
+        payload = {"title": exp.title}
+        if exp.company:
+            payload["company"] = exp.company
+        if exp.start_date:
+            payload["start_date"] = exp.start_date
+        if exp.end_date:
+            payload["end_date"] = exp.end_date
+        if exp.accomplishments:
+            payload["accomplishments"] = list(exp.accomplishments)
+        if exp.description:
+            payload["body"] = exp.description
+        proposals.append(("add_experience", payload))
+
+    for edu in draft.education:
+        payload = {"institution": edu.institution}
+        for key in (
+            "degree",
+            "field_of_study",
+            "start_date",
+            "end_date",
+            "description",
+        ):
+            value = getattr(edu, key)
+            if value:
+                payload[key] = value
+        proposals.append(("add_education", payload))
+
+    return proposals
 
 
 def resume_to_draft(
