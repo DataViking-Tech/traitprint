@@ -28,6 +28,7 @@ Default `~/.traitprint`; override with `--vault-dir DIR` (global flag) or
 ├── experiences/*.md    # YAML frontmatter + body = role description
 ├── stories/*.md        # frontmatter + ## Situation/Task/Action/Result (+ ## Lesson)
 ├── philosophies/*.md   # frontmatter + body = the stance
+├── proposals/*.json    # staged writes awaiting review (see Proposals below)
 ├── .credentials        # gitignored, never synced
 └── .git/               # every CLI write auto-commits
 ```
@@ -99,7 +100,7 @@ shell. Use `-y` on `remove`/`rollback` to skip confirmation.
 | `traitprint vault remove UUID -y` | UUID | searches all sections |
 | `traitprint vault rollback -y` | — | reset tree to previous commit |
 | `traitprint vault migrate [--dry-run] [--json]` | — | v0 → v1 file tree; idempotent |
-| `traitprint vault import-resume PATH` | path | LLM extraction; `--provider --model --yes --dry-run --assist/--no-assist --json`; PDF/DOCX need `pip install 'traitprint[import]'`. Resolution (D11): `--provider` flag → configured BYOK key → agent-assist mode (below) → actionable error |
+| `traitprint vault import-resume PATH` | path | LLM extraction; `--provider --model --yes --dry-run --assist/--no-assist --propose --json`; PDF/DOCX need `pip install 'traitprint[import]'`. Resolution (D11): `--provider` flag → configured BYOK key → agent-assist mode (below) → actionable error. `--propose` stages extracted items as pending proposals instead of writing them (D9 staged path) |
 
 #### Agent-assist mode (D11)
 
@@ -115,8 +116,39 @@ batch commands, then run `traitprint vault audit --json`. `--json` emits
 the payload as `{"mode": "agent-assist", "contract": ..., "text": ...,
 "write_back": ...}`. `--assist` forces the payload even when a key is
 configured; `--no-assist` restores the hard error for headless runs.
-BYOK remains required when no agent is wrapping the CLI. The full loop is
-the `traitprint-import-resume` skill.
+BYOK remains required when no agent is wrapping the CLI. With `--propose`
+the write-back section switches to `traitprint proposals add` commands
+(one JSON object per item) and the verify step becomes
+`traitprint proposals list --json` — the user then approves with
+`traitprint proposals approve`. The full loop is the
+`traitprint-import-resume` skill.
+
+### Proposals (staged writes, D2/D9)
+
+`proposals/*.json` files are staged writes awaiting review — the contract's
+`$defs/proposal` shape (`id`, `kind`, `target_id`, `payload`, `rationale`,
+`source`, `status`, `created_at`, `resolved_at`). Remote agents (hosted MCP
+`vault_propose`), the web app, and local agents (`proposals add`) all stage
+the same shape; the user reviews from any surface. Nothing touches the vault
+until approval.
+
+| Command | Notes |
+|---|---|
+| `traitprint proposals list [--status STATUS] [--json]` | Table (8-char id, kind, status, created, summary) or JSON array of full documents (+ `file`). Statuses: `pending`, `approved`, `rejected`, `withdrawn`. Unreadable files print `[warn]` lines on stderr — never a crash |
+| `traitprint proposals show ID [--json]` | Payload + rationale + a current→proposed field diff against the live vault for `update_*` kinds. ID = full UUID or unambiguous hex prefix. `--json` emits `{proposal, file, diff}` |
+| `traitprint proposals approve ID [-y]` | Validates the payload against the entity schema (Layer 0, hard reject), applies it (`add_*` creates; `update_*` partial-updates by `target_id` — clear error if the target is gone), and deletes the proposal file **in the same git commit** (contract rule 7). Duplicate skill names are rejected with the existing UUID |
+| `traitprint proposals approve --all [-y]` | D9 one-step approve-all: applies every pending proposal in ONE batch commit (`Approve N proposals`); failures print `[err]` lines, those proposals stay pending, exit 1 |
+| `traitprint proposals reject ID [-y]` | Sets `status: rejected` + `resolved_at`; the file is kept (and committed) |
+| `traitprint proposals add --kind K [--target-id UUID] [--rationale R] [--source S] --payload-json -` | Stage a new pending proposal from a JSON object (file or stdin). Same validation as the hosted MCP `vault_propose`: kind enum, per-kind allowed payload keys, `target_id` required for `update_*` kinds (forbidden otherwise). Exit 1 with `[err] proposal: ...` lines on violations |
+
+Payload rules (contract): full entity for `add_*`, only the changed fields
+for `update_*`; narrative text travels in `payload.body` for experiences,
+stories (`## Situation/Task/Action/Result` sections), and philosophies;
+`update_profile` takes `{"basics": {"name"?, "label"?, "summary"?,
+"email"?, "location"?}}` (no `target_id` — the profile is a singleton).
+Never invent `target_id`s — copy them from `traitprint vault list`.
+Pending proposals surface in `traitprint vault audit` as a minor
+`proposals.pending` finding.
 
 ### Batch input (`--from-json`)
 
@@ -170,8 +202,10 @@ written even when others fail.
 Finding codes worth acting on: `skill.unsupported_strength` (strong skill,
 no story), `experience.no_story`, `story.*` (thin/broken STAR fields,
 missing metrics), dangling-reference findings, contradiction findings
-(conflicting metrics or leader-vs-IC claims between stories). Tensions are
-nuance, not bugs — present them as context-dependent thinking.
+(conflicting metrics or leader-vs-IC claims between stories),
+`proposals.pending` (staged writes awaiting review — point the user at
+`traitprint proposals list`). Tensions are nuance, not bugs — present
+them as context-dependent thinking.
 
 ### `vault migrate --json` contract
 

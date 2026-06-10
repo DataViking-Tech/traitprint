@@ -93,6 +93,26 @@ Exact batch shapes and exit codes are in the
 exists — report it, don't retry. Exit code 1 means at least one item
 failed; fix and re-send only the failed items.
 
+### Alternative: stage proposals instead (`--propose`)
+
+If the user prefers a reviewable queue over an inline approve-all — or you
+were invoked with `--propose` — the payload's write-back section switches
+to `traitprint proposals add` commands (one JSON object per item, payload
+keys per the vault v1 proposal contract; experience narrative travels in
+`payload.body`):
+
+```bash
+traitprint proposals add --kind add_skill --source import-resume \
+  --rationale "listed in resume" --payload-json - <<'JSON'
+{"name": "Kubernetes", "proficiency": 3, "category": "technical"}
+JSON
+```
+
+Nothing touches the vault until the USER runs
+`traitprint proposals approve <id>` (or `traitprint proposals approve
+--all` for one step) — never approve on their behalf. Finish by showing
+them `traitprint proposals list` output instead of the audit.
+
 ## 5. Audit and report
 
 ```bash
