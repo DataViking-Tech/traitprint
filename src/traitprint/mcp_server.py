@@ -39,23 +39,53 @@ from traitprint.vault import VaultStore
 SERVER_NAME = "traitprint-local"
 SERVER_VERSION = __version__
 
-PROFICIENCY_LABELS = ("familiar", "working", "expert", "authority")
+# Five-label proficiency vocabulary, one label per 1-5 level (the vault
+# contract: 1 familiar, 2 working, 3 proficient, 4 expert, 5 authority).
+# NOTE: this intentionally diverges from the cloud MCP server's current
+# 4-label enum (which has no "proficient"); cloud parity catch-up is
+# tracked as a cloud-side follow-up — until it lands, this server is
+# deliberately ahead of the hosted one.
+PROFICIENCY_LABELS = ("familiar", "working", "proficient", "expert", "authority")
 PROFICIENCY_ORDER = {label: i for i, label in enumerate(PROFICIENCY_LABELS)}
+
+ProficiencyLabel = Literal["familiar", "working", "proficient", "expert", "authority"]
+
+# Mirrors traitprint.schema.PhilosophyCategory (Literal so FastMCP emits
+# a clean enum in the tool schema).
+PhilosophyCategoryLabel = Literal[
+    "leadership",
+    "collaboration",
+    "technical-approach",
+    "culture",
+    "decision-making",
+]
 
 
 def _map_proficiency(level: int) -> str:
-    """Bucket a 1-5 proficiency into the cloud's 4-label enum.
+    """Map a 1-5 proficiency onto the five-label vocabulary."""
+    index = min(max(int(level), 1), 5) - 1
+    return PROFICIENCY_LABELS[index]
 
-    3 ("proficient") folds into "working" because the cloud enum has no
-    separate proficient label.
-    """
-    if level <= 1:
-        return "familiar"
-    if level <= 3:
-        return "working"
-    if level <= 4:
-        return "expert"
-    return "authority"
+
+def _coerce_min_proficiency(value: str | int | None) -> str | None:
+    """Normalize ``min_proficiency``: the five labels or integers 1-5."""
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        raise ValueError("min_proficiency must be a label or an integer 1-5")
+    if isinstance(value, int):
+        if not 1 <= value <= 5:
+            raise ValueError(
+                f"min_proficiency integer must be 1-5, got {value}"
+            )
+        return _map_proficiency(value)
+    label = value.strip().lower()
+    if label not in PROFICIENCY_ORDER:
+        raise ValueError(
+            "min_proficiency must be one of "
+            f"{', '.join(PROFICIENCY_LABELS)} or an integer 1-5; got {value!r}"
+        )
+    return label
 
 
 def _meets_proficiency(level: str, minimum: str) -> bool:
@@ -364,9 +394,10 @@ def _handle_search_skills(
     vault: VaultSchema,
     taxonomy: list[TaxonomyEntry],
     query: str,
-    min_proficiency: str | None,
+    min_proficiency: str | int | None,
     limit: int,
 ) -> dict[str, Any]:
+    min_label = _coerce_min_proficiency(min_proficiency)
     direct_ids, used_alias = _match_taxonomy(query, taxonomy)
     neighbor_index = build_neighbor_index(taxonomy)
     graph_distances = _graph_expansion(direct_ids, neighbor_index)
@@ -397,7 +428,7 @@ def _handle_search_skills(
             distance = name_distance
 
         prof = _map_proficiency(skill.proficiency)
-        if min_proficiency and not _meets_proficiency(prof, min_proficiency):
+        if min_label and not _meets_proficiency(prof, min_label):
             continue
 
         ev = evidence.get(skill.id, {"count": 0, "top": None})
@@ -433,6 +464,26 @@ def _handle_search_skills(
     }
 
 
+def _theme_score(theme: str, story: StorySchema, content: str) -> float:
+    """Score a story against a theme filter, theme_tags first.
+
+    Strictly tiered so tagged stories outrank body-text hits:
+    - exact ``theme_tags`` match → 1.0
+    - keyword/substring hit inside the tags → (0.6, 0.9]
+    - keyword hit in the STAR body text only → (0.0, 0.5]
+    """
+    normalized = theme.strip().lower()
+    tags = [t.strip().lower() for t in story.theme_tags]
+    if normalized and normalized in tags:
+        return 1.0
+    kws = _keywords(theme)
+    if tags and kws:
+        tag_score = _keyword_score(kws, " ".join(tags))
+        if tag_score > 0:
+            return 0.6 + 0.3 * tag_score
+    return 0.5 * _keyword_score(kws, content)
+
+
 def _handle_find_story(
     vault: VaultSchema,
     situation: str | None,
@@ -458,8 +509,8 @@ def _handle_find_story(
         return {"stories": []}
 
     sit_kw = _keywords(situation) if situation else []
-    theme_kw = _keywords(theme) if theme else []
-    has_text_filter = bool(sit_kw or theme_kw)
+    has_theme = bool(theme and theme.strip())
+    has_text_filter = bool(sit_kw) or has_theme
 
     skill_name_by_id = {skill.id: skill.name for skill in vault.skills}
 
@@ -475,8 +526,10 @@ def _handle_find_story(
         score = 0.0
         if sit_kw:
             score += _keyword_score(sit_kw, content)
-        if theme_kw:
-            score += _keyword_score(theme_kw, content)
+        if has_theme and theme is not None:
+            # Theme matching covers theme_tags (exact tag highest, then
+            # keyword-in-tags) before falling back to STAR body text.
+            score += _theme_score(theme, story, content)
         scored.append((story, score, story_outcome))
 
     if has_text_filter:
@@ -512,17 +565,35 @@ def _handle_find_story(
 
 
 def _handle_get_philosophy(
-    vault: VaultSchema, topic: str, limit: int
+    vault: VaultSchema, topic: str, limit: int, category: str | None = None
 ) -> dict[str, Any]:
     topic = topic.strip()
-    if not vault.philosophies:
+    cat = (category or "").strip().lower()
+
+    # The category argument is a hard filter: non-matching philosophies
+    # (including uncategorized ones) are excluded, never returned at 0.0.
+    pool = vault.philosophies
+    if cat:
+        pool = [p for p in pool if p.category == cat]
+    if not pool:
         return {"philosophies": []}
 
     topic_kw = _keywords(topic)
-    scored: list[tuple[PhilosophySchema, float]] = [
-        (p, _keyword_score(topic_kw, f"{p.title} {p.description}"))
-        for p in vault.philosophies
-    ]
+    scored: list[tuple[PhilosophySchema, float]] = []
+    for p in pool:
+        text_score = _keyword_score(topic_kw, f"{p.title} {p.description}")
+        if topic:
+            if cat:
+                # Category already matched; topic relevance ranks on top
+                # of a category-match floor so scores stay meaningful.
+                score = 0.5 + 0.5 * text_score if text_score > 0 else 0.0
+            else:
+                score = text_score
+        elif cat:
+            score = 1.0  # exact category match is the whole query
+        else:
+            score = 0.0  # unfiltered browse
+        scored.append((p, score))
 
     if topic:
         top = [x for x in scored if x[1] > 0]
@@ -636,7 +707,10 @@ def create_server(store: VaultStore) -> FastMCP:
     @mcp.tool(
         description=(
             "One-shot identity primer. Returns headline, bio, top skills, "
-            "and optionally signature experiences and core philosophies."
+            "and optionally signature experiences and core philosophies. "
+            "depth: 'brief' = headline + bio only; 'standard' (default) = "
+            "+ top 5 skills; 'detailed' = + top 10 skills, signature "
+            "experiences, and core philosophies."
         )
     )
     def get_profile_summary(
@@ -648,14 +722,15 @@ def create_server(store: VaultStore) -> FastMCP:
     @mcp.tool(
         description=(
             "Search the vault for skills matching a query. Returns "
-            "ranked matches with proficiency and evidence."
+            "ranked matches with proficiency and evidence. Proficiency "
+            "labels: familiar (1), working (2), proficient (3), expert "
+            "(4), authority (5); min_proficiency accepts any of the five "
+            "labels or an integer 1-5."
         )
     )
     def search_skills(
         query: str,
-        min_proficiency: (
-            Literal["familiar", "working", "expert", "authority"] | None
-        ) = None,
+        min_proficiency: ProficiencyLabel | int | None = None,
         limit: int = 10,
     ) -> dict[str, Any]:
         if not query.strip():
@@ -688,12 +763,23 @@ def create_server(store: VaultStore) -> FastMCP:
         )
 
     @mcp.tool(
-        description="Query stated beliefs and positions. 'What's their stance on X?'"
+        description=(
+            "Query stated beliefs and positions. 'What's their stance on "
+            "X?' Filter by topic (keyword match against title and stance) "
+            "and/or category (exact match: leadership, collaboration, "
+            "technical-approach, culture, decision-making)."
+        )
     )
-    def get_philosophy(topic: str | None = None, limit: int = 3) -> dict[str, Any]:
+    def get_philosophy(
+        topic: str | None = None,
+        category: PhilosophyCategoryLabel | None = None,
+        limit: int = 3,
+    ) -> dict[str, Any]:
         limit = max(1, min(limit, 5))
         vault = store.load()
-        return _envelope(_handle_get_philosophy(vault, topic or "", limit))
+        return _envelope(
+            _handle_get_philosophy(vault, topic or "", limit, category=category)
+        )
 
     @mcp.prompt(
         description=(

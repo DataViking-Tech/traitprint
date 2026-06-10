@@ -77,11 +77,11 @@ shell. Use `-y` on `remove`/`rollback` to skip confirmation.
 
 | Command | Notes |
 |---|---|
-| `traitprint vault show [-v]` | Summary; `-v` dumps everything incl. UUIDs and git metadata |
-| `traitprint vault list <section>` | Table with UUIDs; sections: `skills`, `experiences`, `stories`, `philosophies`, `education` |
+| `traitprint vault show [-v] [--json]` | Summary; `-v` dumps everything incl. UUIDs and git metadata; `--json` emits the full vault document |
+| `traitprint vault list <section> [--json]` | Table with UUIDs; sections: `skills`, `experiences`, `stories`, `philosophies`, `education`; `--json` emits `[{id, type, name\|title}]` |
 | `traitprint vault audit [--json] [--severity critical\|major\|minor] [--strict]` | Coherence report (below) |
-| `traitprint vault history [-n N]` | Vault git log |
-| `traitprint vault diff` | Changes since previous commit |
+| `traitprint vault history [-n N] [--json]` | Vault git log; `--json` emits `[{sha, message}]` |
+| `traitprint vault diff [--json]` | Changes since previous commit; `--json` emits `{from_sha, to_sha, diff_text}` |
 | `traitprint vault export -f <fmt> [-o FILE]` | Formats: `json` (lossless single doc), `markdown`, `jsonresume`, `synthpanel-persona`. `traitprint export` is a top-level alias |
 
 ### Write commands (each auto-commits)
@@ -90,9 +90,9 @@ shell. Use `-y` on `remove`/`rollback` to skip confirmation.
 |---|---|---|
 | `traitprint init` | — | creates dir, git repo, empty v1 vault |
 | `traitprint vault set-profile` | at least one flag | `--name --headline --summary --location --email`; omitted fields keep values, `""` clears |
-| `traitprint vault add-skill NAME -p 1..5 -c CAT` | name, proficiency, category | `--notes`, `--force-category` (keep your category over the taxonomy's) |
+| `traitprint vault add-skill NAME -p 1..5` | name, proficiency | `-c CAT` (optional; taxonomy category fills it on a match, else empty), `--notes`, `--force-category` (keep your category over the taxonomy's) |
 | `traitprint vault add-experience` | `--title` | `--company --start-date YYYY-MM --end-date YYYY-MM --description --accomplishment ...` (repeatable) |
-| `traitprint vault add-story` | `--title` | `--situation --task --action --result --skill-id UUID` (repeatable) `--experience-id UUID` |
+| `traitprint vault add-story` | `--title` | `--situation --task --action --result --lesson --outcome win\|failure\|learning --theme-tag TAG` (repeatable) `--skill-id UUID` (repeatable) `--experience-id UUID` |
 | `traitprint vault add-philosophy` | `--title` | `--description --category --evidence-id STORY_UUID` (repeatable); categories: `leadership`, `collaboration`, `technical-approach`, `culture`, `decision-making` |
 | `traitprint vault add-education` | `--institution` | `--degree --field --start-date YYYY --end-date YYYY --description` (no batch mode) |
 | `traitprint vault remove UUID -y` | UUID | searches all sections |
@@ -107,11 +107,13 @@ shell. Use `-y` on `remove`/`rollback` to skip confirmation.
 single-item arguments (exit 2). Input is a JSON array:
 
 ```text
-add-skill:      [{"name": str, "proficiency": int 1-5, "category": str, "notes"?: str}]
+add-skill:      [{"name": str, "proficiency": int 1-5, "category"?: str, "notes"?: str}]
 add-experience: [{"title": str, "company"?: str, "start_date"?: "YYYY-MM",
                   "end_date"?: "YYYY-MM", "description"?: str, "accomplishments"?: [str]}]
 add-story:      [{"title": str, "situation"?: str, "task"?: str, "action"?: str,
-                  "result"?: str, "skill_ids"?: [UUID str], "experience_id"?: UUID str}]
+                  "result"?: str, "lesson"?: str, "outcome"?: "win|failure|learning",
+                  "theme_tags"?: [str], "skill_ids"?: [UUID str],
+                  "experience_id"?: UUID str}]
 add-philosophy: [{"title": str, "description"?: str, "category"?: str,
                   "evidence_story_ids"?: [UUID str]}]
 ```
@@ -196,10 +198,16 @@ Client config (Claude Desktop, Cursor, Zed, …):
   "env": {"TRAITPRINT_VAULT_DIR": "/home/you/.traitprint"}}}}
 ```
 
-Four read-only tools, response schemas identical to the hosted cloud MCP
+Four read-only tools, response schemas mirroring the hosted cloud MCP
 server (swap local ↔ cloud by changing a URL): `get_profile_summary`,
 `search_skills`, `find_story`, `get_philosophy`. Every tool returns a
-`{"result": ..., "meta": {...}}` envelope.
+`{"result": ..., "meta": {...}}` envelope. Proficiency uses the full
+five-label vocabulary (`familiar`/`working`/`proficient`/`expert`/
+`authority`); `search_skills min_proficiency` accepts any label or an
+integer 1-5. `find_story theme` matches `theme_tags` first, then body
+text; `get_philosophy` filters by `topic` and/or `category`. (The cloud
+server still exposes a legacy 4-label proficiency enum; parity catch-up
+is tracked cloud-side.)
 
 Five prompts — `fill_vault(focus?)`, `mine_story_gaps`, `discover_skills`,
 `draft_star_story(experience?)`, `audit_coherence` — served verbatim from
@@ -220,6 +228,9 @@ they also ship inside the wheel as `traitprint/data/skills/`.
   on `remove`/`rollback`.
 - **Duplicate skills exit 1** with the existing UUID in the message;
   `remove` then re-add to replace.
+- **A failed git auto-commit never fails the write.** The CLI warns on
+  stderr ("vault saved but git commit failed: …") and keeps exit code 0;
+  fix the git problem, then commit inside the vault to restore history.
 - **Taxonomy may override your `--category`** on an exact match; pass
   `--force-category` to keep yours.
 - **Hand-edited frontmatter**: allowed keys only; unknown keys violate the

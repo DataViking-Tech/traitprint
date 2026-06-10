@@ -251,8 +251,16 @@ class VaultStore:
         result: str,
         skill_ids: list[UUID] | None = None,
         experience_id: UUID | None = None,
+        lesson: str = "",
+        outcome: str = "",
+        theme_tags: list[str] | None = None,
     ) -> StorySchema:
-        """Add a STAR-format story to the vault, save, and auto-commit."""
+        """Add a STAR-format story to the vault, save, and auto-commit.
+
+        ``outcome`` must be empty or one of ``win``/``failure``/``learning``
+        (validated by the schema); ``lesson`` renders as a ``## Lesson``
+        section in the story markdown.
+        """
         vault = self.load()
         story = StorySchema(
             title=title,
@@ -260,6 +268,9 @@ class VaultStore:
             task=task,
             action=action,
             result=result,
+            lesson=lesson,
+            outcome=outcome,
+            theme_tags=theme_tags or [],
             skill_ids=skill_ids or [],
             experience_id=experience_id,
         )

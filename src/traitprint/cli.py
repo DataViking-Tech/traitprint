@@ -12,7 +12,7 @@ import click
 from pydantic import ValidationError
 
 from traitprint import __version__
-from traitprint.git_ops import commit, head_sha, init_repo
+from traitprint.git_ops import commit, head_sha, init_repo, rev_sha
 from traitprint.git_ops import diff as git_diff
 from traitprint.git_ops import log as git_log
 from traitprint.git_ops import rollback as git_rollback
@@ -23,6 +23,47 @@ from traitprint.vault import DuplicateSkillError, VaultStore
 if TYPE_CHECKING:
     from traitprint.credentials import Credentials
     from traitprint.sync import SyncPlan
+
+
+if TYPE_CHECKING:
+    # ParamType only became generic (subscriptable) in click 8.4; pyproject
+    # supports click>=8.0, where a runtime subscript raises TypeError on
+    # import and bricks the CLI. Subscript for the type checker only.
+    _UUIDParamBase = click.ParamType[UUID]
+else:
+    _UUIDParamBase = click.ParamType
+
+
+class UUIDParamType(_UUIDParamBase):
+    """Click param type for UUID flags.
+
+    Produces the same actionable style as batch mode ("invalid UUID 'x'")
+    instead of a raw ValueError traceback, with click's usage-error
+    exit code 2.
+    """
+
+    name = "uuid"
+
+    def convert(
+        self,
+        value: Any,
+        param: click.Parameter | None,
+        ctx: click.Context | None,
+    ) -> UUID:
+        if isinstance(value, UUID):
+            return value
+        try:
+            return UUID(str(value).strip())
+        except ValueError:
+            self.fail(
+                f"invalid UUID {str(value)!r} — copy real UUIDs from "
+                "'traitprint vault list' output",
+                param,
+                ctx,
+            )
+
+
+UUID_PARAM = UUIDParamType()
 
 
 def _get_store(ctx: click.Context) -> VaultStore:
@@ -48,6 +89,22 @@ def _read_json_items(source: IO[str]) -> list[dict[str, Any]]:
                 f"Item {i}: expected an object, got {type(item).__name__}"
             )
     return data
+
+
+def _validation_problems(exc: ValidationError) -> list[str]:
+    """Normalize a pydantic error into ``field: message`` lines.
+
+    Batch output must never leak raw pydantic error dumps or
+    errors.pydantic.dev URLs; this keeps the ``[err] <name>: field:
+    message`` style intact.
+    """
+    problems: list[str] = []
+    for err in exc.errors(include_url=False):
+        loc = ".".join(str(part) for part in err.get("loc", ())) or "value"
+        msg = str(err.get("msg", "invalid value"))
+        msg = msg.removeprefix("Value error, ")
+        problems.append(f"{loc}: {msg}")
+    return problems or ["invalid value"]
 
 
 def _parse_uuid_list(raw: object, field: str, item_index: int) -> list[UUID]:
@@ -140,14 +197,24 @@ def vault() -> None:
     default=False,
     help="Show full vault contents including all fields, timestamps, and git metadata.",
 )
+@click.option(
+    "--json",
+    "as_json",
+    is_flag=True,
+    default=False,
+    help="Emit the full vault (every entity, all fields) as JSON.",
+)
 @click.pass_context
-def vault_show(ctx: click.Context, verbose: bool) -> None:
-    """Pretty-print a summary of vault contents."""
+def vault_show(ctx: click.Context, verbose: bool, as_json: bool) -> None:
+    """Pretty-print a summary of vault contents (JSON with --json)."""
     store = _get_store(ctx)
     if not store.exists():
         click.echo("No vault found. Run 'traitprint init' first.")
         return
     v = store.load()
+    if as_json:
+        click.echo(json.dumps(v.model_dump(mode="json"), indent=2))
+        return
     if not verbose:
         _render_vault_summary(v)
         return
@@ -280,6 +347,12 @@ def _render_vault_verbose(store: VaultStore, v: VaultSchema) -> None:
             click.echo(f"      action:    {st.action}")
         if st.result:
             click.echo(f"      result:    {st.result}")
+        if st.lesson:
+            click.echo(f"      lesson:    {st.lesson}")
+        if st.outcome:
+            click.echo(f"      outcome:   {st.outcome}")
+        if st.theme_tags:
+            click.echo(f"      theme_tags: {', '.join(st.theme_tags)}")
         if st.skill_ids:
             click.echo(f"      skill_ids: {', '.join(str(x) for x in st.skill_ids)}")
         if st.experience_id:
@@ -332,6 +405,15 @@ def _render_vault_verbose(store: VaultStore, v: VaultSchema) -> None:
 # --- vault list ---
 
 
+_LIST_ITEM_TYPE = {
+    "skills": "skill",
+    "experiences": "experience",
+    "stories": "story",
+    "philosophies": "philosophy",
+    "education": "education",
+}
+
+
 @vault.command(name="list")
 @click.argument(
     "section",
@@ -340,15 +422,36 @@ def _render_vault_verbose(store: VaultStore, v: VaultSchema) -> None:
         case_sensitive=False,
     ),
 )
+@click.option(
+    "--json",
+    "as_json",
+    is_flag=True,
+    default=False,
+    help="Emit a JSON array of {id, type, name|title} objects.",
+)
 @click.pass_context
-def vault_list(ctx: click.Context, section: str) -> None:
-    """List items in a vault section (table format)."""
+def vault_list(ctx: click.Context, section: str, as_json: bool) -> None:
+    """List items in a vault section (table format, or JSON with --json)."""
     store = _get_store(ctx)
     if not store.exists():
         click.echo("No vault found. Run 'traitprint init' first.")
         return
     v = store.load()
     items = getattr(v, section)
+
+    if as_json:
+        rows: list[dict[str, str]] = []
+        for item in items:
+            row = {"id": str(item.id), "type": _LIST_ITEM_TYPE[section]}
+            if section == "skills":
+                row["name"] = item.name
+            elif section == "education":
+                row["title"] = item.institution
+            else:
+                row["title"] = item.title
+            rows.append(row)
+        click.echo(json.dumps(rows, indent=2))
+        return
 
     if not items:
         click.echo(f"No {section} found.")
@@ -454,7 +557,8 @@ def vault_set_profile(
     "--category",
     "-c",
     default=None,
-    help="Skill category (e.g. technical, soft, domain, tool).",
+    help="Skill category — optional (e.g. technical, soft, domain, tool). "
+    "Defaults to the taxonomy's category on a match, else empty.",
 )
 @click.option("--notes", "-n", default=None, help="Optional notes about the skill.")
 @click.option(
@@ -501,22 +605,25 @@ def vault_add_skill(
             ctx.exit(1)
         return
 
-    if name is None or proficiency is None or category is None:
+    if name is None or proficiency is None:
         click.echo(
-            "NAME, --proficiency, and --category are required "
-            "(or use --from-json for batch input)."
+            "NAME and --proficiency are required "
+            "(or use --from-json for batch input). --category is optional."
         )
         ctx.exit(2)
         return
 
-    # Taxonomy integration
+    # Taxonomy integration. --category is optional: when omitted, the
+    # taxonomy's category is used on a match, else it stays empty.
     taxonomy_id = None
-    effective_category = category
+    effective_category = category or ""
     exact = find_exact(name)
     if exact:
         taxonomy_id = exact.id
         click.echo(f"Matched taxonomy: {exact.name} ({exact.category})")
-        if category != exact.category:
+        if category is None:
+            effective_category = exact.category
+        elif category != exact.category:
             if force_category:
                 click.echo(
                     f"Keeping --category {category!r} "
@@ -555,54 +662,76 @@ def vault_add_skill(
     click.echo(f"Added skill: {skill.name} ({skill.proficiency}/5) [{skill.id}]")
 
 
+def _report_item_problems(label: str, problems: list[str]) -> None:
+    """Print one ``[err] <label>: field: message`` line per violation."""
+    for problem in problems:
+        click.echo(f"[err] {label}: {problem}")
+
+
 def _batch_add_skills(store: VaultStore, items: list[dict[str, Any]]) -> int:
     """Add skills from parsed JSON items.
 
-    Prints a per-item line (ok/dup/err) and a summary line. Returns the
-    number of items that failed (duplicates count as errors).
+    Prints per-item lines (ok/dup/err) and a summary line. ALL violations
+    for an item are reported in one pass (missing fields and range errors
+    together). Returns the number of items that failed (duplicates count
+    as errors).
     """
     added = 0
     errors = 0
     for i, item in enumerate(items):
-        label = item.get("name") if isinstance(item.get("name"), str) else f"item {i}"
-        missing = [f for f in ("name", "proficiency", "category") if f not in item]
-        if missing:
-            click.echo(f"[err] {label}: missing field(s) {', '.join(missing)}")
-            errors += 1
-            continue
-        name = item["name"]
-        proficiency = item["proficiency"]
-        category = item["category"]
-        notes = item.get("notes")
-        if not isinstance(name, str) or not name.strip():
-            click.echo(f"[err] item {i}: name must be a non-empty string")
-            errors += 1
-            continue
-        if not isinstance(proficiency, int) or isinstance(proficiency, bool):
-            click.echo(f"[err] {name}: proficiency must be an integer 1-5")
-            errors += 1
-            continue
+        name = item.get("name")
+        label = name if isinstance(name, str) and name.strip() else f"item {i}"
+
+        problems: list[str] = []
+        if "name" not in item:
+            problems.append("name: missing required field")
+        elif not isinstance(name, str) or not name.strip():
+            problems.append("name: must be a non-empty string")
+        proficiency = item.get("proficiency")
+        if "proficiency" not in item:
+            problems.append("proficiency: missing required field")
+        elif not isinstance(proficiency, int) or isinstance(proficiency, bool):
+            problems.append("proficiency: must be an integer 1-5")
+        elif not 1 <= proficiency <= 5:
+            problems.append("proficiency: must be between 1 and 5")
+        category = item.get("category", "")
+        if category is None:
+            category = ""
         if not isinstance(category, str):
-            click.echo(f"[err] {name}: category must be a string")
+            problems.append("category: must be a string")
+        notes = item.get("notes")
+        if notes is not None and not isinstance(notes, str):
+            problems.append("notes: must be a string")
+        if problems:
+            _report_item_problems(label, problems)
             errors += 1
             continue
+
+        assert isinstance(name, str) and isinstance(proficiency, int)
         taxonomy_id = None
         exact = find_exact(name)
         if exact:
             taxonomy_id = exact.id
+            # category is optional; fall back to the taxonomy's category.
+            if not category:
+                category = exact.category
         try:
             skill = store.add_skill(
                 name=name,
                 proficiency=proficiency,
                 category=category,
-                notes=str(notes) if notes else None,
+                notes=notes if notes else None,
                 taxonomy_id=taxonomy_id,
             )
         except DuplicateSkillError as exc:
             click.echo(f"[dup] {name}: already exists ({exc.existing_id})")
             errors += 1
             continue
-        except (ValidationError, ValueError, TypeError) as exc:
+        except ValidationError as exc:
+            _report_item_problems(name, _validation_problems(exc))
+            errors += 1
+            continue
+        except (ValueError, TypeError) as exc:
             click.echo(f"[err] {name}: {exc}")
             errors += 1
             continue
@@ -653,8 +782,9 @@ def vault_add_experience(
 ) -> None:
     """Add a work experience to your vault.
 
-    Pass --title, --company, --start-date (and optional fields) for
-    non-interactive use. Any missing required field will be prompted for.
+    Only --title is required; all other fields are optional and default
+    to empty. Omitting --title falls back to interactive prompts for
+    every field.
     """
     store = _get_store(ctx)
     if not store.exists():
@@ -711,31 +841,37 @@ def vault_add_experience(
 
 
 def _batch_add_experiences(store: VaultStore, items: list[dict[str, Any]]) -> int:
-    """Add experiences from parsed JSON items. Returns number of errors."""
+    """Add experiences from parsed JSON items. Returns number of errors.
+
+    ALL violations for an item are reported in one pass.
+    """
     added = 0
     errors = 0
     for i, item in enumerate(items):
-        label = item.get("title") if isinstance(item.get("title"), str) else f"item {i}"
+        title = item.get("title")
+        label = title if isinstance(title, str) and title.strip() else f"item {i}"
+
+        problems: list[str] = []
         if "title" not in item:
-            click.echo(f"[err] {label}: missing field title")
-            errors += 1
-            continue
-        title = item["title"]
-        if not isinstance(title, str) or not title.strip():
-            click.echo(f"[err] item {i}: title must be a non-empty string")
-            errors += 1
-            continue
-        company = item.get("company", "")
-        start_date = item.get("start_date", "")
-        end_date = item.get("end_date") or None
-        description = item.get("description", "")
+            problems.append("title: missing required field")
+        elif not isinstance(title, str) or not title.strip():
+            problems.append("title: must be a non-empty string")
         accomplishments_raw = item.get("accomplishments") or []
         if not isinstance(accomplishments_raw, list) or not all(
             isinstance(a, str) for a in accomplishments_raw
         ):
-            click.echo(f"[err] {title}: accomplishments must be a list of strings")
+            problems.append("accomplishments: must be a list of strings")
+            accomplishments_raw = []
+        if problems:
+            _report_item_problems(label, problems)
             errors += 1
             continue
+
+        assert isinstance(title, str)
+        company = item.get("company", "")
+        start_date = item.get("start_date", "")
+        end_date = item.get("end_date") or None
+        description = item.get("description", "")
         try:
             exp = store.add_experience(
                 title=title,
@@ -745,7 +881,11 @@ def _batch_add_experiences(store: VaultStore, items: list[dict[str, Any]]) -> in
                 description=str(description),
                 accomplishments=list(accomplishments_raw),
             )
-        except (ValidationError, ValueError, TypeError) as exc:
+        except ValidationError as exc:
+            _report_item_problems(title, _validation_problems(exc))
+            errors += 1
+            continue
+        except (ValueError, TypeError) as exc:
             click.echo(f"[err] {title}: {exc}")
             errors += 1
             continue
@@ -765,13 +905,34 @@ def _batch_add_experiences(store: VaultStore, items: list[dict[str, Any]]) -> in
 @click.option("--action", default=None, help="STAR: action.")
 @click.option("--result", default=None, help="STAR: result.")
 @click.option(
+    "--lesson",
+    default=None,
+    help="Lesson learned (rendered as an optional '## Lesson' section).",
+)
+@click.option(
+    "--outcome",
+    type=click.Choice(["win", "failure", "learning"], case_sensitive=False),
+    default=None,
+    help="Outcome classification (win, failure, or learning).",
+)
+@click.option(
+    "--theme-tag",
+    "theme_tags_opt",
+    multiple=True,
+    help="Theme tag, e.g. incident-response (repeatable).",
+)
+@click.option(
     "--skill-id",
     "skill_ids_opt",
     multiple=True,
+    type=UUID_PARAM,
     help="Skill UUID (repeatable).",
 )
 @click.option(
-    "--experience-id", default=None, help="Experience UUID this story belongs to."
+    "--experience-id",
+    default=None,
+    type=UUID_PARAM,
+    help="Experience UUID this story belongs to.",
 )
 @click.option(
     "--interactive", "-i", is_flag=True, default=True, help="Guided STAR prompts."
@@ -783,7 +944,7 @@ def _batch_add_experiences(store: VaultStore, items: list[dict[str, Any]]) -> in
     default=None,
     help="Batch mode: load stories from a JSON file (or '-' for stdin). "
     "Expects a JSON array of {title, situation?, task?, action?, result?, "
-    "skill_ids?, experience_id?} objects.",
+    "lesson?, outcome?, theme_tags?, skill_ids?, experience_id?} objects.",
 )
 @click.pass_context
 def vault_add_story(
@@ -793,14 +954,18 @@ def vault_add_story(
     task: str | None,
     action: str | None,
     result: str | None,
-    skill_ids_opt: tuple[str, ...],
-    experience_id: str | None,
+    lesson: str | None,
+    outcome: str | None,
+    theme_tags_opt: tuple[str, ...],
+    skill_ids_opt: tuple[UUID, ...],
+    experience_id: UUID | None,
     interactive: bool,
     from_json: IO[str] | None,
 ) -> None:
     """Add a STAR-format story to your vault.
 
-    Pass --title and STAR fields for non-interactive use. Any missing field
+    Pass --title and STAR fields for non-interactive use (--lesson,
+    --outcome, and --theme-tag are optional extras). Any missing field
     will be prompted for when --title is omitted.
     """
     store = _get_store(ctx)
@@ -819,17 +984,14 @@ def vault_add_story(
             ctx.exit(1)
         return
 
-    def _parse_uuids(raw: tuple[str, ...]) -> list[UUID]:
-        return [UUID(s.strip()) for s in raw if s and s.strip()]
-
     non_interactive = title is not None
     if non_interactive:
         situation = situation if situation is not None else ""
         task = task if task is not None else ""
         action = action if action is not None else ""
         result = result if result is not None else ""
-        skill_ids = _parse_uuids(skill_ids_opt)
-        experience_uuid = UUID(experience_id) if experience_id else None
+        skill_ids = list(skill_ids_opt)
+        experience_uuid = experience_id
     else:
         click.echo("Enter your story in STAR format:")
         title = click.prompt("Title")
@@ -838,7 +1000,7 @@ def vault_add_story(
         action = click.prompt("Action")
         result = click.prompt("Result")
         if skill_ids_opt:
-            skill_ids = _parse_uuids(skill_ids_opt)
+            skill_ids = list(skill_ids_opt)
         else:
             raw_skills = click.prompt(
                 "Skill IDs (comma-separated UUIDs, or blank)", default=""
@@ -850,7 +1012,7 @@ def vault_add_story(
                     if sid:
                         skill_ids.append(UUID(sid))
         if experience_id:
-            experience_uuid = UUID(experience_id)
+            experience_uuid = experience_id
         else:
             raw_exp = click.prompt("Experience ID (UUID, or blank)", default="")
             experience_uuid = UUID(raw_exp) if raw_exp else None
@@ -862,39 +1024,71 @@ def vault_add_story(
         task=task or "",
         action=action or "",
         result=result or "",
+        lesson=lesson or "",
+        outcome=(outcome or "").lower(),
+        theme_tags=[t for t in theme_tags_opt if t and t.strip()],
         skill_ids=skill_ids,
         experience_id=experience_uuid,
     )
     click.echo(f"Added story: {story.title} [{story.id}]")
 
 
+_STORY_OUTCOME_VALUES = ("win", "failure", "learning")
+
+
 def _batch_add_stories(store: VaultStore, items: list[dict[str, Any]]) -> int:
-    """Add stories from parsed JSON items. Returns number of errors."""
+    """Add stories from parsed JSON items. Returns number of errors.
+
+    ALL violations for an item are reported in one pass.
+    """
     added = 0
     errors = 0
     for i, item in enumerate(items):
-        label = item.get("title") if isinstance(item.get("title"), str) else f"item {i}"
+        title = item.get("title")
+        label = title if isinstance(title, str) and title.strip() else f"item {i}"
+
+        problems: list[str] = []
         if "title" not in item:
-            click.echo(f"[err] {label}: missing field title")
-            errors += 1
-            continue
-        title = item["title"]
-        if not isinstance(title, str) or not title.strip():
-            click.echo(f"[err] item {i}: title must be a non-empty string")
-            errors += 1
-            continue
+            problems.append("title: missing required field")
+        elif not isinstance(title, str) or not title.strip():
+            problems.append("title: must be a non-empty string")
+        skill_ids: list[UUID] = []
         try:
             skill_ids = _parse_uuid_list(item.get("skill_ids"), "skill_ids", i)
-            experience_id_raw = item.get("experience_id")
-            experience_uuid: UUID | None = None
-            if experience_id_raw:
-                if not isinstance(experience_id_raw, str):
-                    raise ValueError("experience_id must be a UUID string")
-                experience_uuid = UUID(experience_id_raw)
         except ValueError as exc:
-            click.echo(f"[err] {title}: {exc}")
+            problems.append(str(exc))
+        experience_uuid: UUID | None = None
+        experience_id_raw = item.get("experience_id")
+        if experience_id_raw:
+            if not isinstance(experience_id_raw, str):
+                problems.append("experience_id: must be a UUID string")
+            else:
+                try:
+                    experience_uuid = UUID(experience_id_raw)
+                except ValueError:
+                    problems.append(
+                        f"experience_id: invalid UUID {experience_id_raw!r}"
+                    )
+        outcome = item.get("outcome", "") or ""
+        if not isinstance(outcome, str):
+            problems.append("outcome: must be a string")
+        elif outcome and outcome not in _STORY_OUTCOME_VALUES:
+            problems.append(
+                f"outcome: must be one of {', '.join(_STORY_OUTCOME_VALUES)}; "
+                f"got {outcome!r}"
+            )
+        theme_tags_raw = item.get("theme_tags") or []
+        if not isinstance(theme_tags_raw, list) or not all(
+            isinstance(t, str) for t in theme_tags_raw
+        ):
+            problems.append("theme_tags: must be a list of strings")
+            theme_tags_raw = []
+        if problems:
+            _report_item_problems(label, problems)
             errors += 1
             continue
+
+        assert isinstance(title, str) and isinstance(outcome, str)
         try:
             story = store.add_story(
                 title=title,
@@ -902,10 +1096,17 @@ def _batch_add_stories(store: VaultStore, items: list[dict[str, Any]]) -> int:
                 task=str(item.get("task", "") or ""),
                 action=str(item.get("action", "") or ""),
                 result=str(item.get("result", "") or ""),
+                lesson=str(item.get("lesson", "") or ""),
+                outcome=outcome,
+                theme_tags=list(theme_tags_raw),
                 skill_ids=skill_ids,
                 experience_id=experience_uuid,
             )
-        except (ValidationError, ValueError, TypeError) as exc:
+        except ValidationError as exc:
+            _report_item_problems(title, _validation_problems(exc))
+            errors += 1
+            continue
+        except (ValueError, TypeError) as exc:
             click.echo(f"[err] {title}: {exc}")
             errors += 1
             continue
@@ -933,6 +1134,7 @@ _PHILOSOPHY_CATEGORIES = [c.value for c in PhilosophyCategory]
     "--evidence-id",
     "evidence_ids_opt",
     multiple=True,
+    type=UUID_PARAM,
     help="Evidence story UUID (repeatable).",
 )
 @click.option("--interactive", "-i", is_flag=True, default=True, help="Guided prompts.")
@@ -951,7 +1153,7 @@ def vault_add_philosophy(
     title: str | None,
     description: str | None,
     category: str | None,
-    evidence_ids_opt: tuple[str, ...],
+    evidence_ids_opt: tuple[UUID, ...],
     interactive: bool,
     from_json: IO[str] | None,
 ) -> None:
@@ -979,7 +1181,7 @@ def vault_add_philosophy(
     non_interactive = title is not None
     if non_interactive:
         description = description if description is not None else ""
-        evidence_ids = [UUID(s.strip()) for s in evidence_ids_opt if s and s.strip()]
+        evidence_ids = list(evidence_ids_opt)
     else:
         title = click.prompt("Philosophy title")
         description = click.prompt("Description")
@@ -991,9 +1193,7 @@ def vault_add_philosophy(
             type=click.Choice([*_PHILOSOPHY_CATEGORIES, ""], case_sensitive=False),
         )
         if evidence_ids_opt:
-            evidence_ids = [
-                UUID(s.strip()) for s in evidence_ids_opt if s and s.strip()
-            ]
+            evidence_ids = list(evidence_ids_opt)
         else:
             raw_evidence = click.prompt(
                 "Evidence story IDs (comma-separated UUIDs, or blank)", default=""
@@ -1016,33 +1216,42 @@ def vault_add_philosophy(
 
 
 def _batch_add_philosophies(store: VaultStore, items: list[dict[str, Any]]) -> int:
-    """Add philosophies from parsed JSON items. Returns number of errors."""
+    """Add philosophies from parsed JSON items. Returns number of errors.
+
+    ALL violations for an item are reported in one pass.
+    """
     added = 0
     errors = 0
     for i, item in enumerate(items):
-        label = item.get("title") if isinstance(item.get("title"), str) else f"item {i}"
+        title = item.get("title")
+        label = title if isinstance(title, str) and title.strip() else f"item {i}"
+
+        problems: list[str] = []
         if "title" not in item:
-            click.echo(f"[err] {label}: missing field title")
-            errors += 1
-            continue
-        title = item["title"]
-        category = item.get("category", "")
-        if not isinstance(title, str) or not title.strip():
-            click.echo(f"[err] item {i}: title must be a non-empty string")
-            errors += 1
-            continue
+            problems.append("title: missing required field")
+        elif not isinstance(title, str) or not title.strip():
+            problems.append("title: must be a non-empty string")
+        category = item.get("category", "") or ""
         if not isinstance(category, str):
-            click.echo(f"[err] {title}: category must be a string")
-            errors += 1
-            continue
+            problems.append("category: must be a string")
+        elif category and category not in _PHILOSOPHY_CATEGORIES:
+            problems.append(
+                f"category: must be one of {', '.join(_PHILOSOPHY_CATEGORIES)}; "
+                f"got {category!r}"
+            )
+        evidence_ids: list[UUID] = []
         try:
             evidence_ids = _parse_uuid_list(
                 item.get("evidence_story_ids"), "evidence_story_ids", i
             )
         except ValueError as exc:
-            click.echo(f"[err] {title}: {exc}")
+            problems.append(str(exc))
+        if problems:
+            _report_item_problems(label, problems)
             errors += 1
             continue
+
+        assert isinstance(title, str) and isinstance(category, str)
         try:
             philosophy = store.add_philosophy(
                 title=title,
@@ -1050,7 +1259,11 @@ def _batch_add_philosophies(store: VaultStore, items: list[dict[str, Any]]) -> i
                 category=category,
                 evidence_story_ids=evidence_ids,
             )
-        except (ValidationError, ValueError, TypeError) as exc:
+        except ValidationError as exc:
+            _report_item_problems(title, _validation_problems(exc))
+            errors += 1
+            continue
+        except (ValueError, TypeError) as exc:
             click.echo(f"[err] {title}: {exc}")
             errors += 1
             continue
@@ -1126,23 +1339,19 @@ def vault_add_education(
 
 
 @vault.command(name="remove")
-@click.argument("item_id")
+@click.argument("item_id", type=UUID_PARAM)
 @click.option(
     "--yes", "-y", is_flag=True, default=False, help="Skip confirmation prompt."
 )
 @click.pass_context
-def vault_remove(ctx: click.Context, item_id: str, yes: bool) -> None:
+def vault_remove(ctx: click.Context, item_id: UUID, yes: bool) -> None:
     """Remove an item from the vault by UUID."""
     store = _get_store(ctx)
     if not store.exists():
         click.echo("No vault found. Run 'traitprint init' first.")
         return
 
-    try:
-        uid = UUID(item_id)
-    except ValueError:
-        click.echo(f"Invalid UUID: {item_id}")
-        return
+    uid = item_id
 
     if not yes and not click.confirm(f"Remove item {uid}?"):
         click.echo("Cancelled.")
@@ -1240,8 +1449,15 @@ def vault_export(
 @click.option(
     "--count", "-n", default=10, help="Number of entries to show.", show_default=True
 )
+@click.option(
+    "--json",
+    "as_json",
+    is_flag=True,
+    default=False,
+    help="Emit a JSON array of {sha, message} objects.",
+)
 @click.pass_context
-def vault_history(ctx: click.Context, count: int) -> None:
+def vault_history(ctx: click.Context, count: int, as_json: bool) -> None:
     """Show git history for the whole vault file tree."""
     store = _get_store(ctx)
     if not store.exists():
@@ -1249,6 +1465,13 @@ def vault_history(ctx: click.Context, count: int) -> None:
         return
 
     entries = git_log(store.directory, n=count)
+    if as_json:
+        rows = []
+        for entry in entries:
+            sha, _, message = entry.partition(" ")
+            rows.append({"sha": sha, "message": message})
+        click.echo(json.dumps(rows, indent=2))
+        return
     if not entries:
         click.echo("No history found.")
         return
@@ -1260,8 +1483,15 @@ def vault_history(ctx: click.Context, count: int) -> None:
 
 
 @vault.command(name="diff")
+@click.option(
+    "--json",
+    "as_json",
+    is_flag=True,
+    default=False,
+    help="Emit a {from_sha, to_sha, diff_text} JSON object.",
+)
 @click.pass_context
-def vault_diff_cmd(ctx: click.Context) -> None:
+def vault_diff_cmd(ctx: click.Context, as_json: bool) -> None:
     """Show changes across the vault file tree since the previous commit."""
     store = _get_store(ctx)
     if not store.exists():
@@ -1269,6 +1499,14 @@ def vault_diff_cmd(ctx: click.Context) -> None:
         return
 
     changes = git_diff(store.directory)
+    if as_json:
+        payload = {
+            "from_sha": rev_sha(store.directory, "HEAD~1"),
+            "to_sha": rev_sha(store.directory, "HEAD"),
+            "diff_text": changes,
+        }
+        click.echo(json.dumps(payload, indent=2))
+        return
     if not changes:
         click.echo("No changes since last commit.")
         return
@@ -1385,7 +1623,16 @@ def vault_migrate(ctx: click.Context, dry_run: bool, as_json: bool) -> None:
         return
 
     store.save(vault_obj)  # writes the v1 tree and removes vault.json
-    commit(store.directory, "Migrate vault to schema v1")
+    # commit() initializes the repo if missing — migrate promises a single
+    # "Migrate vault to schema v1" commit even for a vault in a plain dir.
+    committed = commit(store.directory, "Migrate vault to schema v1")
+    if not committed:
+        click.echo(
+            "WARNING: the migration was written but could NOT be recorded "
+            "as a git commit. Fix the git error above, then commit inside "
+            "the vault directory to restore history/rollback.",
+            err=True,
+        )
 
     if as_json:
         payload = {
@@ -1398,9 +1645,9 @@ def vault_migrate(ctx: click.Context, dry_run: bool, as_json: bool) -> None:
         return
     click.echo(f"Migrated vault to schema v1 ({len(files)} files).")
     if remaps:
+        noun = "proficiency" if len(remaps) == 1 else "proficiencies"
         click.echo(
-            f"Remapped {len(remaps)} skill proficiencies from 1-10 to 1-5 "
-            "(ceil(x/2))."
+            f"Remapped {len(remaps)} skill {noun} from 1-10 to 1-5 (ceil(x/2))."
         )
 
 
@@ -1733,12 +1980,12 @@ def _pre_push_audit(
 ) -> None:
     """Run the coherence audit before a push.
 
-    Blocks (exit 1) on critical findings — broken stories, dangling
-    references, contradicting roles, anything you should never publish. When
-    ``strict`` is set, major findings block too, matching ``traitprint vault
-    audit --strict``. Non-blocking findings are summarized as an advisory
-    line. When ``enforce`` is False (a dry run) nothing blocks; findings are
-    advisory only.
+    Blocks (exit 1) on critical findings — broken stories, contradicting
+    roles, anything you should never publish. When ``strict`` is set, major
+    findings (warnings, e.g. dangling references) block too, matching
+    ``traitprint vault audit --strict``. Non-blocking findings are
+    summarized as an advisory line. When ``enforce`` is False (a dry run)
+    nothing blocks; findings are advisory only.
     """
     from traitprint.audit import audit_vault, severity_rank, summarize
 
@@ -1913,8 +2160,9 @@ def push_cmd(
     """Upload the local vault to Traitprint cloud (last-write-wins).
 
     Before uploading, runs a coherence audit and blocks on error-level
-    findings (broken stories, dangling references). Pass --strict to block
-    on warnings too, or --skip-audit to bypass the check.
+    findings (broken stories, contradictions). Warnings such as dangling
+    references never block by default; pass --strict to block on warnings
+    too, or --skip-audit to bypass the check.
     """
     _require_cloud_extras()
     from traitprint.cloud import AuthError, CloudClient, CloudError, ConflictError

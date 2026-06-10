@@ -151,7 +151,9 @@ class TestAuditVault:
         critical_codes = {f.code for f in findings if f.severity == "critical"}
         assert {"story.task", "story.action", "story.result"} <= critical_codes
 
-    def test_dangling_skill_reference_is_critical(self) -> None:
+    def test_dangling_skill_reference_is_major_warning(self) -> None:
+        # Contract rule 2 / D10: dangling refs are warnings locally — they
+        # must surface, but never as push-blocking critical findings.
         ghost = SkillSchema(name="ghost", category="x", proficiency=1)
         story = _strong_story(skill_ids=[ghost.id])
         v = VaultSchema(
@@ -160,9 +162,9 @@ class TestAuditVault:
             stories=[story],
         )
         f = next(f for f in audit_vault(v).findings if f.code == "story.dangling_skill")
-        assert f.severity == "critical"
+        assert f.severity == "major"
 
-    def test_dangling_experience_reference_is_critical(self) -> None:
+    def test_dangling_experience_reference_is_major_warning(self) -> None:
         ghost = ExperienceSchema(title="ghost")
         story = _strong_story(experience_id=ghost.id)
         v = VaultSchema(
@@ -173,7 +175,7 @@ class TestAuditVault:
         f = next(
             f for f in audit_vault(v).findings if f.code == "story.dangling_experience"
         )
-        assert f.severity == "critical"
+        assert f.severity == "major"
 
     def test_philosophy_without_evidence_is_major(self) -> None:
         v = _coherent_vault()
@@ -183,7 +185,7 @@ class TestAuditVault:
         )
         assert f.severity == "major"
 
-    def test_philosophy_dangling_evidence_is_critical(self) -> None:
+    def test_philosophy_dangling_evidence_is_major_warning(self) -> None:
         ghost = _strong_story(title="ghost")
         v = _coherent_vault()
         v.philosophies[0].evidence_story_ids = [ghost.id]
@@ -192,7 +194,30 @@ class TestAuditVault:
             for f in audit_vault(v).findings
             if f.code == "philosophy.dangling_evidence"
         )
-        assert f.severity == "critical"
+        assert f.severity == "major"
+
+    def test_dangling_reference_never_critical(self) -> None:
+        """No dangling-reference finding may reach critical (D10/rule 2)."""
+        ghost_skill = SkillSchema(name="ghost", category="x", proficiency=1)
+        ghost_exp = ExperienceSchema(title="ghost")
+        ghost_story = _strong_story(title="ghost")
+        story = _strong_story(
+            skill_ids=[ghost_skill.id], experience_id=ghost_exp.id
+        )
+        v = VaultSchema(
+            profile=ProfileSchema(headline="h", summary="s"),
+            stories=[story],
+            philosophies=[
+                PhilosophySchema(
+                    title="P", description="d", evidence_story_ids=[ghost_story.id]
+                )
+            ],
+        )
+        dangling = [
+            f for f in audit_vault(v).findings if "dangling" in f.code
+        ]
+        assert len(dangling) == 3
+        assert all(f.severity == "major" for f in dangling)
 
     def test_experience_without_story_is_major(self) -> None:
         v = _coherent_vault()

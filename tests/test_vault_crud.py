@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import subprocess
 from pathlib import Path
 from uuid import UUID, uuid4
@@ -608,6 +609,39 @@ class TestAddSkillCLI:
         vault = store.load()
         assert vault.skills[0].taxonomy_id is not None
 
+    def test_category_optional_taxonomy_fills_it(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        result = runner.invoke(
+            cli,
+            ["--path", str(vault_dir), "vault", "add-skill", "Python", "-p", "4"],
+        )
+        assert result.exit_code == 0, result.output
+        skill = VaultStore(vault_dir).load().skills[0]
+        assert skill.category == "technical"  # from the taxonomy match
+
+    def test_category_optional_defaults_empty_without_match(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        result = runner.invoke(
+            cli,
+            ["--path", str(vault_dir), "vault", "add-skill", "FooBarLang", "-p", "2"],
+        )
+        assert result.exit_code == 0, result.output
+        assert VaultStore(vault_dir).load().skills[0].category == ""
+
+    def test_missing_proficiency_is_usage_error(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        # No interactive prompt for missing required fields — exit 2 with
+        # an honest message that --category is optional.
+        result = runner.invoke(
+            cli, ["--path", str(vault_dir), "vault", "add-skill", "Python"]
+        )
+        assert result.exit_code == 2
+        assert "NAME and --proficiency are required" in result.output
+        assert "--category is optional" in result.output
+
     def test_add_skill_duplicate_rejected_cli(
         self, runner: CliRunner, vault_dir: Path
     ) -> None:
@@ -1004,6 +1038,341 @@ class TestAddPhilosophyCLI:
 
 
 # ------------------------------------------------------------------
+# CLI: --json read surface (show / list / history / diff) — tp-an-002
+# ------------------------------------------------------------------
+
+
+class TestJsonReadSurface:
+    @pytest.fixture()
+    def seeded_dir(self, vault_dir: Path) -> Path:
+        store = VaultStore(vault_dir)
+        skill = store.add_skill(name="Python", proficiency=4, category="technical")
+        store.add_experience(
+            title="Staff Engineer", company="Acme", start_date="2020-01"
+        )
+        store.add_story(
+            title="Migration",
+            situation="s",
+            task="t",
+            action="a",
+            result="r",
+            skill_ids=[skill.id],
+        )
+        return vault_dir
+
+    def test_show_json_emits_full_vault(
+        self, runner: CliRunner, seeded_dir: Path
+    ) -> None:
+        result = runner.invoke(
+            cli, ["--path", str(seeded_dir), "vault", "show", "--json"]
+        )
+        assert result.exit_code == 0, result.output
+        payload = json.loads(result.output)
+        assert payload["schema_version"] == 1
+        assert {
+            "vault_id",
+            "updated_at",
+            "profile",
+            "skills",
+            "experiences",
+            "stories",
+            "philosophies",
+            "education",
+        } <= set(payload)
+        skill = payload["skills"][0]
+        assert skill["name"] == "Python"
+        assert skill["proficiency"] == 4
+        UUID(skill["id"])
+        story = payload["stories"][0]
+        assert {"lesson", "outcome", "theme_tags", "skill_ids"} <= set(story)
+
+    def test_list_json_shape(self, runner: CliRunner, seeded_dir: Path) -> None:
+        result = runner.invoke(
+            cli, ["--path", str(seeded_dir), "vault", "list", "skills", "--json"]
+        )
+        assert result.exit_code == 0, result.output
+        rows = json.loads(result.output)
+        assert len(rows) == 1
+        assert set(rows[0]) == {"id", "type", "name"}
+        assert rows[0]["type"] == "skill"
+        assert rows[0]["name"] == "Python"
+        UUID(rows[0]["id"])
+
+        result = runner.invoke(
+            cli, ["--path", str(seeded_dir), "vault", "list", "stories", "--json"]
+        )
+        rows = json.loads(result.output)
+        assert set(rows[0]) == {"id", "type", "title"}
+        assert rows[0]["type"] == "story"
+        assert rows[0]["title"] == "Migration"
+
+    def test_list_json_empty_section_is_empty_array(
+        self, runner: CliRunner, seeded_dir: Path
+    ) -> None:
+        result = runner.invoke(
+            cli, ["--path", str(seeded_dir), "vault", "list", "education", "--json"]
+        )
+        assert result.exit_code == 0, result.output
+        assert json.loads(result.output) == []
+
+    def test_history_json_shape(self, runner: CliRunner, seeded_dir: Path) -> None:
+        result = runner.invoke(
+            cli, ["--path", str(seeded_dir), "vault", "history", "--json"]
+        )
+        assert result.exit_code == 0, result.output
+        rows = json.loads(result.output)
+        assert len(rows) >= 3
+        for row in rows:
+            assert set(row) == {"sha", "message"}
+            assert row["sha"]
+        assert any("Add skill: Python" in row["message"] for row in rows)
+
+    def test_diff_json_shape(self, runner: CliRunner, seeded_dir: Path) -> None:
+        result = runner.invoke(
+            cli, ["--path", str(seeded_dir), "vault", "diff", "--json"]
+        )
+        assert result.exit_code == 0, result.output
+        payload = json.loads(result.output)
+        assert set(payload) == {"from_sha", "to_sha", "diff_text"}
+        assert payload["from_sha"]
+        assert payload["to_sha"]
+        # The last commit added a story file.
+        assert "stories/migration.md" in payload["diff_text"]
+
+
+# ------------------------------------------------------------------
+# CLI: add-story lesson / outcome / theme tags write surface
+# ------------------------------------------------------------------
+
+
+class TestAddStoryExtendedFields:
+    def test_flags_persist_lesson_outcome_theme_tags(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-story",
+                "--title",
+                "Pager Storm",
+                "--situation",
+                "Cascading outage.",
+                "--task",
+                "Restore service.",
+                "--action",
+                "Rolled back, ran the bridge.",
+                "--result",
+                "Restored in 40 minutes.",
+                "--lesson",
+                "Stage rollouts behind flags.",
+                "--outcome",
+                "learning",
+                "--theme-tag",
+                "incident-response",
+                "--theme-tag",
+                "process-change",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        story = VaultStore(vault_dir).load().stories[0]
+        assert story.lesson == "Stage rollouts behind flags."
+        assert story.outcome == "learning"
+        assert story.theme_tags == ["incident-response", "process-change"]
+
+    def test_invalid_outcome_is_usage_error(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-story",
+                "--title",
+                "T",
+                "--outcome",
+                "triumph",
+            ],
+        )
+        assert result.exit_code == 2
+        assert "triumph" in result.output
+
+    def test_show_verbose_displays_extended_fields(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        store = VaultStore(vault_dir)
+        store.add_story(
+            title="Pager Storm",
+            situation="s",
+            task="t",
+            action="a",
+            result="r",
+            lesson="Stage rollouts behind flags.",
+            outcome="learning",
+            theme_tags=["incident-response"],
+        )
+        result = runner.invoke(cli, ["--path", str(vault_dir), "vault", "show", "-v"])
+        assert result.exit_code == 0, result.output
+        assert "lesson:    Stage rollouts behind flags." in result.output
+        assert "outcome:   learning" in result.output
+        assert "theme_tags: incident-response" in result.output
+
+    def test_batch_accepts_extended_keys(
+        self, runner: CliRunner, vault_dir: Path, tmp_path: Path
+    ) -> None:
+        payload = tmp_path / "stories.json"
+        payload.write_text(
+            '[{"title":"Tagged","situation":"s","task":"t","action":"a",'
+            '"result":"r","lesson":"L","outcome":"win",'
+            '"theme_tags":["incident-response"]}]'
+        )
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-story",
+                "--from-json",
+                str(payload),
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        story = VaultStore(vault_dir).load().stories[0]
+        assert story.lesson == "L"
+        assert story.outcome == "win"
+        assert story.theme_tags == ["incident-response"]
+
+    def test_batch_rejects_invalid_outcome(
+        self, runner: CliRunner, vault_dir: Path, tmp_path: Path
+    ) -> None:
+        payload = tmp_path / "stories.json"
+        payload.write_text('[{"title":"Bad","outcome":"triumph"}]')
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-story",
+                "--from-json",
+                str(payload),
+            ],
+        )
+        assert result.exit_code == 1
+        assert "[err] Bad" in result.output
+        assert "outcome" in result.output
+
+
+# ------------------------------------------------------------------
+# CLI: UUID flag validation (no raw tracebacks)
+# ------------------------------------------------------------------
+
+
+class TestUUIDFlagValidation:
+    """Invalid UUIDs in flags are usage errors (exit 2), never tracebacks."""
+
+    def _assert_uuid_usage_error(self, result: object, bad: str) -> None:
+        assert result.exit_code == 2, result.output  # type: ignore[attr-defined]
+        assert f"invalid UUID '{bad}'" in result.output  # type: ignore[attr-defined]
+        assert result.exception is None or isinstance(  # type: ignore[attr-defined]
+            result.exception,  # type: ignore[attr-defined]
+            SystemExit,
+        )
+
+    def test_add_philosophy_evidence_id(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-philosophy",
+                "--title",
+                "T",
+                "--evidence-id",
+                "PLACEHOLDER",
+            ],
+        )
+        self._assert_uuid_usage_error(result, "PLACEHOLDER")
+        assert VaultStore(vault_dir).load().philosophies == []
+
+    def test_add_story_skill_id(self, runner: CliRunner, vault_dir: Path) -> None:
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-story",
+                "--title",
+                "T",
+                "--skill-id",
+                "not-a-uuid",
+            ],
+        )
+        self._assert_uuid_usage_error(result, "not-a-uuid")
+        assert VaultStore(vault_dir).load().stories == []
+
+    def test_add_story_experience_id(self, runner: CliRunner, vault_dir: Path) -> None:
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-story",
+                "--title",
+                "T",
+                "--experience-id",
+                "not-a-uuid",
+            ],
+        )
+        self._assert_uuid_usage_error(result, "not-a-uuid")
+
+    def test_remove_argument(self, runner: CliRunner, vault_dir: Path) -> None:
+        result = runner.invoke(
+            cli, ["--path", str(vault_dir), "vault", "remove", "nope", "-y"]
+        )
+        self._assert_uuid_usage_error(result, "nope")
+
+    def test_valid_uuid_still_accepted(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        store = VaultStore(vault_dir)
+        skill = store.add_skill(name="Go", proficiency=3, category="technical")
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-story",
+                "--title",
+                "T",
+                "--situation",
+                "s",
+                "--task",
+                "t",
+                "--action",
+                "a",
+                "--result",
+                "r",
+                "--skill-id",
+                str(skill.id),
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        assert store.load().stories[0].skill_ids == [skill.id]
+
+
+# ------------------------------------------------------------------
 # CLI: vault history / diff / rollback
 # ------------------------------------------------------------------
 
@@ -1111,11 +1480,85 @@ class TestAddSkillBatch:
             ],
         )
         assert result.exit_code == 1
-        assert "[err] Incomplete" in result.output
-        assert "proficiency" in result.output
-        assert "category" in result.output
+        # category is optional — only proficiency is reported missing.
+        err_lines = [
+            line for line in result.output.splitlines() if line.startswith("[err]")
+        ]
+        assert err_lines == ["[err] Incomplete: proficiency: missing required field"]
         assert "[ok] Valid" in result.output
         assert "Summary: added 1, errors 1" in result.output
+
+    def test_batch_reports_all_violations_in_one_pass(
+        self, runner: CliRunner, vault_dir: Path, tmp_path: Path
+    ) -> None:
+        # Missing field AND out-of-range proficiency reported together.
+        payload = tmp_path / "skills.json"
+        payload.write_text('[{"proficiency":99}]')
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-skill",
+                "--from-json",
+                str(payload),
+            ],
+        )
+        assert result.exit_code == 1
+        assert "[err] item 0: name: missing required field" in result.output
+        assert "[err] item 0: proficiency: must be between 1 and 5" in result.output
+        # One failing item, regardless of how many violations it carries.
+        assert "Summary: added 0, errors 1" in result.output
+
+    def test_batch_never_leaks_pydantic_dumps(
+        self, runner: CliRunner, vault_dir: Path, tmp_path: Path
+    ) -> None:
+        # An invalid philosophy category reaches the pydantic validator;
+        # the output must stay in the normalized [err] style.
+        payload = tmp_path / "phil.json"
+        payload.write_text('[{"title":"Bad","category":"not-a-category"}]')
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-philosophy",
+                "--from-json",
+                str(payload),
+            ],
+        )
+        assert result.exit_code == 1
+        assert "[err] Bad: category:" in result.output
+        assert "pydantic" not in result.output.lower()
+        assert "https://" not in result.output
+        assert "validation error" not in result.output.lower()
+
+    def test_batch_skill_category_is_optional(
+        self, runner: CliRunner, vault_dir: Path, tmp_path: Path
+    ) -> None:
+        payload = tmp_path / "skills.json"
+        payload.write_text(
+            '[{"name":"Python","proficiency":4},'
+            '{"name":"FooBarLang","proficiency":2}]'
+        )
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-skill",
+                "--from-json",
+                str(payload),
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        skills = {s.name: s for s in VaultStore(vault_dir).load().skills}
+        # Taxonomy fills the category on a match; otherwise empty.
+        assert skills["Python"].category == "technical"
+        assert skills["FooBarLang"].category == ""
 
     def test_batch_reports_invalid_proficiency(
         self, runner: CliRunner, vault_dir: Path, tmp_path: Path
@@ -1265,7 +1708,7 @@ class TestAddExperienceBatch:
             ],
         )
         assert result.exit_code == 1
-        assert "missing field title" in result.output
+        assert "title: missing required field" in result.output
 
 
 class TestAddStoryBatch:
