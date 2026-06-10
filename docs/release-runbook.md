@@ -2,7 +2,7 @@
 
 How to ship a release of the `traitprint` package. The recommended path is
 **trusted publishing** via the
-[`release.yml`](../.github/workflows/release.yml) GitHub Actions workflow —
+[`publish.yml`](../.github/workflows/publish.yml) GitHub Actions workflow —
 no long-lived API token anywhere. A manual `twine` fallback is documented at
 the end.
 
@@ -21,7 +21,7 @@ If `traitprint` does **not** exist on PyPI yet (first release):
    - PyPI project name: `traitprint`
    - Owner: `DataViking-Tech`
    - Repository name: `traitprint`
-   - Workflow name: `release.yml`
+   - Workflow name: `publish.yml`
    - Environment name: `pypi`
 3. Submit. The first successful workflow publish claims the project name
    and converts the pending publisher into a real one.
@@ -70,7 +70,7 @@ python3 -m venv /tmp/tp-release && /tmp/tp-release/bin/pip install dist/*.whl
 rm -rf /tmp/tp-release
 ```
 
-The `build` job in `release.yml` re-runs steps 4–5 in CI, so a release can
+The `build` job in `publish.yml` re-runs steps 4–5 in CI, so a release can
 never ship without them — but catching failures locally is cheaper.
 
 ## 2. Release (recommended: tag → trusted publishing)
@@ -81,7 +81,7 @@ git tag v0.9.0                          # tag MUST match pyproject version
 git push origin v0.9.0
 ```
 
-That's it. The tag push triggers `release.yml`:
+That's it. The tag push triggers `publish.yml`:
 
 1. **test** — ruff + mypy + pytest across Python 3.10–3.13.
 2. **build** — verifies the tag matches `pyproject.toml`, builds
