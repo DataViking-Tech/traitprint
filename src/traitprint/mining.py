@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import re
+import shlex
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -213,32 +214,51 @@ BATCH_SHAPES = {
 }
 
 #: Write-back instructions: validated CLI paths only, ending with the audit.
+#: Each command is rendered as ``traitprint --vault-dir <resolved-dir> …``
+#: (see :func:`_assist_command`) so the wrapping agent always writes to the
+#: exact vault the payload was produced for — never a default/cwd-discovered
+#: vault that happens to resolve differently in the agent's shell.
 WRITE_BACK_STEPS = (
     (
         "profile",
-        "traitprint vault set-profile --name <display_name> "
+        "vault set-profile --name <display_name> "
         "--headline <headline> --summary <summary> --location <location> "
         "--email <contact_email>  # pass only extracted non-empty fields",
         None,
     ),
     (
         "skills",
-        "traitprint vault add-skill --from-json -  # JSON array on stdin",
+        "vault add-skill --from-json -  # JSON array on stdin",
         BATCH_SHAPES["skills"],
     ),
     (
         "experiences",
-        "traitprint vault add-experience --from-json -  # JSON array on stdin",
+        "vault add-experience --from-json -  # JSON array on stdin",
         BATCH_SHAPES["experiences"],
     ),
     (
         "education",
-        "traitprint vault add-education --from-json -  # JSON array on stdin",
+        "vault add-education --from-json -  # JSON array on stdin",
         BATCH_SHAPES["education"],
     ),
 )
 
-WRITE_BACK_VERIFY = "traitprint vault audit --json"
+WRITE_BACK_VERIFY = "vault audit --json"
+
+
+def _resolved_vault_dir(vault_dir: Path) -> Path:
+    """Normalize the vault directory to an absolute path for the payload."""
+    return Path(vault_dir).expanduser().resolve()
+
+
+def _assist_command(vault_dir: Path, rest: str) -> str:
+    """Render a write-back command pinned to the resolved vault directory.
+
+    The selector is always included (deterministic even for the default
+    vault): the agent may run the command from any cwd / env, where vault
+    discovery would otherwise resolve to a different directory.
+    """
+    return f"traitprint --vault-dir {shlex.quote(str(vault_dir))} {rest}"
 
 
 def extraction_contract() -> dict[str, str]:
@@ -255,39 +275,50 @@ def extraction_contract() -> dict[str, str]:
     }
 
 
-def assist_write_back() -> dict[str, Any]:
-    """The machine-readable write-back plan for agent-assist mode."""
+def assist_write_back(vault_dir: Path) -> dict[str, Any]:
+    """The machine-readable write-back plan for agent-assist mode.
+
+    ``vault_dir`` is the resolved directory of the vault the payload was
+    produced for; every command (including the audit verify line) carries
+    it as an explicit ``--vault-dir`` selector.
+    """
+    resolved = _resolved_vault_dir(vault_dir)
     steps: list[dict[str, str]] = []
     for section, command, stdin_shape in WRITE_BACK_STEPS:
-        step = {"section": section, "command": command}
+        step = {"section": section, "command": _assist_command(resolved, command)}
         if stdin_shape is not None:
             step["stdin"] = stdin_shape
         steps.append(step)
-    return {"steps": steps, "verify": WRITE_BACK_VERIFY}
+    return {"steps": steps, "verify": _assist_command(resolved, WRITE_BACK_VERIFY)}
 
 
-def build_assist_payload(text: str, file_name: str) -> dict[str, Any]:
+def build_assist_payload(
+    text: str, file_name: str, vault_dir: Path
+) -> dict[str, Any]:
     """Structured (``--json``) form of the agent-assist payload."""
+    resolved = _resolved_vault_dir(vault_dir)
     return {
         "mode": "agent-assist",
         "file": file_name,
+        "vault_dir": str(resolved),
         "instructions": ASSIST_INSTRUCTIONS,
         "contract": extraction_contract(),
         "text": text,
-        "write_back": assist_write_back(),
+        "write_back": assist_write_back(resolved),
     }
 
 
-def render_assist_payload(text: str, file_name: str) -> str:
+def render_assist_payload(text: str, file_name: str, vault_dir: Path) -> str:
     """Human/agent-readable text form of the agent-assist payload."""
-    write_back_lines: list[str] = []
+    resolved = _resolved_vault_dir(vault_dir)
+    write_back_lines: list[str] = [f"vault: {resolved}"]
     for section, command, stdin_shape in WRITE_BACK_STEPS:
         write_back_lines.append(f"{section}:")
-        write_back_lines.append(f"  {command}")
+        write_back_lines.append(f"  {_assist_command(resolved, command)}")
         if stdin_shape is not None:
             write_back_lines.append(f"  stdin: {stdin_shape}")
     write_back_lines.append("then verify:")
-    write_back_lines.append(f"  {WRITE_BACK_VERIFY}")
+    write_back_lines.append(f"  {_assist_command(resolved, WRITE_BACK_VERIFY)}")
 
     return "\n".join(
         [

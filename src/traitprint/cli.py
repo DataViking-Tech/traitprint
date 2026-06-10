@@ -2003,12 +2003,19 @@ def vault_import_resume(
                 "Is the file empty or image-only?"
             )
         truncated = text[:MAX_RESUME_CHARS]
+        # Thread the RESOLVED vault directory into the payload so the
+        # write-back commands pin the same vault this invocation targeted
+        # (--vault-dir / $TRAITPRINT_VAULT_DIR / discovery), wherever the
+        # wrapping agent happens to run them from.
         if as_json:
             click.echo(
-                json.dumps(build_assist_payload(truncated, path), indent=2)
+                json.dumps(
+                    build_assist_payload(truncated, path, store.directory),
+                    indent=2,
+                )
             )
         else:
-            click.echo(render_assist_payload(truncated, path))
+            click.echo(render_assist_payload(truncated, path, store.directory))
         return
 
     click.echo(f"Using provider: {llm.name} (model: {llm.model})")

@@ -11,8 +11,11 @@ from typing import Protocol
 AVAILABLE_PROVIDERS = ("anthropic", "openai", "ollama", "openrouter")
 
 # Priority order when auto-detecting (cheapest-local-first: Ollama > Anthropic
-# > OpenAI > OpenRouter). The ordering matters only when multiple keys are
-# present and the user hasn't picked one.
+# > OpenAI > OpenRouter). The ordering matters only when multiple providers are
+# configured and the user hasn't picked one. Ollama participates in
+# auto-detect only with an explicit signal (OLLAMA_HOST env / ollama_host in
+# .credentials) — see ``_ollama_signal`` — since its default localhost host
+# would otherwise shadow configured cloud keys.
 _DETECT_ORDER = ("ollama", "anthropic", "openai", "openrouter")
 
 #: Actionable hint shown whenever no provider can be resolved.
@@ -32,6 +35,16 @@ _PROVIDER_SIGNALS = (
     ("OPENROUTER_API_KEY", "openrouter_api_key"),
     ("OLLAMA_HOST", "ollama_host"),
 )
+
+
+def _ollama_signal(creds: dict[str, str]) -> bool:
+    """True when Ollama is EXPLICITLY configured (D11).
+
+    Mirrors the Ollama entry in ``_PROVIDER_SIGNALS``: OLLAMA_HOST (env) or
+    ``ollama_host`` (.credentials). The silently-assumed localhost default
+    is not a signal.
+    """
+    return bool(os.environ.get("OLLAMA_HOST") or creds.get("ollama_host"))
 
 
 def has_provider_signal(credentials: dict[str, str] | None = None) -> bool:
@@ -205,6 +218,11 @@ def detect_provider(
     If ``preferred`` is passed, it's tried first (and raises if it isn't
     configured, so users get a helpful error when they asked for a
     specific provider). Otherwise, providers are tried in ``_DETECT_ORDER``.
+
+    In auto-detect, Ollama is considered only when explicitly configured
+    (OLLAMA_HOST env or ``ollama_host`` in .credentials) — the default
+    localhost host is not a signal (D11), so configured cloud keys win.
+    An explicit ``preferred="ollama"`` still works without a signal.
     """
     creds = credentials if credentials is not None else load_credentials()
 
@@ -213,6 +231,10 @@ def detect_provider(
 
     last_error: LLMError | None = None
     for name in _DETECT_ORDER:
+        if name == "ollama" and not _ollama_signal(creds):
+            # Never auto-construct a default-host Ollama provider: it would
+            # shadow a configured cloud key with a doomed localhost call.
+            continue
         try:
             return provider_from_name(name, model=model, credentials=creds)
         except ProviderNotConfigured as exc:

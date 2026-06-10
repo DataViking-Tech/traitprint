@@ -133,13 +133,11 @@ class TestDetectProvider:
             detect_provider(preferred="anthropic", credentials={})
 
     def test_no_providers_raises(self) -> None:
-        # Ollama is always considered configured (no key needed), so we need
-        # to force that path to fail by overriding the detect order via
-        # explicit credentials-only keys that won't match.
-        # Instead we just verify the hint message includes a helpful line.
-        p = detect_provider(credentials={})
-        # Ollama always wins auto-detect when no keys are set.
-        assert p.name == "ollama"
+        # Default-host Ollama is not a signal (D11): with no keys and no
+        # OLLAMA_HOST, auto-detect raises instead of constructing a doomed
+        # localhost Ollama provider.
+        with pytest.raises(ProviderNotConfigured, match="No LLM provider"):
+            detect_provider(credentials={})
 
     def test_anthropic_wins_when_ollama_disabled(
         self, monkeypatch: pytest.MonkeyPatch
@@ -149,6 +147,46 @@ class TestDetectProvider:
             preferred="anthropic", credentials={"anthropic_api_key": "sk-a"}
         )
         assert p.name == "anthropic"
+
+    def test_cloud_key_only_returns_cloud_provider(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # D11: with only ANTHROPIC_API_KEY set (no OLLAMA_HOST), auto-detect
+        # must skip Ollama and return the configured cloud provider.
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-a")
+        p = detect_provider(credentials={})
+        assert p.name == "anthropic"
+
+    def test_cloud_key_in_credentials_returns_cloud_provider(self) -> None:
+        p = detect_provider(credentials={"anthropic_api_key": "sk-a"})
+        assert p.name == "anthropic"
+
+    def test_ollama_host_env_is_a_signal(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("OLLAMA_HOST", "http://gpu-box:11434")
+        p = detect_provider(credentials={})
+        assert p.name == "ollama"
+        assert p.host == "http://gpu-box:11434"  # type: ignore[attr-defined]
+
+    def test_ollama_host_in_credentials_is_a_signal(self) -> None:
+        p = detect_provider(credentials={"ollama_host": "http://gpu-box:11434"})
+        assert p.name == "ollama"
+        assert p.host == "http://gpu-box:11434"  # type: ignore[attr-defined]
+
+    def test_explicit_ollama_signal_keeps_local_first_priority(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # Cheapest-local-first still applies when Ollama is explicit.
+        monkeypatch.setenv("OLLAMA_HOST", "http://gpu-box:11434")
+        p = detect_provider(credentials={"anthropic_api_key": "sk-a"})
+        assert p.name == "ollama"
+
+    def test_preferred_ollama_works_without_signal(self) -> None:
+        # `--provider ollama` stays unchanged: no signal needed, default host.
+        p = detect_provider(preferred="ollama", credentials={})
+        assert p.name == "ollama"
+        assert p.host == "http://localhost:11434"  # type: ignore[attr-defined]
 
 
 # ---- provider HTTP mocking -----------------------------------------------

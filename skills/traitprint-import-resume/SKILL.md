@@ -61,7 +61,10 @@ identity.
 ## 4. Write back through the batch commands
 
 Only the validated CLI paths shown in the payload (each write
-auto-commits):
+auto-commits). The payload renders every command — including the final
+audit — as `traitprint --vault-dir <resolved-dir> vault ...`, pinning the
+exact vault the payload was produced for; keep that flag when you run
+them so writes never land in a default or cwd-discovered vault:
 
 ```bash
 traitprint vault set-profile --name "..." --headline "..." --summary "..." \

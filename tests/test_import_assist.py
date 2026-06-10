@@ -283,12 +283,14 @@ class TestAssistModeResolution:
         # (c) the extracted resume text
         assert "Jordan Vance" in out
         assert "Northwind Robotics" in out
-        # (d) write-back through the validated batch path, ending in audit
-        assert "traitprint vault set-profile" in out
-        assert "traitprint vault add-skill --from-json -" in out
-        assert "traitprint vault add-experience --from-json -" in out
-        assert "traitprint vault add-education --from-json -" in out
-        assert "traitprint vault audit --json" in out
+        # (d) write-back through the validated batch path, ending in audit —
+        # every command pinned to the resolved vault via --vault-dir.
+        prefix = f"traitprint --vault-dir {vault_dir.resolve()} vault"
+        assert f"{prefix} set-profile" in out
+        assert f"{prefix} add-skill --from-json -" in out
+        assert f"{prefix} add-experience --from-json -" in out
+        assert f"{prefix} add-education --from-json -" in out
+        assert f"{prefix} audit --json" in out
 
     def test_payload_json_shape(self, vault_dir: Path, no_provider: None) -> None:
         runner = CliRunner()
@@ -307,6 +309,7 @@ class TestAssistModeResolution:
         payload = json.loads(result.output)
         assert payload["mode"] == "agent-assist"
         assert payload["file"] == str(RESUME_TXT)
+        assert payload["vault_dir"] == str(vault_dir.resolve())
         contract = payload["contract"]
         assert {"output", "schema", "rules", "proposal_rules"} <= set(contract)
         from traitprint.mining import EXTRACTION_RULES, EXTRACTION_SCHEMA
@@ -321,10 +324,68 @@ class TestAssistModeResolution:
             "experiences",
             "education",
         ]
+        prefix = f"traitprint --vault-dir {vault_dir.resolve()} vault"
+        for step in steps:
+            assert step["command"].startswith(f"{prefix} ")
         for step in steps[1:]:
             assert "--from-json -" in step["command"]
             assert "stdin" in step
-        assert payload["write_back"]["verify"] == "traitprint vault audit --json"
+        assert payload["write_back"]["verify"] == f"{prefix} audit --json"
+
+    def test_write_back_pins_custom_vault_dir(
+        self, vault_dir: Path, no_provider: None
+    ) -> None:
+        """P2-1: payload write-back must target the vault the CLI resolved.
+
+        With a custom ``--vault-dir``, every write-back command (and the
+        audit verify line) carries that resolved directory explicitly, so a
+        wrapping agent in any cwd/env cannot write to the wrong vault.
+        """
+        runner = CliRunner()
+        resolved = str(vault_dir.resolve())
+        prefix = f"traitprint --vault-dir {resolved} vault"
+
+        # Text payload: --vault-dir on every write-back command + verify.
+        result = runner.invoke(
+            cli,
+            [
+                "--vault-dir",
+                str(vault_dir),
+                "vault",
+                "import-resume",
+                str(RESUME_TXT),
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        for sub in (
+            "set-profile",
+            "add-skill --from-json -",
+            "add-experience --from-json -",
+            "add-education --from-json -",
+            "audit --json",
+        ):
+            assert f"{prefix} {sub}" in result.output
+
+        # JSON payload: vault_dir field + the same commands in every step.
+        result = runner.invoke(
+            cli,
+            [
+                "--vault-dir",
+                str(vault_dir),
+                "vault",
+                "import-resume",
+                str(RESUME_TXT),
+                "--json",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        payload = json.loads(result.output)
+        assert payload["vault_dir"] == resolved
+        steps = payload["write_back"]["steps"]
+        assert steps
+        for step in steps:
+            assert f"--vault-dir {resolved} " in step["command"]
+        assert payload["write_back"]["verify"] == f"{prefix} audit --json"
 
     def test_no_assist_with_no_provider_errors(
         self, vault_dir: Path, no_provider: None
