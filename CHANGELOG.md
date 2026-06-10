@@ -5,7 +5,72 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.7.1] - 2026-06-10
+
+### Fixed
+
+- **Git auto-commits never fail silently.** A vault living in a plain
+  directory (no `.git`) now gets a repo initialized on its first write;
+  an adopted pre-existing repo gets the vault-local identity and
+  `commit.gpgsign=false` config (re)applied so a broken global git setup
+  cannot block commits; and when a commit still fails, the CLI prints a
+  prominent stderr warning ("vault saved but git commit failed: …")
+  instead of swallowing it — the data write keeps exit code 0.
+  `vault migrate` initializes the repo when missing and warns loudly if
+  its promised migration commit cannot be recorded.
+- **Invalid UUID flags no longer raise tracebacks.** `add-story
+  --skill-id/--experience-id`, `add-philosophy --evidence-id`, and
+  `vault remove ITEM_ID` reject bad values with `invalid UUID '<x>'`
+  and exit code 2 (usage error).
+- **MCP `get_philosophy` honors its filter.** The tool gains a
+  `category` argument (exact match against the five philosophy
+  categories) that excludes non-matching entries instead of returning
+  everything at `match_score` 0.0; topic queries rank by keyword match
+  against title/stance, and matches carry meaningful scores.
+- **MCP proficiency vocabulary covers all five levels.** Level 3 now
+  renders as `proficient` instead of folding into `working`;
+  `search_skills min_proficiency` accepts all five labels (`familiar`,
+  `working`, `proficient`, `expert`, `authority`) and integers 1-5.
+  (Intentionally ahead of the cloud server's current 4-label enum;
+  cloud parity catch-up is tracked separately.)
+- **MCP `find_story` theme matching includes `theme_tags`.** An exact
+  tag match scores highest (1.0), then keyword/substring hits in the
+  tags, then STAR body text — a story tagged `incident-response` is now
+  found for that theme.
+- **Audit severity matches the contract.** Dangling cross-link
+  references (`story.dangling_skill`, `story.dangling_experience`,
+  `philosophy.dangling_evidence`) are warnings (major), not critical:
+  they still surface in every audit but no longer block `traitprint
+  push` by default (vault v1 contract rule 2 / architecture D10).
+- **Batch `--from-json` errors are complete and clean.** All violations
+  per item are reported in one pass (missing fields and range errors
+  together) in the `[err] <name>: field: message` style; pydantic error
+  dumps and `errors.pydantic.dev` URLs never leak into the output.
+- `add-skill --category` is genuinely optional, matching the contract:
+  on a taxonomy match the taxonomy's category fills it, otherwise it
+  stays empty — in single and batch mode, with honest help text and no
+  interactive prompt.
+- `add-experience` help no longer claims missing required fields are
+  prompted for (only `--title` is required).
+- `vault migrate` grammar: "Remapped 1 skill proficiency" (singular).
+- `docs/schema/vault-v1` rule 7 notes that `traitprint proposals
+  approve` is planned, not shipped (the Traitprint Cloud review queue
+  covers approval today).
+
+### Added
+
+- `vault add-story` writes the full story schema: `--lesson TEXT`,
+  `--outcome win|failure|learning`, and repeatable `--theme-tag TAG`.
+  The same `lesson`/`outcome`/`theme_tags` keys are accepted in
+  `--from-json` batch mode, and `vault show --verbose` displays all
+  three fields.
+- `--json` on the read surface (tp-an-002): `vault show --json` (full
+  vault document), `vault list <section> --json` (array of
+  `{id, type, name|title}`), `vault history --json` (array of
+  `{sha, message}`), `vault diff --json`
+  (`{from_sha, to_sha, diff_text}`).
+- MCP `get_profile_summary` documents its `depth` levels
+  (`brief|standard|detailed`) in the tool description.
 
 ### Added — Agent Skills (SKILL.md)
 
