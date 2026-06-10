@@ -1286,6 +1286,15 @@ def _batch_add_philosophies(store: VaultStore, items: list[dict[str, Any]]) -> i
 )
 @click.option("--description", default=None, help="Description of the entry.")
 @click.option("--interactive", "-i", is_flag=True, default=True, help="Guided prompts.")
+@click.option(
+    "--from-json",
+    "from_json",
+    type=click.File("r"),
+    default=None,
+    help="Batch mode: load education entries from a JSON file (or '-' for "
+    "stdin). Expects a JSON array of {institution, degree?, field_of_study?, "
+    "start_date?, end_date?, description?} objects.",
+)
 @click.pass_context
 def vault_add_education(
     ctx: click.Context,
@@ -1296,6 +1305,7 @@ def vault_add_education(
     end_date: str | None,
     description: str | None,
     interactive: bool,
+    from_json: IO[str] | None,
 ) -> None:
     """Add an education entry to your vault.
 
@@ -1305,6 +1315,17 @@ def vault_add_education(
     store = _get_store(ctx)
     if not store.exists():
         click.echo("No vault found. Run 'traitprint init' first.")
+        return
+
+    if from_json is not None:
+        if institution is not None:
+            click.echo("--from-json cannot be combined with --institution.")
+            ctx.exit(2)
+            return
+        items = _read_json_items(from_json)
+        errors = _batch_add_education(store, items)
+        if errors:
+            ctx.exit(1)
         return
 
     non_interactive = institution is not None
@@ -1333,6 +1354,67 @@ def vault_add_education(
         description=desc_val,
     )
     click.echo(f"Added education: {edu.degree} at {edu.institution} [{edu.id}]")
+
+
+def _batch_add_education(store: VaultStore, items: list[dict[str, Any]]) -> int:
+    """Add education entries from parsed JSON items. Returns number of errors.
+
+    ALL violations for an item are reported in one pass.
+    """
+    added = 0
+    errors = 0
+    string_fields = (
+        "degree",
+        "field_of_study",
+        "start_date",
+        "end_date",
+        "description",
+    )
+    for i, item in enumerate(items):
+        institution = item.get("institution")
+        label = (
+            institution
+            if isinstance(institution, str) and institution.strip()
+            else f"item {i}"
+        )
+
+        problems: list[str] = []
+        if "institution" not in item:
+            problems.append("institution: missing required field")
+        elif not isinstance(institution, str) or not institution.strip():
+            problems.append("institution: must be a non-empty string")
+        for field_name in string_fields:
+            value = item.get(field_name)
+            if value is not None and not isinstance(value, str):
+                problems.append(f"{field_name}: must be a string")
+        if problems:
+            _report_item_problems(label, problems)
+            errors += 1
+            continue
+
+        assert isinstance(institution, str)
+        end_date = item.get("end_date") or None
+        try:
+            edu = store.add_education(
+                institution=institution,
+                degree=str(item.get("degree", "") or ""),
+                field_of_study=str(item.get("field_of_study", "") or ""),
+                start_date=str(item.get("start_date", "") or ""),
+                end_date=str(end_date) if end_date else None,
+                description=str(item.get("description", "") or ""),
+            )
+        except ValidationError as exc:
+            _report_item_problems(institution, _validation_problems(exc))
+            errors += 1
+            continue
+        except (ValueError, TypeError) as exc:
+            click.echo(f"[err] {institution}: {exc}")
+            errors += 1
+            continue
+        click.echo(f"[ok] {edu.institution} [{edu.id}]")
+        added += 1
+    click.echo(f"Summary: added {added}, errors {errors}")
+    return errors
 
 
 # --- vault remove ---
@@ -1743,6 +1825,55 @@ def vault_audit(
         ctx.exit(1)
 
 
+# --- vault extract-text ---
+
+
+@vault.command(name="extract-text")
+@click.argument(
+    "path",
+    type=click.Path(exists=True, dir_okay=False, readable=True, path_type=str),
+)
+@click.option(
+    "--json",
+    "as_json",
+    is_flag=True,
+    default=False,
+    help='Emit a {"file", "format", "chars", "text"} JSON object.',
+)
+@click.pass_context
+def vault_extract_text(ctx: click.Context, path: str, as_json: bool) -> None:
+    """Extract plain text from a document (PDF, DOCX, TXT, MD) to stdout.
+
+    The deterministic half of resume import: no LLM, no vault writes.
+    PDF needs pypdf and DOCX needs python-docx — both ship with
+    pip install 'traitprint[import]'.
+    """
+    from pathlib import Path as _Path
+
+    from traitprint.mining import ResumeExtractionError, extract_resume_text
+
+    file_path = _Path(path)
+    try:
+        text = extract_resume_text(file_path)
+    except ResumeExtractionError as exc:
+        raise click.ClickException(str(exc)) from exc
+    if not text.strip():
+        raise click.ClickException(
+            f"Extracted zero text from {path}. Is the file empty or image-only?"
+        )
+
+    if as_json:
+        payload = {
+            "file": path,
+            "format": file_path.suffix.lower().lstrip("."),
+            "chars": len(text),
+            "text": text,
+        }
+        click.echo(json.dumps(payload, indent=2))
+        return
+    click.echo(text)
+
+
 # --- vault import-resume ---
 
 
@@ -1775,6 +1906,23 @@ def vault_audit(
     default=False,
     help="Show what would be imported without modifying the vault.",
 )
+@click.option(
+    "--assist/--no-assist",
+    "assist",
+    default=None,
+    help="Force (--assist) or suppress (--no-assist) agent-assist mode. "
+    "Default: assist kicks in automatically when no LLM provider is "
+    "configured; with --no-assist and no provider the command errors.",
+)
+@click.option(
+    "--json",
+    "as_json",
+    is_flag=True,
+    default=False,
+    help="Agent-assist mode only: emit the assist payload as structured "
+    'JSON ({"mode": "agent-assist", "contract": ..., "text": ..., '
+    '"write_back": ...}).',
+)
 @click.pass_context
 def vault_import_resume(
     ctx: click.Context,
@@ -1783,20 +1931,38 @@ def vault_import_resume(
     model: str | None,
     yes: bool,
     dry_run: bool,
+    assist: bool | None,
+    as_json: bool,
 ) -> None:
-    """Import a resume via a BYOK LLM provider.
+    """Import a resume via a BYOK LLM provider — or your wrapping agent.
 
     Extracts profile, skills, experiences, and education from PDF, DOCX,
     TXT, or MD. Shows a summary and asks for confirmation before writing
     to the vault.
+
+    Provider resolution (D11): explicit --provider flag, then a configured
+    BYOK key (env or .credentials), then agent-assist mode — the command
+    prints the extracted text plus the extraction contract for the wrapping
+    agent to complete and write back through the validated batch commands.
+    Headless runs (no agent) still need a BYOK key; pass --no-assist to get
+    an actionable error instead of the assist payload.
     """
     from pathlib import Path as _Path
 
-    from traitprint.mining import ResumeExtractionError, resume_to_draft
+    from traitprint.mining import (
+        MAX_RESUME_CHARS,
+        ResumeExtractionError,
+        build_assist_payload,
+        extract_resume_text,
+        render_assist_payload,
+        resume_to_draft,
+    )
     from traitprint.providers import (
+        NO_PROVIDER_HINT,
         LLMError,
         ProviderNotConfigured,
         detect_provider,
+        has_provider_signal,
     )
 
     store = _get_store(ctx)
@@ -1805,10 +1971,52 @@ def vault_import_resume(
         ctx.exit(1)
         return
 
-    try:
-        llm = detect_provider(preferred=provider, model=model)
-    except ProviderNotConfigured as exc:
-        raise click.ClickException(str(exc)) from exc
+    if assist is True and provider is not None:
+        click.echo("--assist cannot be combined with --provider.")
+        ctx.exit(2)
+        return
+
+    # D11 resolution: explicit flag → configured BYOK key → ambient agent
+    # (assist) → actionable error.
+    llm = None
+    if assist is not True and (provider is not None or has_provider_signal()):
+        try:
+            llm = detect_provider(preferred=provider, model=model)
+        except ProviderNotConfigured as exc:
+            raise click.ClickException(str(exc)) from exc
+
+    if llm is None:
+        if assist is False:
+            raise click.ClickException(
+                f"No LLM provider configured. {NO_PROVIDER_HINT} "
+                "(Or drop --no-assist to let a wrapping agent do the "
+                "extraction.)"
+            )
+        # Agent-assist mode: emit text + contract for the wrapping agent.
+        try:
+            text = extract_resume_text(_Path(path))
+        except ResumeExtractionError as exc:
+            raise click.ClickException(f"Resume extraction failed: {exc}") from exc
+        if not text.strip():
+            raise click.ClickException(
+                f"Extracted zero text from {path}. "
+                "Is the file empty or image-only?"
+            )
+        truncated = text[:MAX_RESUME_CHARS]
+        # Thread the RESOLVED vault directory into the payload so the
+        # write-back commands pin the same vault this invocation targeted
+        # (--vault-dir / $TRAITPRINT_VAULT_DIR / discovery), wherever the
+        # wrapping agent happens to run them from.
+        if as_json:
+            click.echo(
+                json.dumps(
+                    build_assist_payload(truncated, path, store.directory),
+                    indent=2,
+                )
+            )
+        else:
+            click.echo(render_assist_payload(truncated, path, store.directory))
+        return
 
     click.echo(f"Using provider: {llm.name} (model: {llm.model})")
     click.echo(f"Reading resume: {path}")

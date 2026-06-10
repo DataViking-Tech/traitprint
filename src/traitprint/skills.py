@@ -30,13 +30,14 @@ if sys.version_info >= (3, 11):
 else:  # pragma: no cover - exercised on Python 3.10 only
     from importlib.abc import Traversable
 
-#: The five workflow skills; folder name == frontmatter ``name``.
+#: The published workflow skills; folder name == frontmatter ``name``.
 SKILL_NAMES = (
     "traitprint-fill-vault",
     "traitprint-mine-story-gaps",
     "traitprint-discover-skills",
     "traitprint-draft-star-story",
     "traitprint-audit-coherence",
+    "traitprint-import-resume",
 )
 
 

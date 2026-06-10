@@ -11,9 +11,54 @@ from typing import Protocol
 AVAILABLE_PROVIDERS = ("anthropic", "openai", "ollama", "openrouter")
 
 # Priority order when auto-detecting (cheapest-local-first: Ollama > Anthropic
-# > OpenAI > OpenRouter). The ordering matters only when multiple keys are
-# present and the user hasn't picked one.
+# > OpenAI > OpenRouter). The ordering matters only when multiple providers are
+# configured and the user hasn't picked one. Ollama participates in
+# auto-detect only with an explicit signal (OLLAMA_HOST env / ollama_host in
+# .credentials) — see ``_ollama_signal`` — since its default localhost host
+# would otherwise shadow configured cloud keys.
 _DETECT_ORDER = ("ollama", "anthropic", "openai", "openrouter")
+
+#: Actionable hint shown whenever no provider can be resolved.
+NO_PROVIDER_HINT = (
+    "Set ANTHROPIC_API_KEY, OPENAI_API_KEY, or OPENROUTER_API_KEY — "
+    "or run Ollama locally (http://localhost:11434)."
+)
+
+# Explicit configuration signals, checked by ``has_provider_signal`` (D11).
+# Env var name -> .credentials key. Ollama counts only when explicitly
+# configured via OLLAMA_HOST / ollama_host; a silently-assumed localhost
+# default is not a signal, so agent-assist mode can kick in instead of a
+# doomed network call.
+_PROVIDER_SIGNALS = (
+    ("ANTHROPIC_API_KEY", "anthropic_api_key"),
+    ("OPENAI_API_KEY", "openai_api_key"),
+    ("OPENROUTER_API_KEY", "openrouter_api_key"),
+    ("OLLAMA_HOST", "ollama_host"),
+)
+
+
+def _ollama_signal(creds: dict[str, str]) -> bool:
+    """True when Ollama is EXPLICITLY configured (D11).
+
+    Mirrors the Ollama entry in ``_PROVIDER_SIGNALS``: OLLAMA_HOST (env) or
+    ``ollama_host`` (.credentials). The silently-assumed localhost default
+    is not a signal.
+    """
+    return bool(os.environ.get("OLLAMA_HOST") or creds.get("ollama_host"))
+
+
+def has_provider_signal(credentials: dict[str, str] | None = None) -> bool:
+    """True when any BYOK provider is explicitly configured.
+
+    Checks provider API keys (env or ``.credentials`` file) and an explicit
+    Ollama host. Used by D11 resolution: explicit provider flag → configured
+    BYOK key → ambient agent (assist mode) → actionable error.
+    """
+    creds = credentials if credentials is not None else load_credentials()
+    return any(
+        os.environ.get(env_name) or creds.get(cred_key)
+        for env_name, cred_key in _PROVIDER_SIGNALS
+    )
 
 
 class LLMError(RuntimeError):
@@ -173,6 +218,11 @@ def detect_provider(
     If ``preferred`` is passed, it's tried first (and raises if it isn't
     configured, so users get a helpful error when they asked for a
     specific provider). Otherwise, providers are tried in ``_DETECT_ORDER``.
+
+    In auto-detect, Ollama is considered only when explicitly configured
+    (OLLAMA_HOST env or ``ollama_host`` in .credentials) — the default
+    localhost host is not a signal (D11), so configured cloud keys win.
+    An explicit ``preferred="ollama"`` still works without a signal.
     """
     creds = credentials if credentials is not None else load_credentials()
 
@@ -181,17 +231,17 @@ def detect_provider(
 
     last_error: LLMError | None = None
     for name in _DETECT_ORDER:
+        if name == "ollama" and not _ollama_signal(creds):
+            # Never auto-construct a default-host Ollama provider: it would
+            # shadow a configured cloud key with a doomed localhost call.
+            continue
         try:
             return provider_from_name(name, model=model, credentials=creds)
         except ProviderNotConfigured as exc:
             last_error = exc
             continue
 
-    hint = (
-        "Set ANTHROPIC_API_KEY, OPENAI_API_KEY, or OPENROUTER_API_KEY — "
-        "or run Ollama locally (http://localhost:11434)."
-    )
     raise ProviderNotConfigured(
-        f"No LLM provider configured. {hint}"
+        f"No LLM provider configured. {NO_PROVIDER_HINT}"
         + (f" Last error: {last_error}" if last_error else "")
     )
