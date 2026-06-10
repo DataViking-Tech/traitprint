@@ -38,6 +38,7 @@ import httpx
 
 from traitprint.credentials import Credentials
 from traitprint.schema import VaultSchema
+from traitprint.vault_io import validate_vault_payload
 
 # Public Supabase anon key for the traitprint project. Mirrors what the web
 # portal at traitprint.com ships in its JS bundle. Safe to embed: the JWT
@@ -218,7 +219,10 @@ class CloudClient:
 
         data = response.json() or {}
         raw_vault = data.get("vault")
-        vault = VaultSchema.model_validate(raw_vault) if raw_vault else None
+        # Server may hold a vault uploaded by a <=0.6 client
+        # (schema_version 0, 1-10 proficiencies) — validate through the
+        # v0-aware path, never VaultSchema.model_validate directly.
+        vault = validate_vault_payload(raw_vault) if raw_vault else None
         return PullResult(
             vault=vault,
             server_updated_at=_parse_ts(data.get("updated_at")),

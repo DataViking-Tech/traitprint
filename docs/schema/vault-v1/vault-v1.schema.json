@@ -1,0 +1,173 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://traitprint.com/schema/vault-v1.schema.json",
+  "title": "Traitprint Vault v1",
+  "description": "Contract for the vault v1 file tree. Each $defs entry validates one file type; see README.md for layout and markdown-body conventions.",
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source": {
+      "type": "string",
+      "description": "Provenance of the entry.",
+      "default": "manual",
+      "examples": ["manual", "imported", "mined", "proposal"]
+    },
+    "proficiency": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5,
+      "description": "1 familiar, 2 working, 3 proficient, 4 expert, 5 authority."
+    },
+    "manifest": {
+      "type": "object",
+      "description": "traitprint.json",
+      "required": ["schema_version", "vault_id", "updated_at"],
+      "properties": {
+        "schema_version": { "const": 1 },
+        "vault_id": { "$ref": "#/$defs/uuid" },
+        "updated_at": { "$ref": "#/$defs/timestamp" }
+      },
+      "additionalProperties": false
+    },
+    "profile": {
+      "type": "object",
+      "description": "profile.json — JSON Resume-compatible keys where they overlap.",
+      "required": ["basics"],
+      "properties": {
+        "basics": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "label": { "type": "string", "description": "Headline." },
+            "summary": { "type": "string" },
+            "email": { "type": "string" },
+            "location": { "type": "string", "description": "Plain string (deviation from JSON Resume's location object)." }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "skill": {
+      "type": "object",
+      "description": "One element of the skills.json array.",
+      "required": ["id", "name", "proficiency"],
+      "properties": {
+        "id": { "$ref": "#/$defs/uuid" },
+        "name": { "type": "string", "minLength": 1 },
+        "taxonomy_id": { "oneOf": [{ "$ref": "#/$defs/uuid" }, { "type": "null" }] },
+        "category": { "type": "string" },
+        "proficiency": { "$ref": "#/$defs/proficiency" },
+        "source": { "$ref": "#/$defs/source" },
+        "notes": { "type": "string" },
+        "created_at": { "$ref": "#/$defs/timestamp" },
+        "updated_at": { "$ref": "#/$defs/timestamp" }
+      },
+      "additionalProperties": false
+    },
+    "education": {
+      "type": "object",
+      "description": "One element of the education.json array.",
+      "required": ["id", "institution"],
+      "properties": {
+        "id": { "$ref": "#/$defs/uuid" },
+        "institution": { "type": "string", "minLength": 1 },
+        "degree": { "type": "string" },
+        "field_of_study": { "type": "string" },
+        "start_date": { "type": "string" },
+        "end_date": { "type": "string" },
+        "description": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "experienceFrontmatter": {
+      "type": "object",
+      "description": "YAML frontmatter of experiences/*.md; the markdown body is the role description.",
+      "required": ["id", "title"],
+      "properties": {
+        "id": { "$ref": "#/$defs/uuid" },
+        "title": { "type": "string", "minLength": 1 },
+        "company": { "type": "string" },
+        "start_date": { "type": "string" },
+        "end_date": { "type": "string" },
+        "accomplishments": { "type": "array", "items": { "type": "string" } },
+        "source": { "$ref": "#/$defs/source" },
+        "created_at": { "$ref": "#/$defs/timestamp" },
+        "updated_at": { "$ref": "#/$defs/timestamp" }
+      },
+      "additionalProperties": false
+    },
+    "storyFrontmatter": {
+      "type": "object",
+      "description": "YAML frontmatter of stories/*.md; the body carries '## Situation/Task/Action/Result' (+ optional '## Lesson') sections.",
+      "required": ["id", "title"],
+      "properties": {
+        "id": { "$ref": "#/$defs/uuid" },
+        "title": { "type": "string", "minLength": 1 },
+        "skill_ids": { "type": "array", "items": { "$ref": "#/$defs/uuid" } },
+        "experience_id": { "oneOf": [{ "$ref": "#/$defs/uuid" }, { "type": "null" }] },
+        "outcome": { "enum": ["", "win", "failure", "learning"] },
+        "theme_tags": { "type": "array", "items": { "type": "string" } },
+        "source": { "$ref": "#/$defs/source" },
+        "created_at": { "$ref": "#/$defs/timestamp" },
+        "updated_at": { "$ref": "#/$defs/timestamp" }
+      },
+      "additionalProperties": false
+    },
+    "philosophyFrontmatter": {
+      "type": "object",
+      "description": "YAML frontmatter of philosophies/*.md; the body is the stance in the user's own words.",
+      "required": ["id", "title"],
+      "properties": {
+        "id": { "$ref": "#/$defs/uuid" },
+        "title": { "type": "string", "minLength": 1, "description": "The topic, e.g. 'code review'." },
+        "category": {
+          "enum": ["", "leadership", "collaboration", "technical-approach", "culture", "decision-making"]
+        },
+        "evidence_story_ids": { "type": "array", "items": { "$ref": "#/$defs/uuid" } },
+        "source": { "$ref": "#/$defs/source" },
+        "created_at": { "$ref": "#/$defs/timestamp" },
+        "updated_at": { "$ref": "#/$defs/timestamp" }
+      },
+      "additionalProperties": false
+    },
+    "proposal": {
+      "type": "object",
+      "description": "proposals/*.json — a staged write awaiting review. Never applied until approved.",
+      "required": ["id", "kind", "payload", "status", "created_at"],
+      "properties": {
+        "id": { "$ref": "#/$defs/uuid" },
+        "kind": {
+          "enum": [
+            "add_skill", "update_skill",
+            "add_experience", "update_experience",
+            "add_story", "update_story",
+            "add_philosophy", "update_philosophy",
+            "add_education", "update_education",
+            "update_profile"
+          ]
+        },
+        "target_id": {
+          "oneOf": [{ "$ref": "#/$defs/uuid" }, { "type": "null" }],
+          "description": "Required for update_* kinds: the id of the entity being changed."
+        },
+        "payload": {
+          "type": "object",
+          "description": "Entity fields (full entity for add_*, changed fields for update_*). For markdown-backed entities the narrative text travels in payload.body."
+        },
+        "rationale": { "type": "string", "description": "Why the proposer believes this change is right; shown at review time." },
+        "source": { "type": "string", "description": "Proposer identity, e.g. 'mcp:sk_abc1234' or 'web'." },
+        "status": { "enum": ["pending", "approved", "rejected", "withdrawn"] },
+        "created_at": { "$ref": "#/$defs/timestamp" },
+        "resolved_at": { "oneOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }] }
+      },
+      "additionalProperties": false
+    }
+  }
+}

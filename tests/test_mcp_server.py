@@ -62,7 +62,6 @@ def populated_store(vault_dir: Path) -> VaultStore:
     """A VaultStore with a representative set of skills, stories, etc."""
     store = VaultStore(vault_dir)
     vault = VaultSchema(
-        schema_version=0,
         profile=ProfileSchema(
             display_name="Wesley Johnson",
             headline="Data Engineering Leader",
@@ -75,13 +74,13 @@ def populated_store(vault_dir: Path) -> VaultStore:
     python_skill = SkillSchema(
         name="Python",
         category="technical",
-        proficiency=9,
+        proficiency=5,
         taxonomy_id=python_tax.id,
         notes="Primary language",
     )
-    sql_skill = SkillSchema(name="SQL", category="technical", proficiency=7)
+    sql_skill = SkillSchema(name="SQL", category="technical", proficiency=4)
     leadership_skill = SkillSchema(
-        name="Team Leadership", category="soft", proficiency=6
+        name="Team Leadership", category="soft", proficiency=3
     )
     vault.skills = [python_skill, sql_skill, leadership_skill]
 
@@ -117,14 +116,14 @@ def populated_store(vault_dir: Path) -> VaultStore:
 
 class TestProficiencyMapping:
     def test_bucket_edges(self) -> None:
+        # 1-5 scale: 1 familiar, 2 working, 3 proficient (folds into
+        # working — the cloud enum has no proficient label), 4 expert,
+        # 5 authority.
         assert _map_proficiency(1) == "familiar"
-        assert _map_proficiency(2) == "familiar"
+        assert _map_proficiency(2) == "working"
         assert _map_proficiency(3) == "working"
-        assert _map_proficiency(5) == "working"
-        assert _map_proficiency(6) == "expert"
-        assert _map_proficiency(8) == "expert"
-        assert _map_proficiency(9) == "authority"
-        assert _map_proficiency(10) == "authority"
+        assert _map_proficiency(4) == "expert"
+        assert _map_proficiency(5) == "authority"
 
     def test_meets_proficiency(self) -> None:
         assert _meets_proficiency("expert", "working")
@@ -221,7 +220,7 @@ class TestSearchSkills:
         out = _handle_search_skills(
             populated_store.load(), load_taxonomy(), "sql", "expert", 10
         )
-        # SQL is 7/10 → expert, which meets expert.
+        # SQL is 4/5 → expert, which meets expert.
         assert any(m["name"] == "SQL" for m in out["matches"])
 
         out = _handle_search_skills(
@@ -239,7 +238,6 @@ class TestSearchSkills:
         """'Python programming' finds both Python and user-added 'python scripting'."""
         store = VaultStore(vault_dir)
         vault = VaultSchema(
-            schema_version=0,
             profile=ProfileSchema(display_name="t"),
         )
         taxonomy = load_taxonomy()
@@ -248,11 +246,11 @@ class TestSearchSkills:
             SkillSchema(
                 name="Python",
                 category="technical",
-                proficiency=9,
+                proficiency=5,
                 taxonomy_id=python_tax.id,
             ),
-            SkillSchema(name="python scripting", category="technical", proficiency=5),
-            SkillSchema(name="Team Leadership", category="soft", proficiency=6),
+            SkillSchema(name="python scripting", category="technical", proficiency=3),
+            SkillSchema(name="Team Leadership", category="soft", proficiency=3),
         ]
         store.save(vault)
 
@@ -268,12 +266,11 @@ class TestSearchSkills:
         """Query via alias ('golang') matches user skill 'Go services'."""
         store = VaultStore(vault_dir)
         vault = VaultSchema(
-            schema_version=0,
             profile=ProfileSchema(display_name="t"),
         )
         vault.skills = [
-            SkillSchema(name="Go services", category="technical", proficiency=7),
-            SkillSchema(name="React", category="technical", proficiency=6),
+            SkillSchema(name="Go services", category="technical", proficiency=4),
+            SkillSchema(name="React", category="technical", proficiency=3),
         ]
         store.save(vault)
 
@@ -286,7 +283,6 @@ class TestSearchSkills:
         """Querying 'machine learning' surfaces a Python-tagged skill via the graph."""
         store = VaultStore(vault_dir)
         vault = VaultSchema(
-            schema_version=0,
             profile=ProfileSchema(display_name="t"),
         )
         taxonomy = load_taxonomy()
@@ -295,7 +291,7 @@ class TestSearchSkills:
             SkillSchema(
                 name="Python",
                 category="technical",
-                proficiency=9,
+                proficiency=5,
                 taxonomy_id=python_tax.id,
             ),
         ]
@@ -317,7 +313,6 @@ class TestSearchSkills:
         """Direct taxonomy hit outranks a graph-only hit on the same query."""
         store = VaultStore(vault_dir)
         vault = VaultSchema(
-            schema_version=0,
             profile=ProfileSchema(display_name="t"),
         )
         taxonomy = load_taxonomy()
@@ -327,13 +322,13 @@ class TestSearchSkills:
             SkillSchema(
                 name="React",
                 category="technical",
-                proficiency=8,
+                proficiency=4,
                 taxonomy_id=react_tax.id,
             ),
             SkillSchema(
                 name="Vue",
                 category="technical",
-                proficiency=7,
+                proficiency=4,
                 taxonomy_id=vue_tax.id,
             ),
         ]
@@ -356,7 +351,6 @@ class TestSearchSkills:
         """used_distance_graph stays False when no graph-only skill surfaces."""
         store = VaultStore(vault_dir)
         vault = VaultSchema(
-            schema_version=0,
             profile=ProfileSchema(display_name="t"),
         )
         taxonomy = load_taxonomy()
@@ -365,7 +359,7 @@ class TestSearchSkills:
             SkillSchema(
                 name="Python",
                 category="technical",
-                proficiency=9,
+                proficiency=5,
                 taxonomy_id=python_tax.id,
             ),
         ]

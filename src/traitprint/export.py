@@ -127,7 +127,7 @@ def _export_markdown(vault: VaultSchema) -> str:
         lines.append("## Skills")
         for skill in _sort_skills(vault.skills):
             lines.append(
-                f"- **{skill.name}** — {skill.proficiency}/10"
+                f"- **{skill.name}** — {skill.proficiency}/5"
                 + (f" ({skill.category})" if skill.category else "")
             )
 
@@ -152,7 +152,10 @@ def _export_markdown(vault: VaultSchema) -> str:
         lines.append("## Philosophy")
         for phi in vault.philosophies:
             lines.append("")
-            lines.append(f"### {phi.title} ({phi.category.value})")
+            header = f"### {phi.title}"
+            if phi.category:
+                header += f" ({phi.category})"
+            lines.append(header)
             if phi.description:
                 lines.append("")
                 lines.append(phi.description)
@@ -273,11 +276,12 @@ def _normalize_date(raw: str) -> str:
 
 
 def _proficiency_label(prof: int) -> str:
-    if prof >= 9:
+    """Map the 1-5 proficiency scale onto JSON Resume level labels."""
+    if prof >= 5:
         return "Master"
-    if prof >= 7:
-        return "Advanced"
     if prof >= 4:
+        return "Advanced"
+    if prof >= 2:
         return "Intermediate"
     return "Beginner"
 

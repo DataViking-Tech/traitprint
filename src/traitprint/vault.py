@@ -1,8 +1,14 @@
-"""Vault storage operations — load, save, create, and CRUD."""
+"""Vault storage operations — load, save, create, and CRUD.
+
+The native on-disk format is the v1 file tree (``traitprint.json`` +
+``profile.json`` + JSON arrays + markdown files; see
+``docs/schema/vault-v1/``). Legacy v0 single-file ``vault.json`` vaults
+are still readable; any write emits v1. Serialization details live in
+:mod:`traitprint.vault_io`.
+"""
 
 from __future__ import annotations
 
-import json
 import os
 from datetime import datetime, timezone
 from pathlib import Path
@@ -17,6 +23,13 @@ from traitprint.schema import (
     SkillSchema,
     StorySchema,
     VaultSchema,
+)
+from traitprint.vault_io import (
+    MANIFEST_FILENAME,
+    V0_FILENAME,
+    read_vault_tree,
+    read_vault_v0,
+    write_vault_tree,
 )
 
 DEFAULT_VAULT_DIR = Path.home() / ".traitprint"
@@ -78,45 +91,61 @@ class DuplicateSkillError(ValueError):
 
 
 class VaultStore:
-    """Manages reading and writing the vault.json file."""
+    """Manages reading and writing the vault directory.
+
+    Reads both formats (v1 file tree, legacy v0 ``vault.json``); writes
+    emit the v1 file tree only.
+    """
 
     def __init__(self, path: str | Path | None = None) -> None:
         self.directory = resolve_vault_dir(path)
 
     @property
+    def manifest_path(self) -> Path:
+        """Path to the v1 manifest (traitprint.json)."""
+        return self.directory / MANIFEST_FILENAME
+
+    @property
     def vault_path(self) -> Path:
-        """Path to vault.json inside the vault directory."""
-        return self.directory / "vault.json"
+        """Path to the legacy v0 vault.json inside the vault directory."""
+        return self.directory / V0_FILENAME
 
     def exists(self) -> bool:
-        """Check whether vault.json exists."""
-        return self.vault_path.is_file()
+        """Check whether a vault (v1 tree or v0 vault.json) exists."""
+        return self.manifest_path.is_file() or self.vault_path.is_file()
+
+    def is_v1(self) -> bool:
+        """True when the vault is stored as a v1 file tree."""
+        return self.manifest_path.is_file()
 
     def load(self) -> VaultSchema:
-        """Read and validate vault.json."""
-        raw = self.vault_path.read_text(encoding="utf-8")
-        data = json.loads(raw)
-        return VaultSchema.model_validate(data)
+        """Read and validate the vault (v1 file tree, or legacy v0).
+
+        A v0 vault has its proficiency values remapped 1-10 → 1-5
+        (``ceil(x/2)``) in memory; see :func:`traitprint.vault_io.read_vault_v0`.
+        """
+        if self.manifest_path.is_file():
+            return read_vault_tree(self.directory)
+        return read_vault_v0(self.vault_path)
 
     def save(self, vault: VaultSchema, *, bump_updated_at: bool = True) -> None:
-        """Write vault to disk with pretty formatting.
+        """Write the vault as a v1 file tree (only changed files touched).
 
         When ``bump_updated_at`` is True (the default), ``vault.updated_at`` is
         refreshed to now. Pass False when persisting a vault received from the
-        cloud so its server timestamp is preserved.
+        cloud so its server timestamp is preserved. Writing always emits v1;
+        a legacy ``vault.json`` is removed so the two formats never coexist.
         """
         if bump_updated_at:
             vault.updated_at = datetime.now(timezone.utc)
         self.directory.mkdir(parents=True, exist_ok=True)
-        payload = vault.model_dump(mode="json")
-        self.vault_path.write_text(
-            json.dumps(payload, indent=2, default=str) + "\n",
-            encoding="utf-8",
-        )
+        write_vault_tree(self.directory, vault)
+        if self.vault_path.is_file():
+            self.vault_path.unlink()
 
     def create_empty(self) -> VaultSchema:
-        """Return an empty vault with schema_version=0."""
-        return VaultSchema(schema_version=0)
+        """Return an empty vault (schema v1)."""
+        return VaultSchema()
 
     # ------------------------------------------------------------------
     # CRUD helpers
@@ -187,7 +216,7 @@ class VaultStore:
             taxonomy_id=taxonomy_id,
         )
         vault.skills.append(skill)
-        self._save_and_commit(vault, f"Add skill: {name} ({proficiency}/10)")
+        self._save_and_commit(vault, f"Add skill: {name} ({proficiency}/5)")
         return skill
 
     def add_experience(
@@ -242,13 +271,15 @@ class VaultStore:
         self,
         title: str,
         description: str,
-        category: PhilosophyCategory | str,
+        category: PhilosophyCategory | str = "",
         evidence_story_ids: list[UUID] | None = None,
     ) -> PhilosophySchema:
-        """Add a philosophy to the vault, save, and auto-commit."""
+        """Add a philosophy to the vault, save, and auto-commit.
+
+        ``category`` is optional; when provided it must be empty or one
+        of the :class:`PhilosophyCategory` values (validated by the schema).
+        """
         vault = self.load()
-        if isinstance(category, str):
-            category = PhilosophyCategory(category)
         philosophy = PhilosophySchema(
             title=title,
             description=description,

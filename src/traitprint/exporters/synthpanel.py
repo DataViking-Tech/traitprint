@@ -142,7 +142,7 @@ def _derive_personality_traits(vault: VaultSchema) -> list[str]:
     """
     seen: dict[str, None] = {}
     for phil in vault.philosophies:
-        category = phil.category.value.replace("-", " ").strip().lower()
+        category = phil.category.replace("-", " ").strip().lower()
         if category:
             seen.setdefault(category, None)
         title = phil.title.strip().lower()

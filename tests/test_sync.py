@@ -186,6 +186,25 @@ class TestCloudClient:
         assert result.vault is None
         assert result.server_updated_at is None
 
+    def test_pull_legacy_v0_vault_remaps_proficiency(
+        self, server: FakeServer, cloud: CloudClient
+    ) -> None:
+        # A vault uploaded by a <=0.6 client: schema_version 0 with 1-10
+        # proficiencies. Pull must remap ceil(x/2), not fail validation.
+        server.updated_at = "2026-01-01T00:00:00Z"
+        server.vault = {
+            "schema_version": 0,
+            "updated_at": server.updated_at,
+            "skills": [
+                {"name": "Python", "proficiency": 9},
+                {"name": "SQL", "proficiency": 10},
+                {"name": "Go", "proficiency": 1},
+            ],
+        }
+        result = cloud.pull()
+        assert result.vault is not None
+        assert [s.proficiency for s in result.vault.skills] == [5, 5, 1]
+
     def test_pull_without_token_raises(self, http_client: httpx.Client) -> None:
         client = CloudClient("http://test", token=None, client=http_client)
         with pytest.raises(AuthError):

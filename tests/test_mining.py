@@ -52,9 +52,9 @@ SAMPLE_LLM_JSON = {
         "contact_email": "wesley@dataviking.tech",
     },
     "skills": [
-        {"name": "Python", "category": "technical", "proficiency": 9, "notes": "10y"},
-        {"name": "Redshift", "category": "tool", "proficiency": 7, "notes": ""},
-        {"name": "Team Leadership", "category": "soft", "proficiency": 8, "notes": ""},
+        {"name": "Python", "category": "technical", "proficiency": 5, "notes": "10y"},
+        {"name": "Redshift", "category": "tool", "proficiency": 4, "notes": ""},
+        {"name": "Team Leadership", "category": "soft", "proficiency": 4, "notes": ""},
     ],
     "experiences": [
         {
@@ -187,13 +187,13 @@ class TestDraftFromDict:
 
     def test_proficiency_clamped(self) -> None:
         draft = draft_from_dict({"skills": [{"name": "X", "proficiency": 99}]})
-        assert draft.skills[0].proficiency == 10
+        assert draft.skills[0].proficiency == 5
 
         draft = draft_from_dict({"skills": [{"name": "Y", "proficiency": -5}]})
         assert draft.skills[0].proficiency == 1
 
-        draft = draft_from_dict({"skills": [{"name": "Z", "proficiency": "eight"}]})
-        assert draft.skills[0].proficiency == 6  # default
+        draft = draft_from_dict({"skills": [{"name": "Z", "proficiency": "four"}]})
+        assert draft.skills[0].proficiency == 3  # default
 
     def test_skips_skills_without_names(self) -> None:
         draft = draft_from_dict({"skills": [{"name": "", "proficiency": 5}]})
@@ -258,7 +258,7 @@ class TestSummaryLines:
         assert "Peloton Interactive" in joined
 
     def test_caps_long_skill_lists(self) -> None:
-        data = {"skills": [{"name": f"S{i}", "proficiency": 5} for i in range(25)]}
+        data = {"skills": [{"name": f"S{i}", "proficiency": 3} for i in range(25)]}
         lines = draft_from_dict(data).summary_lines()
         assert any("and 15 more" in line for line in lines)
 

@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-06-10
+
+### Changed — vault v1 file-tree format (breaking on disk, migrated automatically)
+
+The vault's native storage format is now the **v1 file tree** instead of a
+single `vault.json` (contract: `docs/schema/vault-v1/`):
+
+```
+<vault>/
+├── traitprint.json      # manifest: schema_version=1, vault_id, updated_at
+├── profile.json         # JSON Resume-compatible basics keys
+├── skills.json          # JSON array
+├── education.json       # JSON array
+├── experiences/*.md     # YAML frontmatter + body (role description)
+├── stories/*.md         # frontmatter + ## Situation/Task/Action/Result (+ Lesson)
+└── philosophies/*.md    # frontmatter + body (the stance)
+```
+
+- **Readers accept v0 and v1; writers emit v1 only.** Loading a legacy v0
+  `vault.json` keeps working; the first write converts it in place.
+- **Migration:** run `traitprint vault migrate` to convert explicitly. It
+  remaps skill proficiency from 1-10 to 1-5 (`ceil(x/2)`), writes the v1
+  tree, removes `vault.json`, and records a single git commit
+  ("Migrate vault to schema v1"). `--dry-run` previews the file list and
+  proficiency remaps (`--json` for machine-readable output); already-v1
+  vaults are a no-op.
+- **Proficiency is now 1-5** everywhere (1 familiar, 2 working, 3 proficient,
+  4 expert, 5 authority): CLI validation (`add-skill --proficiency`), audit
+  thresholds, MCP outputs, exports, and the resume-import LLM prompt. A v0
+  vault loaded read-only is remapped in memory so downstream logic always
+  sees 1-5.
+- **Schema unification with Cloud:** stories gained `lesson`,
+  `outcome` (`""|win|failure|learning`) and `theme_tags`; philosophy
+  `category` is now optional (empty string allowed; the five enum values are
+  the only non-empty options); the vault carries a `vault_id` (UUID) and
+  `schema_version: 1`.
+- **Git operations cover the whole tree:** auto-commits stage all vault
+  content (`.credentials` stays gitignored); `vault history`, `vault diff`,
+  and `vault rollback` operate on the full file tree, not just one file.
+- `export --format json` still emits the lossless single-document JSON form
+  (now schema_version 1 with the new fields) for v0 consumers; cloud sync
+  continues to push that same single-document serialization unchanged.
+
 ### Added
 - **Narrative-coherence engine, ported from Traitprint Cloud** so Local and
   Cloud agree on scoring and vocabulary:
@@ -146,7 +189,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Set server version in MCP stdio `serverInfo`; add PyPI publish workflow.
 
-[Unreleased]: https://github.com/DataViking-Tech/traitprint/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/DataViking-Tech/traitprint/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/DataViking-Tech/traitprint/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/DataViking-Tech/traitprint/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/DataViking-Tech/traitprint/compare/v0.4.2...v0.5.0
 [0.4.2]: https://github.com/DataViking-Tech/traitprint/compare/v0.4.1...v0.4.2

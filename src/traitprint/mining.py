@@ -102,7 +102,7 @@ JSON object with this exact shape — no prose, no markdown fences:
     {
       "name": "string",
       "category": "technical|soft|domain|tool",
-      "proficiency": 1-10,
+      "proficiency": 1-5,
       "notes": "string"
     }
   ],
@@ -129,8 +129,9 @@ JSON object with this exact shape — no prose, no markdown fences:
 }
 
 Rules:
-- Use integers 1-10 for proficiency. Estimate conservatively: 5=competent,
-  7=strong, 9=expert. Default to 6 if unsure.
+- Use integers 1-5 for proficiency (1=familiar, 2=working, 3=proficient,
+  4=expert, 5=authority). Estimate conservatively: 3=competent, 4=strong,
+  5=recognized authority. Default to 3 if unsure.
 - Omit fields you cannot infer — use empty strings, not null.
 - Do not invent companies, dates, or skills. If something is not in the
   resume, leave it out rather than guess.
@@ -167,7 +168,7 @@ class ResumeDraft:
         lines.append(f"Profile: {name} — {self.profile.headline or 'no headline'}")
         lines.append(f"Skills: {len(self.skills)}")
         for s in self.skills[:10]:
-            lines.append(f"  - {s.name} ({s.proficiency}/10, {s.category})")
+            lines.append(f"  - {s.name} ({s.proficiency}/5, {s.category})")
         if len(self.skills) > 10:
             lines.append(f"  ... and {len(self.skills) - 10} more")
         lines.append(f"Experiences: {len(self.experiences)}")
@@ -232,14 +233,14 @@ def parse_llm_response(raw: str) -> dict[str, Any]:
 
 
 def _clamp_proficiency(value: object) -> int:
-    """Coerce a LLM-provided proficiency into the 1-10 range."""
+    """Coerce a LLM-provided proficiency into the 1-5 range."""
     if not isinstance(value, (int, str, float)):
-        return 6
+        return 3
     try:
         n = int(value)
     except (TypeError, ValueError):
-        return 6
-    return max(1, min(10, n))
+        return 3
+    return max(1, min(5, n))
 
 
 def draft_from_dict(

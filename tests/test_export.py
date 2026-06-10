@@ -27,7 +27,6 @@ from traitprint.vault import VaultStore
 @pytest.fixture()
 def sample_vault() -> VaultSchema:
     return VaultSchema(
-        schema_version=0,
         profile=ProfileSchema(
             display_name="Ada Lovelace",
             headline="Analytical Engine Programmer",
@@ -36,9 +35,9 @@ def sample_vault() -> VaultSchema:
             contact_email="ada@example.com",
         ),
         skills=[
-            SkillSchema(name="Analytical thinking", proficiency=10, category="soft"),
-            SkillSchema(name="Python", proficiency=8, category="technical"),
-            SkillSchema(name="Mentoring", proficiency=6, category="soft"),
+            SkillSchema(name="Analytical thinking", proficiency=5, category="soft"),
+            SkillSchema(name="Python", proficiency=4, category="technical"),
+            SkillSchema(name="Mentoring", proficiency=3, category="soft"),
         ],
         experiences=[
             ExperienceSchema(
