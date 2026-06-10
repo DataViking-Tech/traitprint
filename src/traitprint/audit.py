@@ -337,9 +337,44 @@ def _contradiction_findings(vault: VaultSchema, out: list[Finding]) -> None:
             )
 
 
-def audit_vault(vault: VaultSchema) -> AuditReport:
-    """Run every coherence check and return a full report."""
+def audit_vault(
+    vault: VaultSchema,
+    *,
+    pending_proposals: int = 0,
+    proposal_issues: list[str] | None = None,
+) -> AuditReport:
+    """Run every coherence check and return a full report.
+
+    ``pending_proposals`` and ``proposal_issues`` describe the vault's
+    ``proposals/`` directory (staged writes awaiting review): pending
+    proposals surface as an info-level (minor) finding, and unreadable
+    proposal files surface as findings rather than crashes (Layer 1
+    spirit). Callers with only a :class:`VaultSchema` may omit both.
+    """
     findings: list[Finding] = []
+
+    if pending_proposals:
+        noun = "proposal" if pending_proposals == 1 else "proposals"
+        findings.append(
+            Finding(
+                "minor",
+                "proposals.pending",
+                "proposals",
+                f"{pending_proposals} {noun} awaiting review. Run "
+                "'traitprint proposals list' to review, then "
+                "'traitprint proposals approve <id>' or "
+                "'traitprint proposals reject <id>'.",
+            )
+        )
+    for issue in proposal_issues or []:
+        findings.append(
+            Finding(
+                "minor",
+                "proposals.invalid_file",
+                "proposals",
+                f"Unreadable proposal file: {issue}",
+            )
+        )
 
     skill_ids = {str(s.id) for s in vault.skills}
     experience_ids = {str(e.id) for e in vault.experiences}

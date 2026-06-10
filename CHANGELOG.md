@@ -5,6 +5,55 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-06-10
+
+### Added
+
+- **Proposals review CLI (architecture D2/D9, tp-an-021).** New
+  `traitprint proposals` command group operating on `proposals/*.json`
+  staged writes (vault v1 contract `$defs/proposal`):
+  - `proposals list [--status pending|approved|rejected|withdrawn]
+    [--json]` — table or full-document JSON array; unreadable proposal
+    files surface as `[warn]` lines (stderr), never crashes.
+  - `proposals show ID [--json]` — payload, rationale, source, and a
+    current→proposed field diff against the live vault for `update_*`
+    kinds. IDs accept the full UUID or an unambiguous hex prefix (the
+    8-char prefix in the filename).
+  - `proposals approve ID [-y]` — validates the payload against the
+    entity schema (Layer 0, hard reject), applies it to the vault
+    (`add_*` creates the entity; `update_*` partial-updates by
+    `target_id` with an actionable error when the target is gone), and
+    deletes the proposal file **in the same git commit** (contract
+    rule 7).
+  - `proposals approve --all [-y]` — the D9 one-step approve-all:
+    applies every pending proposal and records **one batch commit**
+    (`Approve N proposals`); failed items are reported per-line
+    (`[ok]`/`[err]` + `Summary:`) and stay pending (exit 1).
+  - `proposals reject ID [-y]` — sets `status: rejected` +
+    `resolved_at` and keeps the file.
+  - `proposals add --kind K [--target-id UUID] [--rationale R]
+    [--source S] --payload-json -` — the local staged-write path,
+    validating kind/target rules and per-kind payload keys exactly as
+    the hosted MCP server's `vault_propose` tool does, so local agents
+    get the same propose-and-review flow remote agents have.
+- **`vault import-resume --propose` (D9 staged path).** Extracted items
+  become pending proposals instead of direct writes: the BYOK path
+  stages one proposal per item (single commit, `source:
+  import-resume`), and the agent-assist payload's write-back section
+  switches to `traitprint proposals add` commands (one JSON object per
+  invocation) with `proposals list --json` as the verify step. Default
+  behavior without the flag is unchanged.
+- **Pending proposals surface in `vault audit`** as a minor finding
+  (`proposals.pending`, "N proposals awaiting review"); unreadable
+  `proposals/*.json` files surface as `proposals.invalid_file`
+  findings.
+
+### Changed
+
+- `docs/schema/vault-v1/README.md` rule 7 updated: proposal review CLI
+  support is shipped (was "planned, not yet shipped"), and proposal
+  filenames are documented as `<kind>-<id8>.json` slugs.
+
 ## [0.8.0] - 2026-06-10
 
 ### Added

@@ -18,6 +18,7 @@ A vault is a git-versioned directory (default `~/.traitprint`; override with
 ├── experiences/*.md    # YAML frontmatter + body = role description
 ├── stories/*.md        # frontmatter + ## Situation/Task/Action/Result (+ ## Lesson)
 ├── philosophies/*.md   # frontmatter + body = the stance
+├── proposals/*.json    # staged writes awaiting user review
 └── .git/               # every CLI write auto-commits
 ```
 
@@ -112,8 +113,47 @@ traitprint vault import-resume FILE       # resolution order: --provider flag ->
                                           # --json emits the assist payload as
                                           # JSON; --assist forces the payload,
                                           # --no-assist errors when no key;
-                                          # --yes/--dry-run apply to the BYOK path
+                                          # --yes/--dry-run apply to the BYOK path;
+                                          # --propose stages extracted items as
+                                          # pending proposals instead of writing
 ```
+
+### Proposals (staged writes — the user approves, never you)
+
+`proposals/*.json` are staged writes awaiting review. Stage changes with
+`proposals add`; the USER approves or rejects — never approve on their
+behalf without explicit confirmation:
+
+```bash
+traitprint proposals list                 # table; --status pending|approved|
+                                          # rejected|withdrawn; --json -> full
+                                          # proposal documents (+ "file")
+traitprint proposals show <ID>            # payload + rationale + current->proposed
+                                          # diff for update_* kinds; ID = full UUID
+                                          # or 8-char prefix; --json -> {proposal,
+                                          # file, diff}
+traitprint proposals approve <ID> -y      # validate (hard reject on schema
+                                          # violations), apply to the vault, and
+                                          # delete the proposal file in ONE commit
+traitprint proposals approve --all -y     # apply every pending proposal in one
+                                          # batch commit ("Approve N proposals");
+                                          # failures stay pending, exit 1
+traitprint proposals reject <ID> -y       # status=rejected + resolved_at;
+                                          # the file is kept
+traitprint proposals add --kind add_skill --rationale "..." \
+  --payload-json -                        # stage ONE proposal from a JSON object
+                                          # on stdin; kinds: add_*/update_* per
+                                          # entity + update_profile; update_* kinds
+                                          # need --target-id <UUID>
+```
+
+Payload rules: full entity for `add_*`, changed fields only for `update_*`;
+narrative text goes in `payload.body` (experiences, stories — STAR
+sections — and philosophies); `update_profile` takes
+`{"basics": {"name"?, "label"?, "summary"?, "email"?, "location"?}}`.
+Unknown payload keys are rejected with the allowed-key list. Pending
+proposals show up in `traitprint vault audit` as a `proposals.pending`
+finding.
 
 ### Batch mode (preferred for 3+ items)
 

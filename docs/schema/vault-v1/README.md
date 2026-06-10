@@ -49,10 +49,13 @@ validation happens against [`vault-v1.schema.json`](vault-v1.schema.json)
    location object.
 7. **Proposals** (`proposals/*.json`) are staged writes awaiting review.
    They are synced but never applied until approved (CLI
-   `traitprint proposals approve` — CLI support planned, not yet shipped;
-   available in the Traitprint Cloud review queue today). Approval
+   `traitprint proposals list|show|approve|reject` — shipped in 0.9.0;
+   also available in the Traitprint Cloud review queue). Approval
    applies the payload to the target file(s) and deletes the proposal in
-   the same commit.
+   the same commit; rejection keeps the file with `status: rejected`
+   and a `resolved_at` timestamp. Filenames are `<kind>-<id8>.json`
+   slugs (kebab-case kind + first 8 hex chars of the id) — identity is
+   the document `id`, never the filename.
 8. **Readers accept v0 (`vault.json`) and v1; writers emit v1 only.**
    `traitprint vault migrate` converts v0→v1 in place as a single git
    commit. The lossless single-document JSON export remains available for
