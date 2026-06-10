@@ -25,7 +25,16 @@ if TYPE_CHECKING:
     from traitprint.sync import SyncPlan
 
 
-class UUIDParamType(click.ParamType[UUID]):
+if TYPE_CHECKING:
+    # ParamType only became generic (subscriptable) in click 8.4; pyproject
+    # supports click>=8.0, where a runtime subscript raises TypeError on
+    # import and bricks the CLI. Subscript for the type checker only.
+    _UUIDParamBase = click.ParamType[UUID]
+else:
+    _UUIDParamBase = click.ParamType
+
+
+class UUIDParamType(_UUIDParamBase):
     """Click param type for UUID flags.
 
     Produces the same actionable style as batch mode ("invalid UUID 'x'")
