@@ -684,7 +684,7 @@ def sync_push(vault: Path, client: GitSyncClient) -> PushOutcome:
         retried_full = True
         full_bundle = True
         response = client.push(create_bundle(vault, None), head)
-    except NonFastForwardError as exc:
+    except NonFastForwardError:
         # Do NOT persist exc.server_head here: the divergent commits are
         # not integrated locally yet, and recording it would make the
         # follow-up pull fetch with since=<server_head> and 204.
