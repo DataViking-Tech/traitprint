@@ -233,13 +233,16 @@ Domain namespaces require proof of domain ownership. The hosted server URL
    {
      "name": "com.traitprint/mcp",
      "title": "Traitprint (hosted)",
-     "description": "Hosted career-vault MCP server: query skills, STAR stories, and philosophies; stage vault writes as proposals; match jobs. OAuth 2.1 or sk_ API keys.",
+     "version": "1.0.0",
+     "description": "Hosted career-vault MCP: skills, STAR stories, staged writes, job matching.",
      "websiteUrl": "https://traitprint.com",
      "remotes": [
        { "type": "streamable-http", "url": "https://api.traitprint.com/functions/v1/mcp-server" }
      ]
    }
    ```
+   The registry schema (2025-07-09) requires `version` (semver — bump on
+   meaningful server changes) and caps `description` at 100 characters.
 4. Publish:
    ```bash
    mcp-publisher login dns   # uses the .pem from step 1
