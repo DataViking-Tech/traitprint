@@ -121,7 +121,7 @@ class TestCliVaultDirFlag:
         runner = CliRunner()
         result = runner.invoke(cli, ["--vault-dir", str(vault_dir), "init"])
         assert result.exit_code == 0, result.output
-        assert (vault_dir / "vault.json").is_file()
+        assert (vault_dir / "traitprint.json").is_file()
 
     def test_path_alias_still_works(
         self, tmp_path: Path, clean_env: None
@@ -130,7 +130,7 @@ class TestCliVaultDirFlag:
         runner = CliRunner()
         result = runner.invoke(cli, ["--path", str(vault_dir), "init"])
         assert result.exit_code == 0, result.output
-        assert (vault_dir / "vault.json").is_file()
+        assert (vault_dir / "traitprint.json").is_file()
 
     def test_env_var_drives_cli_when_no_flag(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -140,7 +140,7 @@ class TestCliVaultDirFlag:
         runner = CliRunner()
         result = runner.invoke(cli, ["init"])
         assert result.exit_code == 0, result.output
-        assert (vault_dir / "vault.json").is_file()
+        assert (vault_dir / "traitprint.json").is_file()
 
     def test_walk_up_finds_local_project_vault(
         self,

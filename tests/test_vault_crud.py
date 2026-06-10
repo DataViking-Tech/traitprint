@@ -53,23 +53,23 @@ def runner() -> CliRunner:
 class TestAddSkill:
     def test_creates_skill_with_correct_fields(self, store: VaultStore) -> None:
         skill = store.add_skill(
-            name="Python", proficiency=8, category="technical", notes="Primary lang"
+            name="Python", proficiency=4, category="technical", notes="Primary lang"
         )
         assert skill.name == "Python"
-        assert skill.proficiency == 8
+        assert skill.proficiency == 4
         assert skill.category == "technical"
         assert skill.notes == "Primary lang"
         assert isinstance(skill.id, UUID)
         assert skill.created_at is not None
 
     def test_skill_persisted_to_disk(self, store: VaultStore) -> None:
-        store.add_skill(name="Go", proficiency=6, category="technical")
+        store.add_skill(name="Go", proficiency=3, category="technical")
         vault = store.load()
         assert len(vault.skills) == 1
         assert vault.skills[0].name == "Go"
 
     def test_auto_commits_to_git(self, store: VaultStore) -> None:
-        store.add_skill(name="SQL", proficiency=9, category="technical")
+        store.add_skill(name="SQL", proficiency=5, category="technical")
         result = subprocess.run(
             ["git", "log", "--oneline", "-1"],
             cwd=str(store.directory),
@@ -77,7 +77,7 @@ class TestAddSkill:
             text=True,
             check=False,
         )
-        assert "Add skill: SQL (9/10)" in result.stdout
+        assert "Add skill: SQL (5/5)" in result.stdout
 
     def test_multiple_skills_accumulate(self, store: VaultStore) -> None:
         store.add_skill(name="A", proficiency=1, category="x")
@@ -88,24 +88,24 @@ class TestAddSkill:
     def test_taxonomy_id_set_when_provided(self, store: VaultStore) -> None:
         tid = uuid4()
         skill = store.add_skill(
-            name="Test", proficiency=5, category="x", taxonomy_id=tid
+            name="Test", proficiency=3, category="x", taxonomy_id=tid
         )
         assert skill.taxonomy_id == tid
 
     def test_duplicate_name_rejected(self, store: VaultStore) -> None:
-        first = store.add_skill(name="Python", proficiency=8, category="technical")
+        first = store.add_skill(name="Python", proficiency=4, category="technical")
         with pytest.raises(DuplicateSkillError) as exc_info:
-            store.add_skill(name="Python", proficiency=5, category="technical")
+            store.add_skill(name="Python", proficiency=3, category="technical")
         assert exc_info.value.existing_id == first.id
         # Duplicate was not appended.
         assert len(store.load().skills) == 1
 
     def test_duplicate_name_case_insensitive(self, store: VaultStore) -> None:
-        store.add_skill(name="Python", proficiency=8, category="technical")
+        store.add_skill(name="Python", proficiency=4, category="technical")
         with pytest.raises(DuplicateSkillError):
-            store.add_skill(name="python", proficiency=5, category="technical")
+            store.add_skill(name="python", proficiency=3, category="technical")
         with pytest.raises(DuplicateSkillError):
-            store.add_skill(name="  PYTHON  ", proficiency=5, category="technical")
+            store.add_skill(name="  PYTHON  ", proficiency=3, category="technical")
         assert len(store.load().skills) == 1
 
 
@@ -163,7 +163,7 @@ class TestAddExperience:
 
 class TestAddStory:
     def test_with_skill_ids_cross_reference(self, store: VaultStore) -> None:
-        skill = store.add_skill(name="Python", proficiency=8, category="tech")
+        skill = store.add_skill(name="Python", proficiency=4, category="tech")
         story = store.add_story(
             title="Data Pipeline Redesign",
             situation="Legacy system failing",
@@ -276,7 +276,7 @@ class TestRemoveItem:
 
 class TestGetItem:
     def test_returns_correct_item(self, store: VaultStore) -> None:
-        skill = store.add_skill(name="Rust", proficiency=7, category="technical")
+        skill = store.add_skill(name="Rust", proficiency=4, category="technical")
         found = store.get_item("skills", skill.id)
         assert found is not None
         assert found.name == "Rust"  # type: ignore[union-attr]
@@ -296,17 +296,17 @@ class TestProficiencyValidation:
         s = SkillSchema(name="Test", proficiency=1)
         assert s.proficiency == 1
 
-    def test_proficiency_10_ok(self) -> None:
-        s = SkillSchema(name="Test", proficiency=10)
-        assert s.proficiency == 10
+    def test_proficiency_5_ok(self) -> None:
+        s = SkillSchema(name="Test", proficiency=5)
+        assert s.proficiency == 5
 
     def test_proficiency_0_rejected(self) -> None:
         with pytest.raises(ValidationError):
             SkillSchema(name="Test", proficiency=0)
 
-    def test_proficiency_11_rejected(self) -> None:
+    def test_proficiency_6_rejected(self) -> None:
         with pytest.raises(ValidationError):
-            SkillSchema(name="Test", proficiency=11)
+            SkillSchema(name="Test", proficiency=6)
 
 
 # ------------------------------------------------------------------
@@ -323,8 +323,8 @@ class TestVaultShowCLI:
         assert result.exit_code == 0
         out = result.output
         assert "Skills (2):" in out
-        assert "A (5/10)" in out
-        assert "B (3/10)" in out
+        assert "A (5/5)" in out
+        assert "B (3/5)" in out
         assert "Experiences (0)" in out
         assert "Stories (0)" in out
         assert "Philosophies (0)" in out
@@ -336,10 +336,10 @@ class TestVaultShowCLI:
         store = VaultStore(vault_dir)
         for name, prof in [
             ("LowSkill", 2),
-            ("TopSkill", 9),
-            ("MidSkill", 5),
-            ("Other1", 7),
-            ("Other2", 6),
+            ("TopSkill", 5),
+            ("MidSkill", 3),
+            ("Other1", 4),
+            ("Other2", 3),
             ("HiddenSkill", 1),
         ]:
             store.add_skill(name=name, proficiency=prof, category="x")
@@ -347,7 +347,7 @@ class TestVaultShowCLI:
         assert result.exit_code == 0
         out = result.output
         assert "Skills (6):" in out
-        assert "TopSkill (9/10)" in out
+        assert "TopSkill (5/5)" in out
         # Top 5 shown, 6th (HiddenSkill, lowest) should be omitted
         assert "HiddenSkill" not in out
         assert "... 1 more" in out
@@ -408,7 +408,7 @@ class TestVaultShowCLI:
         store = VaultStore(vault_dir)
         store.add_skill(
             name="Python",
-            proficiency=8,
+            proficiency=4,
             category="technical",
             notes="Primary lang",
         )
@@ -434,7 +434,7 @@ class TestVaultShowCLI:
         assert "Profile:" in out
         assert "Skills (1)" in out
         assert "Python" in out
-        assert "proficiency: 8/10" in out
+        assert "proficiency: 4/5" in out
         assert "Primary lang" in out
         assert "Experiences (1)" in out
         assert "Staff Engineer" in out
@@ -462,7 +462,7 @@ class TestVaultShowCLI:
 class TestVaultListCLI:
     def test_list_skills(self, runner: CliRunner, vault_dir: Path) -> None:
         store = VaultStore(vault_dir)
-        store.add_skill(name="Python", proficiency=8, category="technical")
+        store.add_skill(name="Python", proficiency=4, category="technical")
         result = runner.invoke(
             cli, ["--path", str(vault_dir), "vault", "list", "skills"]
         )
@@ -594,7 +594,7 @@ class TestAddSkillCLI:
                 "add-skill",
                 "Python",
                 "--proficiency",
-                "8",
+                "4",
                 "--category",
                 "technical",
             ],
@@ -618,7 +618,7 @@ class TestAddSkillCLI:
             "add-skill",
             "Python",
             "--proficiency",
-            "8",
+            "4",
             "--category",
             "technical",
         ]
@@ -661,7 +661,7 @@ class TestAddSkillCLI:
                 "add-skill",
                 "Kubernetes",
                 "--proficiency",
-                "7",
+                "4",
                 "--category",
                 "technical",
             ],
@@ -685,7 +685,7 @@ class TestAddSkillCLI:
                 "add-skill",
                 "Kubernetes",
                 "--proficiency",
-                "7",
+                "4",
                 "--category",
                 "technical",
                 "--force-category",
@@ -710,7 +710,7 @@ class TestAddSkillCLI:
                 "add-skill",
                 "Python",
                 "--proficiency",
-                "8",
+                "4",
                 "--category",
                 "technical",
             ],
@@ -895,7 +895,7 @@ class TestAddStoryCLI:
         self, runner: CliRunner, vault_dir: Path
     ) -> None:
         store = VaultStore(vault_dir)
-        skill = store.add_skill(name="Go", proficiency=8, category="technical")
+        skill = store.add_skill(name="Go", proficiency=4, category="technical")
         exp = store.add_experience(title="Eng", company="Co", start_date="2020-01")
         result = runner.invoke(
             cli,
@@ -953,7 +953,7 @@ class TestAddPhilosophyCLI:
         assert p.title == "Ship small"
         assert p.category == PhilosophyCategory.LEADERSHIP
 
-    def test_non_interactive_missing_category_errors(
+    def test_non_interactive_category_is_optional(
         self, runner: CliRunner, vault_dir: Path
     ) -> None:
         result = runner.invoke(
@@ -964,13 +964,14 @@ class TestAddPhilosophyCLI:
                 "vault",
                 "add-philosophy",
                 "--title",
-                "Incomplete",
+                "Uncategorized stance",
                 "--description",
                 "No category provided.",
             ],
         )
-        assert result.exit_code != 0
-        assert "--category is required" in result.output
+        assert result.exit_code == 0, result.output
+        v = VaultStore(vault_dir).load()
+        assert v.philosophies[0].category == ""
 
     def test_non_interactive_with_evidence_ids(
         self, runner: CliRunner, vault_dir: Path
@@ -1010,7 +1011,7 @@ class TestAddPhilosophyCLI:
 class TestHistoryDiffRollback:
     def test_history_shows_commits(self, runner: CliRunner, vault_dir: Path) -> None:
         store = VaultStore(vault_dir)
-        store.add_skill(name="Go", proficiency=7, category="technical")
+        store.add_skill(name="Go", proficiency=4, category="technical")
         result = runner.invoke(cli, ["--path", str(vault_dir), "vault", "history"])
         assert result.exit_code == 0
         assert "Add skill: Go" in result.output
@@ -1040,8 +1041,8 @@ class TestAddSkillBatch:
     ) -> None:
         payload = tmp_path / "skills.json"
         payload.write_text(
-            '[{"name":"Go","proficiency":8,"category":"technical"},'
-            '{"name":"Rust","proficiency":6,"category":"technical","notes":"WIP"}]'
+            '[{"name":"Go","proficiency":4,"category":"technical"},'
+            '{"name":"Rust","proficiency":3,"category":"technical","notes":"WIP"}]'
         )
         result = runner.invoke(
             cli,
@@ -1067,11 +1068,11 @@ class TestAddSkillBatch:
         self, runner: CliRunner, vault_dir: Path, tmp_path: Path
     ) -> None:
         store = VaultStore(vault_dir)
-        store.add_skill(name="Python", proficiency=8, category="technical")
+        store.add_skill(name="Python", proficiency=4, category="technical")
         payload = tmp_path / "skills.json"
         payload.write_text(
-            '[{"name":"python","proficiency":5,"category":"technical"},'
-            '{"name":"Go","proficiency":7,"category":"technical"}]'
+            '[{"name":"python","proficiency":3,"category":"technical"},'
+            '{"name":"Go","proficiency":4,"category":"technical"}]'
         )
         result = runner.invoke(
             cli,
@@ -1096,7 +1097,7 @@ class TestAddSkillBatch:
         payload = tmp_path / "skills.json"
         payload.write_text(
             '[{"name":"Incomplete"},'
-            '{"name":"Valid","proficiency":7,"category":"technical"}]'
+            '{"name":"Valid","proficiency":4,"category":"technical"}]'
         )
         result = runner.invoke(
             cli,
@@ -1148,7 +1149,7 @@ class TestAddSkillBatch:
                 "--from-json",
                 "-",
             ],
-            input='[{"name":"Bash","proficiency":9,"category":"tool"}]',
+            input='[{"name":"Bash","proficiency":5,"category":"tool"}]',
         )
         assert result.exit_code == 0, result.output
         assert "[ok] Bash" in result.output
@@ -1158,7 +1159,7 @@ class TestAddSkillBatch:
         self, runner: CliRunner, vault_dir: Path, tmp_path: Path
     ) -> None:
         payload = tmp_path / "bad.json"
-        payload.write_text('{"name":"Python","proficiency":8,"category":"technical"}')
+        payload.write_text('{"name":"Python","proficiency":4,"category":"technical"}')
         result = runner.invoke(
             cli,
             [
@@ -1196,7 +1197,7 @@ class TestAddSkillBatch:
         self, runner: CliRunner, vault_dir: Path, tmp_path: Path
     ) -> None:
         payload = tmp_path / "skills.json"
-        payload.write_text('[{"name":"Go","proficiency":8,"category":"technical"}]')
+        payload.write_text('[{"name":"Go","proficiency":4,"category":"technical"}]')
         result = runner.invoke(
             cli,
             [
@@ -1272,7 +1273,7 @@ class TestAddStoryBatch:
         self, runner: CliRunner, vault_dir: Path, tmp_path: Path
     ) -> None:
         store = VaultStore(vault_dir)
-        skill = store.add_skill(name="Go", proficiency=7, category="technical")
+        skill = store.add_skill(name="Go", proficiency=4, category="technical")
         exp = store.add_experience(title="Eng", company="Co", start_date="2020-01")
         payload = tmp_path / "stories.json"
         payload.write_text(
@@ -1375,7 +1376,7 @@ class TestAddPhilosophyBatch:
 class TestRemoveCLI:
     def test_remove_with_confirm(self, runner: CliRunner, vault_dir: Path) -> None:
         store = VaultStore(vault_dir)
-        skill = store.add_skill(name="Rust", proficiency=7, category="technical")
+        skill = store.add_skill(name="Rust", proficiency=4, category="technical")
         result = runner.invoke(
             cli,
             ["--path", str(vault_dir), "vault", "remove", str(skill.id), "--yes"],

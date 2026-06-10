@@ -9,7 +9,7 @@ from click.testing import CliRunner
 
 from traitprint import __version__
 from traitprint.cli import cli
-from traitprint.schema import VaultSchema
+from traitprint.vault import VaultStore
 
 
 class TestInit:
@@ -20,19 +20,30 @@ class TestInit:
 
         assert result.exit_code == 0
         assert vault_dir.is_dir()
-        assert (vault_dir / "vault.json").is_file()
+        # v1 file tree, no legacy vault.json
+        assert (vault_dir / "traitprint.json").is_file()
+        assert (vault_dir / "profile.json").is_file()
+        assert (vault_dir / "skills.json").is_file()
+        assert (vault_dir / "education.json").is_file()
+        assert (vault_dir / "experiences").is_dir()
+        assert (vault_dir / "stories").is_dir()
+        assert (vault_dir / "philosophies").is_dir()
+        assert not (vault_dir / "vault.json").exists()
         assert (vault_dir / ".git").is_dir()
         assert (vault_dir / ".gitignore").is_file()
 
-    def test_vault_json_validates_against_schema(self, tmp_path: Path) -> None:
+    def test_manifest_is_schema_v1(self, tmp_path: Path) -> None:
         vault_dir = tmp_path / "test-vault"
         runner = CliRunner()
         runner.invoke(cli, ["--path", str(vault_dir), "init"])
 
-        raw = (vault_dir / "vault.json").read_text()
-        data = json.loads(raw)
-        vault = VaultSchema.model_validate(data)
-        assert vault.schema_version == 0
+        manifest = json.loads((vault_dir / "traitprint.json").read_text())
+        assert manifest["schema_version"] == 1
+        assert manifest["vault_id"]
+        assert manifest["updated_at"]
+
+        vault = VaultStore(vault_dir).load()
+        assert vault.schema_version == 1
         assert vault.skills == []
 
     def test_double_init_is_safe(self, tmp_path: Path) -> None:
@@ -43,9 +54,9 @@ class TestInit:
         result1 = runner.invoke(cli, ["--path", str(vault_dir), "init"])
         assert result1.exit_code == 0
 
-        # Write something to verify it's not overwritten
-        vault_path = vault_dir / "vault.json"
-        original_content = vault_path.read_text()
+        # Capture state to verify it's not overwritten
+        manifest_path = vault_dir / "traitprint.json"
+        original_content = manifest_path.read_text()
 
         # Second init
         result2 = runner.invoke(cli, ["--path", str(vault_dir), "init"])
@@ -53,7 +64,7 @@ class TestInit:
         assert "already exists" in result2.output
 
         # Content should be unchanged
-        assert vault_path.read_text() == original_content
+        assert manifest_path.read_text() == original_content
 
     def test_gitignore_contains_credentials(self, tmp_path: Path) -> None:
         vault_dir = tmp_path / "test-vault"

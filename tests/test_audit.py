@@ -50,7 +50,7 @@ def _strong_story(**kwargs: object) -> StorySchema:
 
 
 def _coherent_vault() -> VaultSchema:
-    skill = SkillSchema(name="Python", category="technical", proficiency=9)
+    skill = SkillSchema(name="Python", category="technical", proficiency=5)
     exp = ExperienceSchema(
         title="Staff Engineer",
         company="Acme",
@@ -116,7 +116,7 @@ class TestAuditVault:
     def test_unsupported_strong_skill_is_major(self) -> None:
         v = VaultSchema(
             profile=ProfileSchema(headline="h", summary="s"),
-            skills=[SkillSchema(name="Rust", category="technical", proficiency=9)],
+            skills=[SkillSchema(name="Rust", category="technical", proficiency=5)],
             experiences=[ExperienceSchema(title="Eng", description="d")],
         )
         f = next(
@@ -143,7 +143,7 @@ class TestAuditVault:
     def test_incomplete_star_produces_critical_field_findings(self) -> None:
         v = VaultSchema(
             profile=ProfileSchema(headline="h", summary="s"),
-            skills=[SkillSchema(name="Go", category="technical", proficiency=4)],
+            skills=[SkillSchema(name="Go", category="technical", proficiency=3)],
             experiences=[ExperienceSchema(title="Eng", description="d")],
             stories=[StorySchema(title="Half", situation="only the situation here")],
         )
@@ -254,7 +254,7 @@ class TestAuditVault:
     def test_findings_sorted_most_severe_first(self) -> None:
         v = VaultSchema(
             profile=ProfileSchema(),
-            skills=[SkillSchema(name="Go", category="x", proficiency=9)],
+            skills=[SkillSchema(name="Go", category="x", proficiency=5)],
             experiences=[ExperienceSchema(title="Eng")],
             stories=[StorySchema(title="Half", situation="only this here please")],
         )

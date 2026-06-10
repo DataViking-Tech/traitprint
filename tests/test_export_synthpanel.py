@@ -34,9 +34,9 @@ def _populated_vault() -> VaultSchema:
             contact_email="jordan@example.com",
         ),
         skills=[
-            SkillSchema(name="Rust", proficiency=9, category="technical"),
-            SkillSchema(name="Python", proficiency=8, category="technical"),
-            SkillSchema(name="Go", proficiency=6, category="technical"),
+            SkillSchema(name="Rust", proficiency=5, category="technical"),
+            SkillSchema(name="Python", proficiency=4, category="technical"),
+            SkillSchema(name="Go", proficiency=3, category="technical"),
         ],
         experiences=[
             ExperienceSchema(
@@ -121,7 +121,7 @@ class TestVaultToPersona:
     def test_top_skills_sorted_by_proficiency(self) -> None:
         skills = vault_to_synthpanel_persona(_populated_vault())["skills"]
         assert [s["name"] for s in skills] == ["Rust", "Python", "Go"]
-        assert skills[0]["proficiency"] == 9
+        assert skills[0]["proficiency"] == 5
 
     def test_education_summary_uses_degree_and_institution(self) -> None:
         edu = vault_to_synthpanel_persona(_populated_vault())["education"]
