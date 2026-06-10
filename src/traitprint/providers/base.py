@@ -15,6 +15,38 @@ AVAILABLE_PROVIDERS = ("anthropic", "openai", "ollama", "openrouter")
 # present and the user hasn't picked one.
 _DETECT_ORDER = ("ollama", "anthropic", "openai", "openrouter")
 
+#: Actionable hint shown whenever no provider can be resolved.
+NO_PROVIDER_HINT = (
+    "Set ANTHROPIC_API_KEY, OPENAI_API_KEY, or OPENROUTER_API_KEY — "
+    "or run Ollama locally (http://localhost:11434)."
+)
+
+# Explicit configuration signals, checked by ``has_provider_signal`` (D11).
+# Env var name -> .credentials key. Ollama counts only when explicitly
+# configured via OLLAMA_HOST / ollama_host; a silently-assumed localhost
+# default is not a signal, so agent-assist mode can kick in instead of a
+# doomed network call.
+_PROVIDER_SIGNALS = (
+    ("ANTHROPIC_API_KEY", "anthropic_api_key"),
+    ("OPENAI_API_KEY", "openai_api_key"),
+    ("OPENROUTER_API_KEY", "openrouter_api_key"),
+    ("OLLAMA_HOST", "ollama_host"),
+)
+
+
+def has_provider_signal(credentials: dict[str, str] | None = None) -> bool:
+    """True when any BYOK provider is explicitly configured.
+
+    Checks provider API keys (env or ``.credentials`` file) and an explicit
+    Ollama host. Used by D11 resolution: explicit provider flag → configured
+    BYOK key → ambient agent (assist mode) → actionable error.
+    """
+    creds = credentials if credentials is not None else load_credentials()
+    return any(
+        os.environ.get(env_name) or creds.get(cred_key)
+        for env_name, cred_key in _PROVIDER_SIGNALS
+    )
+
 
 class LLMError(RuntimeError):
     """Raised when a provider call fails."""
@@ -187,11 +219,7 @@ def detect_provider(
             last_error = exc
             continue
 
-    hint = (
-        "Set ANTHROPIC_API_KEY, OPENAI_API_KEY, or OPENROUTER_API_KEY — "
-        "or run Ollama locally (http://localhost:11434)."
-    )
     raise ProviderNotConfigured(
-        f"No LLM provider configured. {hint}"
+        f"No LLM provider configured. {NO_PROVIDER_HINT}"
         + (f" Last error: {last_error}" if last_error else "")
     )

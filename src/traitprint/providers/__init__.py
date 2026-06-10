@@ -19,22 +19,26 @@ from __future__ import annotations
 
 from traitprint.providers.base import (
     AVAILABLE_PROVIDERS,
+    NO_PROVIDER_HINT,
     LLMError,
     LLMProvider,
     LLMResponse,
     ProviderNotConfigured,
     detect_provider,
+    has_provider_signal,
     load_credentials,
     provider_from_name,
 )
 
 __all__ = [
     "AVAILABLE_PROVIDERS",
+    "NO_PROVIDER_HINT",
     "LLMError",
     "LLMProvider",
     "LLMResponse",
     "ProviderNotConfigured",
     "detect_provider",
+    "has_provider_signal",
     "load_credentials",
     "provider_from_name",
 ]

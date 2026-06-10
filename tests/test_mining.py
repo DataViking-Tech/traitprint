@@ -341,6 +341,7 @@ class TestImportResumeCLI:
         )
 
         provider = FakeProvider()
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
         monkeypatch.setattr(
             "traitprint.providers.detect_provider", lambda **kwargs: provider
         )
@@ -368,6 +369,7 @@ class TestImportResumeCLI:
         resume = tmp_path / "resume.txt"
         resume.write_text("Wesley — Engineer. Python.", encoding="utf-8")
 
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
         monkeypatch.setattr(
             "traitprint.providers.detect_provider", lambda **kwargs: FakeProvider()
         )
@@ -397,6 +399,7 @@ class TestImportResumeCLI:
         resume = tmp_path / "resume.txt"
         resume.write_text("x" * 30, encoding="utf-8")
 
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
         monkeypatch.setattr(
             "traitprint.providers.detect_provider", lambda **kwargs: FakeProvider()
         )
@@ -446,6 +449,7 @@ class TestImportResumeCLI:
         def boom(**kwargs: Any) -> None:
             raise ProviderNotConfigured("No keys set")
 
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
         monkeypatch.setattr("traitprint.providers.detect_provider", boom)
 
         runner = CliRunner()
