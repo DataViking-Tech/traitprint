@@ -6,13 +6,14 @@ name: Release to PyPI
 # full release procedure.
 
 on:
+  # Release-on-version-change: any push to main whose pyproject version has
+  # no matching v* tag publishes that version (guard below makes every
+  # other merge a no-op). Tag pushes and manual dispatch also release.
   push:
     tags:
       - "v*"
-  # Manual release path: derives the version from pyproject.toml and
-  # creates the matching v* tag itself (the tag-push trigger then no-ops
-  # because the tag commit is identical). Trusted publishing matches on
-  # the workflow filename + environment, so both paths publish.
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
@@ -45,7 +46,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # manual-dispatch path pushes the release tag
+      contents: write  # dispatch/main-push paths push the release tag
+    outputs:
+      skip: ${{ steps.guard.outputs.skip }}
 
     steps:
       - uses: actions/checkout@v4
@@ -56,10 +59,18 @@ jobs:
           python-version: "3.12"
 
       - name: Verify tag matches pyproject version
+        id: guard
         run: |
           PKG_VERSION="$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")"
           if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
             echo "Manual dispatch: releasing pyproject version $PKG_VERSION from $GITHUB_REF_NAME"
+          elif [ "${GITHUB_REF}" = "refs/heads/main" ]; then
+            if git ls-remote --exit-code origin "refs/tags/v$PKG_VERSION" >/dev/null 2>&1; then
+              echo "v$PKG_VERSION already released — skipping."
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "Version change detected on main: releasing v$PKG_VERSION"
+            fi
           else
             TAG_VERSION="${GITHUB_REF_NAME#v}"
             if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
@@ -69,8 +80,8 @@ jobs:
           fi
           echo "PKG_VERSION=$PKG_VERSION" >> "$GITHUB_ENV"
 
-      - name: Create release tag (manual dispatch only)
-        if: github.event_name == 'workflow_dispatch'
+      - name: Create release tag (dispatch / main-push)
+        if: steps.guard.outputs.skip != 'true' && (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main')
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -82,11 +93,13 @@ jobs:
           fi
 
       - name: Build sdist and wheel
+        if: steps.guard.outputs.skip != 'true'
         run: |
           pip install build
           python -m build
 
       - name: Verify wheel contains packaged skills
+        if: steps.guard.outputs.skip != 'true'
         run: |
           python3 - <<'EOF'
           import glob, zipfile
@@ -98,11 +111,13 @@ jobs:
           EOF
 
       - name: Check metadata with twine
+        if: steps.guard.outputs.skip != 'true'
         run: |
           pip install twine
           twine check dist/*
 
       - name: Upload distributions
+        if: steps.guard.outputs.skip != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: dist
@@ -110,6 +125,7 @@ jobs:
 
   publish:
     needs: [test, build]
+    if: needs.build.outputs.skip != 'true'
     runs-on: ubuntu-latest
     environment:
       name: pypi
