@@ -25,6 +25,10 @@ def init_repo(path: Path) -> None:
         # even without a global git config.
         _run(["git", "config", "user.email", "vault@traitprint.local"], cwd=path)
         _run(["git", "config", "user.name", "Traitprint Vault"], cwd=path)
+        # Vault commits are local bookkeeping; a global signing setup
+        # (hardware key, signing server) must not be able to block them.
+        _run(["git", "config", "commit.gpgsign", "false"], cwd=path)
+        _run(["git", "config", "tag.gpgsign", "false"], cwd=path)
 
 
 def commit(path: Path, message: str) -> None:
