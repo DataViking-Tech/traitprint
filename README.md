@@ -21,14 +21,19 @@ Traitprint ships as **two products**:
 ## The vault
 
 The vault is the whole product: a directory on your machine (default
-`~/.traitprint`) holding a single `vault.json`, versioned as a git repo. It is
-plain, inspectable JSON — no database, no proprietary format. Six kinds of
-entry make up the structure agents read:
+`~/.traitprint`) holding a file tree of plain JSON and markdown, versioned as
+a git repo — no database, no proprietary format. Structured lists are JSON
+(`profile.json`, `skills.json`, `education.json`); narratives are markdown
+with YAML frontmatter (`experiences/`, `stories/`, `philosophies/`), so you
+— or an agent — can edit them with any text editor. (Format contract:
+[docs/schema/vault-v1/](docs/schema/vault-v1/). Upgrading from an older
+single-file vault? Run `traitprint vault migrate`.) Six kinds of entry make
+up the structure agents read:
 
 | Entry | What it captures | CLI |
 |---|---|---|
 | **Profile** | Name, headline, summary, location | `vault set-profile` |
-| **Skills** | What you can do, with a 1–10 proficiency and an O*NET taxonomy link | `vault add-skill` |
+| **Skills** | What you can do, with a 1–5 proficiency (familiar → authority) and an O*NET taxonomy link | `vault add-skill` |
 | **Experiences** | Roles you've held — title, company, dates, accomplishments | `vault add-experience` |
 | **Stories** | STAR-format narratives (Situation, Task, Action, Result), linked to the skills and experience they prove | `vault add-story` |
 | **Philosophies** | Stated beliefs on leadership, collaboration, technical approach, culture, decision-making — each backed by evidence stories | `vault add-philosophy` |
@@ -46,7 +51,7 @@ checks.
 pip install traitprint
 traitprint init
 traitprint vault set-profile --name "Your Name" --headline "Your Role"
-traitprint vault add-skill "Postgres" --proficiency 8 --category technical
+traitprint vault add-skill "Postgres" --proficiency 4 --category technical
 traitprint mcp-serve
 ```
 
@@ -96,7 +101,7 @@ Add Traitprint to your Claude Desktop config file
   `/opt/homebrew/bin/traitprint`). Run `which traitprint` to find it.
 - `TRAITPRINT_VAULT_DIR` is optional — omit it to use the default `~/.traitprint`.
 - Restart Claude Desktop after editing the config. The `traitprint` server should
-  appear in the MCP tools list, exposing the four query tools and three prompts
+  appear in the MCP tools list, exposing the four query tools and five prompts
   described below.
 
 The same snippet works for any MCP client that accepts an `mcpServers` block
@@ -132,6 +137,21 @@ shell access so the agent can run the CLI directly:
 | `draft_star_story` | FOCUSED deep dive — turns one raw accomplishment into a crisp, well-linked STAR story. Optional `experience` seeds the topic. |
 | `audit_coherence` | Runs the coherence audit, then applies judgment on consistency, voice, and evidence quality. |
 
+### Agent Skills
+
+The same five workflows ship as [SKILL.md Agent Skills](skills/)
+(agentskills.io open standard) for filesystem agents like Claude Code,
+Codex CLI, Gemini CLI, and Cursor:
+
+```
+npx skills add DataViking-Tech/traitprint
+```
+
+The skills are the canonical text — the MCP prompts serve their bodies
+verbatim, so the two surfaces never drift. A shared CLI cheatsheet lives at
+[`skills/shared/cli-reference.md`](skills/shared/cli-reference.md), and the
+agent operating manual is [`AGENTS.md`](AGENTS.md).
+
 ### Fill out the vault
 
 Hand an agent the `fill_vault` prompt (or just ask it to "help me build my
@@ -147,8 +167,8 @@ Traitprint"). The intended loop:
 
    ```bash
    traitprint vault add-skill --from-json - <<'JSON'
-   [{"name": "Postgres", "proficiency": 8, "category": "technical"},
-    {"name": "Incident Response", "proficiency": 7, "category": "soft"}]
+   [{"name": "Postgres", "proficiency": 4, "category": "technical"},
+    {"name": "Incident Response", "proficiency": 3, "category": "soft"}]
    JSON
    ```
 
@@ -172,7 +192,7 @@ traitprint vault audit
 ```
 
 ```
-[major] skills: Skill 'Kubernetes' is claimed at 9/10 but no story demonstrates it.
+[major] skills: Skill 'Kubernetes' is claimed at 5/5 but no story demonstrates it.
 [major] philosophies: Philosophy 'Bias to ship' cites no evidence story.
 [major] stories: 'The big migration': Result lacks measurable outcomes — add metrics
 [minor] experiences: Experience 'Founding Engineer' has no description...
@@ -256,14 +276,18 @@ coaching workflows compose instead of starting from scratch each time.
 
 ## What's in the box
 
-- **Local vault** — plain-JSON storage on your laptop, versioned with git.
+- **Local vault** — a plain JSON + markdown file tree on your laptop,
+  versioned with git.
 - **MCP server (stdio)** — four query tools (`get_profile_summary`,
-  `search_skills`, `find_story`, `get_philosophy`) and three workflow prompts
-  (`fill_vault`, `audit_coherence`, `draft_star_story`).
+  `search_skills`, `find_story`, `get_philosophy`) and five workflow prompts
+  (`fill_vault`, `mine_story_gaps`, `discover_skills`, `draft_star_story`,
+  `audit_coherence`).
+- **Agent Skills** — the same five workflows as SKILL.md skills under
+  [`skills/`](skills/) for Claude Code, Codex CLI, Gemini CLI, Cursor, etc.
 - **CLI** — `traitprint init`, `traitprint vault set-profile`, `add-skill`,
   `add-experience`, `add-story`, `add-philosophy`, `add-education`, `remove`,
-  `show`, `list`, `audit`, `history`, `diff`, `rollback`, `export`,
-  `import-resume`.
+  `show`, `list`, `audit`, `history`, `diff`, `rollback`, `migrate`,
+  `export`, `import-resume`.
 - **Coherence audit** — `traitprint vault audit` flags unsupported claims,
   unbacked philosophies, and broken stories (text, `--json`, or `--strict`).
 - **Resume import** with BYOK LLM (Anthropic, OpenAI, Ollama, OpenRouter) —
@@ -281,7 +305,7 @@ thing, hosted, plus the handful of features that genuinely need a server.
 | Capability | Free forever, no account | Requires traitprint.com account |
 |---|---|---|
 | Create + edit your vault (`init`, `vault add-*`, `remove`) | ✅ | — |
-| MCP query tools + fill/audit/draft prompts | ✅ | — |
+| MCP query tools + workflow prompts + Agent Skills | ✅ | — |
 | Narrative-coherence audit (`vault audit`) | ✅ | — |
 | Version history, diff, rollback | ✅ | — |
 | Resume import via BYOK LLM | ✅ | — |

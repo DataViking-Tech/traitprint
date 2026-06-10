@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Agent Skills (SKILL.md)
+
+- Five workflow skills under a top-level `skills/` directory
+  (agentskills.io format), ported from the MCP prompts and rewritten for
+  filesystem/shell agents: `traitprint-fill-vault`,
+  `traitprint-mine-story-gaps`, `traitprint-discover-skills`,
+  `traitprint-draft-star-story`, `traitprint-audit-coherence`. Shared CLI
+  cheatsheet + vault file-tree reference at `skills/shared/cli-reference.md`.
+  Install with `npx skills add DataViking-Tech/traitprint`.
+- Skills bake in the validation policy: extracted skills are proposed to
+  the user before writing, enter at modest proficiency, taxonomy IDs are
+  never invented, and every workflow ends with
+  `traitprint vault audit --json`.
+- Wheels ship the skills as package data (`traitprint/data/skills/`,
+  hatchling force-include); the new `traitprint.skills` module resolves the
+  package-data copy first, with the repo root as fallback.
+
+### Changed
+
+- The five MCP prompts are now thin wrappers that read the corresponding
+  SKILL.md body at serve time (plus prompt arguments and an MCP-context
+  note), so the prompts and the published skills cannot drift.
+- `AGENTS.md` rewritten as the agent operating manual for the CLI: vault
+  v1 file-tree map, full command reference with JSON contracts and exit
+  codes, proficiency scale, validation/audit workflow, MCP usage, and
+  hand-editing gotchas.
+
 ## [0.7.0] - 2026-06-10
 
 ### Changed — vault v1 file-tree format (breaking on disk, migrated automatically)
