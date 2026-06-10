@@ -462,7 +462,19 @@ def read_vault_v0(path: Path) -> VaultSchema:
     data = _read_json(path)
     if not isinstance(data, dict):
         raise VaultFormatError(f"Vault must be a JSON object in {path}")
-    if int(data.get("schema_version", 0)) == 0:
+    return validate_vault_payload(data)
+
+
+def validate_vault_payload(data: Any) -> VaultSchema:
+    """Validate a raw vault document, remapping v0 proficiencies first.
+
+    Applies the same in-memory ``ceil(x/2)`` remap as ``read_vault_v0``
+    when the document declares ``schema_version: 0``. Cloud payloads
+    uploaded by <=0.6 clients are exactly such documents, so every
+    consumer of a raw vault dict (local v0 file, cloud pull) must come
+    through here rather than ``VaultSchema.model_validate`` directly.
+    """
+    if isinstance(data, dict) and int(data.get("schema_version", 0)) == 0:
         for skill in data.get("skills") or []:
             if isinstance(skill, dict) and isinstance(skill.get("proficiency"), int):
                 skill["proficiency"] = remap_proficiency(skill["proficiency"])
@@ -488,6 +500,7 @@ __all__ = [
     "read_vault_tree",
     "read_vault_v0",
     "remap_proficiency",
+    "validate_vault_payload",
     "render_markdown",
     "render_story_body",
     "slugify",

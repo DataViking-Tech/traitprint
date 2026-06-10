@@ -46,6 +46,8 @@ Credentials. Nobody in the career space has claimed the
 | D6 | Monetization boundary | **Protocol surfaces are free** (MCP, skills, CLI, local product). Monetize hosted features: sync, public digital-twin profile, job index/matching, Pro analytics. | The GitHub/Linear/Notion pattern: MCP is a retention/distribution surface, not a SKU. |
 | D7 | Distribution wave 1 | **All four:** Agent Skills via skills.sh, Claude connector directory, ChatGPT app directory, Gemini CLI extension. Plus the official MCP Registry. | Skills are near-zero cost; the three directories all front the same OAuth-enabled remote MCP server. |
 | D8 | Schema unification | One canonical schema shared by Local and Cloud (§5). Local leads; Cloud conforms. | Today local proficiency is 1–10 vs cloud 1–5, and philosophy shapes differ. Drift breaks the local↔cloud MCP parity promise. |
+| D9 | Story-extracted skills | **Always-propose**: LLM-extracted skills land as proposals the user approves (with a one-step "approve all" and a config flip to auto-create for users who want it). | Nothing enters a professional identity without sign-off by default; the flip preserves low-friction workflows. |
+| D10 | Ingest strictness | **Accept + quarantine**: cloud ingest hard-rejects only structural schema violations; dangling UUID references are accepted and quarantined as disputed/flagged, not rejected. | Friendly to hand-edited vaults (agents edit files directly); the trust layer is the natural home for quarantined state. |
 
 ## 3. Target Architecture
 
@@ -149,6 +151,30 @@ Local leads; Cloud conforms (migration plan in the cloud spec).
 - A versioned JSON Schema for the vault is published in this repo
   (`docs/schema/vault-v1/`) and consumed by Cloud's ingest pipeline as the
   contract.
+
+### Validation layers (the vault is a repo; the audit is its CI)
+
+| Layer | Check | Nature | Enforcement |
+|---|---|---|---|
+| 0 | Schema shape (types, enums, ranges, UUIDs) | Deterministic | Hard reject at every write, every surface |
+| 1 | Referential integrity (cross-link UUIDs resolve) | Deterministic | Warning locally; **accept + quarantine as disputed** at cloud ingest (D10) |
+| 2 | Taxonomy resolution, evidence coverage (skill↔story) | Deterministic | Flag, never block; unresolved skills are first-class (`taxonomy_id: null`) and can graduate into taxonomy proposals |
+| 3 | Narrative coherence, LLM-judged quality | Nondeterministic | Advisory findings only (confidence + rationale); never gates — BYOK means judge quality varies by the user's model |
+
+Mechanism rules:
+- **LLMs propose names and evidence spans only — never taxonomy IDs, never
+  proficiency scores.** A deterministic resolver maps names → taxonomy IDs
+  (aliases/fuzzy/DAG); extracted skills enter at a floor proficiency with a
+  "confirm proficiency" finding.
+- **Extraction output is always proposals** (D9), validated against Layer 0
+  before persisting (one repair retry, then reject).
+- Multi-entity logical changes (a story plus its extracted skills) need
+  transactional application — one commit, validation on the post-state —
+  and eventually proposal *bundles* so they review as a unit.
+- Findings carry a ruleset version; gate policy only tightens with a vault
+  schema version bump.
+- The taxonomy becomes a versioned shared artifact like this schema, so
+  Local and Cloud resolve identically.
 
 ## 6. Roadmap
 
