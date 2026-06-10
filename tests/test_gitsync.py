@@ -482,6 +482,54 @@ class TestSyncPull:
         assert pushed.pushed is True
         assert server.head() == head_sha(clone, short=False)
 
+    def test_merge_abort_can_still_repull(
+        self, vault: Path, client: GitSyncClient, server: FakeGitServer, tmp_path: Path
+    ) -> None:
+        # Codex P2 on #42: the server head must not be persisted before
+        # integration succeeds, or a post-abort retry pull would send
+        # since=<server_head>, get 204, and strand the remote changes.
+        from traitprint.gitsync import read_server_head
+
+        sync_push(vault, client)
+        clone = _clone(vault, tmp_path / "vault-b")
+        basis = read_server_head(clone)
+
+        _write_and_commit(vault, "headline.md", "A's headline\n", "A edit")
+        sync_push(vault, client)
+        _write_and_commit(clone, "headline.md", "B's headline\n", "B edit")
+
+        outcome = sync_pull(clone, client)
+        assert outcome.mode == "conflicts"
+        # Server head NOT recorded while the merge is unresolved.
+        assert read_server_head(clone) == basis
+
+        assert _run(["git", "merge", "--abort"], cwd=clone).returncode == 0
+        retry = sync_pull(clone, client)
+        assert retry.fetched is True
+        assert retry.mode == "conflicts"  # the divergence is re-fetched, not 204'd
+
+    def test_push_409_does_not_record_server_head(
+        self, vault: Path, client: GitSyncClient, server: FakeGitServer, tmp_path: Path
+    ) -> None:
+        from traitprint.gitsync import NonFastForwardError, read_server_head
+
+        sync_push(vault, client)
+        clone = _clone(vault, tmp_path / "vault-b")
+        basis = read_server_head(clone)
+
+        _write_and_commit(vault, "a.md", "x\n", "A edit")
+        sync_push(vault, client)
+        _write_and_commit(clone, "b.md", "y\n", "B edit")
+
+        with pytest.raises(NonFastForwardError):
+            sync_push(clone, client)
+        # The divergent server commits are not integrated locally yet.
+        assert read_server_head(clone) == basis
+        # The follow-up pull still fetches them.
+        pulled = sync_pull(clone, client)
+        assert pulled.fetched is True
+        assert pulled.mode in ("merged", "fast_forward")
+
 
 # ------------------------------------------------------------------
 # Status

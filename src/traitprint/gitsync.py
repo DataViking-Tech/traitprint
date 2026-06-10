@@ -685,9 +685,9 @@ def sync_push(vault: Path, client: GitSyncClient) -> PushOutcome:
         full_bundle = True
         response = client.push(create_bundle(vault, None), head)
     except NonFastForwardError as exc:
-        if exc.server_head:
-            # Remember the server head for the follow-up pull/merge.
-            write_server_head(vault, exc.server_head)
+        # Do NOT persist exc.server_head here: the divergent commits are
+        # not integrated locally yet, and recording it would make the
+        # follow-up pull fetch with since=<server_head> and 204.
         raise
 
     write_server_head(vault, response.head)
@@ -740,10 +740,14 @@ def sync_pull(vault: Path, client: GitSyncClient) -> PullOutcome:
 
     fetched_sha = apply_bundle(vault, fetched.bundle)
     server_head = fetched.head or fetched_sha
-    write_server_head(vault, server_head)
     mode, conflicts = integrate_fetched(vault, fetched_sha)
     head = head_sha(vault, short=False)
     if mode != "conflicts":
+        # Persist the server head only once the local branch actually
+        # contains those commits — recording it earlier would make a
+        # post-`merge --abort` retry fetch with since=<server_head> and
+        # get 204, stranding the remote changes (Codex P2 on #42).
+        write_server_head(vault, server_head)
         _mirror_main_ref(vault, head)
     return PullOutcome(
         fetched=True,
