@@ -608,6 +608,39 @@ class TestAddSkillCLI:
         vault = store.load()
         assert vault.skills[0].taxonomy_id is not None
 
+    def test_category_optional_taxonomy_fills_it(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        result = runner.invoke(
+            cli,
+            ["--path", str(vault_dir), "vault", "add-skill", "Python", "-p", "4"],
+        )
+        assert result.exit_code == 0, result.output
+        skill = VaultStore(vault_dir).load().skills[0]
+        assert skill.category == "technical"  # from the taxonomy match
+
+    def test_category_optional_defaults_empty_without_match(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        result = runner.invoke(
+            cli,
+            ["--path", str(vault_dir), "vault", "add-skill", "FooBarLang", "-p", "2"],
+        )
+        assert result.exit_code == 0, result.output
+        assert VaultStore(vault_dir).load().skills[0].category == ""
+
+    def test_missing_proficiency_is_usage_error(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        # No interactive prompt for missing required fields — exit 2 with
+        # an honest message that --category is optional.
+        result = runner.invoke(
+            cli, ["--path", str(vault_dir), "vault", "add-skill", "Python"]
+        )
+        assert result.exit_code == 2
+        assert "NAME and --proficiency are required" in result.output
+        assert "--category is optional" in result.output
+
     def test_add_skill_duplicate_rejected_cli(
         self, runner: CliRunner, vault_dir: Path
     ) -> None:
@@ -1343,11 +1376,85 @@ class TestAddSkillBatch:
             ],
         )
         assert result.exit_code == 1
-        assert "[err] Incomplete" in result.output
-        assert "proficiency" in result.output
-        assert "category" in result.output
+        # category is optional — only proficiency is reported missing.
+        err_lines = [
+            line for line in result.output.splitlines() if line.startswith("[err]")
+        ]
+        assert err_lines == ["[err] Incomplete: proficiency: missing required field"]
         assert "[ok] Valid" in result.output
         assert "Summary: added 1, errors 1" in result.output
+
+    def test_batch_reports_all_violations_in_one_pass(
+        self, runner: CliRunner, vault_dir: Path, tmp_path: Path
+    ) -> None:
+        # Missing field AND out-of-range proficiency reported together.
+        payload = tmp_path / "skills.json"
+        payload.write_text('[{"proficiency":99}]')
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-skill",
+                "--from-json",
+                str(payload),
+            ],
+        )
+        assert result.exit_code == 1
+        assert "[err] item 0: name: missing required field" in result.output
+        assert "[err] item 0: proficiency: must be between 1 and 5" in result.output
+        # One failing item, regardless of how many violations it carries.
+        assert "Summary: added 0, errors 1" in result.output
+
+    def test_batch_never_leaks_pydantic_dumps(
+        self, runner: CliRunner, vault_dir: Path, tmp_path: Path
+    ) -> None:
+        # An invalid philosophy category reaches the pydantic validator;
+        # the output must stay in the normalized [err] style.
+        payload = tmp_path / "phil.json"
+        payload.write_text('[{"title":"Bad","category":"not-a-category"}]')
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-philosophy",
+                "--from-json",
+                str(payload),
+            ],
+        )
+        assert result.exit_code == 1
+        assert "[err] Bad: category:" in result.output
+        assert "pydantic" not in result.output.lower()
+        assert "https://" not in result.output
+        assert "validation error" not in result.output.lower()
+
+    def test_batch_skill_category_is_optional(
+        self, runner: CliRunner, vault_dir: Path, tmp_path: Path
+    ) -> None:
+        payload = tmp_path / "skills.json"
+        payload.write_text(
+            '[{"name":"Python","proficiency":4},'
+            '{"name":"FooBarLang","proficiency":2}]'
+        )
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-skill",
+                "--from-json",
+                str(payload),
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        skills = {s.name: s for s in VaultStore(vault_dir).load().skills}
+        # Taxonomy fills the category on a match; otherwise empty.
+        assert skills["Python"].category == "technical"
+        assert skills["FooBarLang"].category == ""
 
     def test_batch_reports_invalid_proficiency(
         self, runner: CliRunner, vault_dir: Path, tmp_path: Path
@@ -1497,7 +1604,7 @@ class TestAddExperienceBatch:
             ],
         )
         assert result.exit_code == 1
-        assert "missing field title" in result.output
+        assert "title: missing required field" in result.output
 
 
 class TestAddStoryBatch:

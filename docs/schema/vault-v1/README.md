@@ -49,7 +49,8 @@ validation happens against [`vault-v1.schema.json`](vault-v1.schema.json)
    location object.
 7. **Proposals** (`proposals/*.json`) are staged writes awaiting review.
    They are synced but never applied until approved (CLI
-   `traitprint proposals approve` or the web review queue). Approval
+   `traitprint proposals approve` — CLI support planned, not yet shipped;
+   available in the Traitprint Cloud review queue today). Approval
    applies the payload to the target file(s) and deletes the proposal in
    the same commit.
 8. **Readers accept v0 (`vault.json`) and v1; writers emit v1 only.**

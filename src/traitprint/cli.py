@@ -82,6 +82,22 @@ def _read_json_items(source: IO[str]) -> list[dict[str, Any]]:
     return data
 
 
+def _validation_problems(exc: ValidationError) -> list[str]:
+    """Normalize a pydantic error into ``field: message`` lines.
+
+    Batch output must never leak raw pydantic error dumps or
+    errors.pydantic.dev URLs; this keeps the ``[err] <name>: field:
+    message`` style intact.
+    """
+    problems: list[str] = []
+    for err in exc.errors(include_url=False):
+        loc = ".".join(str(part) for part in err.get("loc", ())) or "value"
+        msg = str(err.get("msg", "invalid value"))
+        msg = msg.removeprefix("Value error, ")
+        problems.append(f"{loc}: {msg}")
+    return problems or ["invalid value"]
+
+
 def _parse_uuid_list(raw: object, field: str, item_index: int) -> list[UUID]:
     """Parse a list-of-UUID field from a JSON item. Returns [] for missing/None."""
     if raw is None:
@@ -492,7 +508,8 @@ def vault_set_profile(
     "--category",
     "-c",
     default=None,
-    help="Skill category (e.g. technical, soft, domain, tool).",
+    help="Skill category — optional (e.g. technical, soft, domain, tool). "
+    "Defaults to the taxonomy's category on a match, else empty.",
 )
 @click.option("--notes", "-n", default=None, help="Optional notes about the skill.")
 @click.option(
@@ -539,22 +556,25 @@ def vault_add_skill(
             ctx.exit(1)
         return
 
-    if name is None or proficiency is None or category is None:
+    if name is None or proficiency is None:
         click.echo(
-            "NAME, --proficiency, and --category are required "
-            "(or use --from-json for batch input)."
+            "NAME and --proficiency are required "
+            "(or use --from-json for batch input). --category is optional."
         )
         ctx.exit(2)
         return
 
-    # Taxonomy integration
+    # Taxonomy integration. --category is optional: when omitted, the
+    # taxonomy's category is used on a match, else it stays empty.
     taxonomy_id = None
-    effective_category = category
+    effective_category = category or ""
     exact = find_exact(name)
     if exact:
         taxonomy_id = exact.id
         click.echo(f"Matched taxonomy: {exact.name} ({exact.category})")
-        if category != exact.category:
+        if category is None:
+            effective_category = exact.category
+        elif category != exact.category:
             if force_category:
                 click.echo(
                     f"Keeping --category {category!r} "
@@ -593,54 +613,76 @@ def vault_add_skill(
     click.echo(f"Added skill: {skill.name} ({skill.proficiency}/5) [{skill.id}]")
 
 
+def _report_item_problems(label: str, problems: list[str]) -> None:
+    """Print one ``[err] <label>: field: message`` line per violation."""
+    for problem in problems:
+        click.echo(f"[err] {label}: {problem}")
+
+
 def _batch_add_skills(store: VaultStore, items: list[dict[str, Any]]) -> int:
     """Add skills from parsed JSON items.
 
-    Prints a per-item line (ok/dup/err) and a summary line. Returns the
-    number of items that failed (duplicates count as errors).
+    Prints per-item lines (ok/dup/err) and a summary line. ALL violations
+    for an item are reported in one pass (missing fields and range errors
+    together). Returns the number of items that failed (duplicates count
+    as errors).
     """
     added = 0
     errors = 0
     for i, item in enumerate(items):
-        label = item.get("name") if isinstance(item.get("name"), str) else f"item {i}"
-        missing = [f for f in ("name", "proficiency", "category") if f not in item]
-        if missing:
-            click.echo(f"[err] {label}: missing field(s) {', '.join(missing)}")
-            errors += 1
-            continue
-        name = item["name"]
-        proficiency = item["proficiency"]
-        category = item["category"]
-        notes = item.get("notes")
-        if not isinstance(name, str) or not name.strip():
-            click.echo(f"[err] item {i}: name must be a non-empty string")
-            errors += 1
-            continue
-        if not isinstance(proficiency, int) or isinstance(proficiency, bool):
-            click.echo(f"[err] {name}: proficiency must be an integer 1-5")
-            errors += 1
-            continue
+        name = item.get("name")
+        label = name if isinstance(name, str) and name.strip() else f"item {i}"
+
+        problems: list[str] = []
+        if "name" not in item:
+            problems.append("name: missing required field")
+        elif not isinstance(name, str) or not name.strip():
+            problems.append("name: must be a non-empty string")
+        proficiency = item.get("proficiency")
+        if "proficiency" not in item:
+            problems.append("proficiency: missing required field")
+        elif not isinstance(proficiency, int) or isinstance(proficiency, bool):
+            problems.append("proficiency: must be an integer 1-5")
+        elif not 1 <= proficiency <= 5:
+            problems.append("proficiency: must be between 1 and 5")
+        category = item.get("category", "")
+        if category is None:
+            category = ""
         if not isinstance(category, str):
-            click.echo(f"[err] {name}: category must be a string")
+            problems.append("category: must be a string")
+        notes = item.get("notes")
+        if notes is not None and not isinstance(notes, str):
+            problems.append("notes: must be a string")
+        if problems:
+            _report_item_problems(label, problems)
             errors += 1
             continue
+
+        assert isinstance(name, str) and isinstance(proficiency, int)
         taxonomy_id = None
         exact = find_exact(name)
         if exact:
             taxonomy_id = exact.id
+            # category is optional; fall back to the taxonomy's category.
+            if not category:
+                category = exact.category
         try:
             skill = store.add_skill(
                 name=name,
                 proficiency=proficiency,
                 category=category,
-                notes=str(notes) if notes else None,
+                notes=notes if notes else None,
                 taxonomy_id=taxonomy_id,
             )
         except DuplicateSkillError as exc:
             click.echo(f"[dup] {name}: already exists ({exc.existing_id})")
             errors += 1
             continue
-        except (ValidationError, ValueError, TypeError) as exc:
+        except ValidationError as exc:
+            _report_item_problems(name, _validation_problems(exc))
+            errors += 1
+            continue
+        except (ValueError, TypeError) as exc:
             click.echo(f"[err] {name}: {exc}")
             errors += 1
             continue
@@ -691,8 +733,9 @@ def vault_add_experience(
 ) -> None:
     """Add a work experience to your vault.
 
-    Pass --title, --company, --start-date (and optional fields) for
-    non-interactive use. Any missing required field will be prompted for.
+    Only --title is required; all other fields are optional and default
+    to empty. Omitting --title falls back to interactive prompts for
+    every field.
     """
     store = _get_store(ctx)
     if not store.exists():
@@ -749,31 +792,37 @@ def vault_add_experience(
 
 
 def _batch_add_experiences(store: VaultStore, items: list[dict[str, Any]]) -> int:
-    """Add experiences from parsed JSON items. Returns number of errors."""
+    """Add experiences from parsed JSON items. Returns number of errors.
+
+    ALL violations for an item are reported in one pass.
+    """
     added = 0
     errors = 0
     for i, item in enumerate(items):
-        label = item.get("title") if isinstance(item.get("title"), str) else f"item {i}"
+        title = item.get("title")
+        label = title if isinstance(title, str) and title.strip() else f"item {i}"
+
+        problems: list[str] = []
         if "title" not in item:
-            click.echo(f"[err] {label}: missing field title")
-            errors += 1
-            continue
-        title = item["title"]
-        if not isinstance(title, str) or not title.strip():
-            click.echo(f"[err] item {i}: title must be a non-empty string")
-            errors += 1
-            continue
-        company = item.get("company", "")
-        start_date = item.get("start_date", "")
-        end_date = item.get("end_date") or None
-        description = item.get("description", "")
+            problems.append("title: missing required field")
+        elif not isinstance(title, str) or not title.strip():
+            problems.append("title: must be a non-empty string")
         accomplishments_raw = item.get("accomplishments") or []
         if not isinstance(accomplishments_raw, list) or not all(
             isinstance(a, str) for a in accomplishments_raw
         ):
-            click.echo(f"[err] {title}: accomplishments must be a list of strings")
+            problems.append("accomplishments: must be a list of strings")
+            accomplishments_raw = []
+        if problems:
+            _report_item_problems(label, problems)
             errors += 1
             continue
+
+        assert isinstance(title, str)
+        company = item.get("company", "")
+        start_date = item.get("start_date", "")
+        end_date = item.get("end_date") or None
+        description = item.get("description", "")
         try:
             exp = store.add_experience(
                 title=title,
@@ -783,7 +832,11 @@ def _batch_add_experiences(store: VaultStore, items: list[dict[str, Any]]) -> in
                 description=str(description),
                 accomplishments=list(accomplishments_raw),
             )
-        except (ValidationError, ValueError, TypeError) as exc:
+        except ValidationError as exc:
+            _report_item_problems(title, _validation_problems(exc))
+            errors += 1
+            continue
+        except (ValueError, TypeError) as exc:
             click.echo(f"[err] {title}: {exc}")
             errors += 1
             continue
@@ -931,40 +984,62 @@ def vault_add_story(
     click.echo(f"Added story: {story.title} [{story.id}]")
 
 
+_STORY_OUTCOME_VALUES = ("win", "failure", "learning")
+
+
 def _batch_add_stories(store: VaultStore, items: list[dict[str, Any]]) -> int:
-    """Add stories from parsed JSON items. Returns number of errors."""
+    """Add stories from parsed JSON items. Returns number of errors.
+
+    ALL violations for an item are reported in one pass.
+    """
     added = 0
     errors = 0
     for i, item in enumerate(items):
-        label = item.get("title") if isinstance(item.get("title"), str) else f"item {i}"
+        title = item.get("title")
+        label = title if isinstance(title, str) and title.strip() else f"item {i}"
+
+        problems: list[str] = []
         if "title" not in item:
-            click.echo(f"[err] {label}: missing field title")
-            errors += 1
-            continue
-        title = item["title"]
-        if not isinstance(title, str) or not title.strip():
-            click.echo(f"[err] item {i}: title must be a non-empty string")
-            errors += 1
-            continue
+            problems.append("title: missing required field")
+        elif not isinstance(title, str) or not title.strip():
+            problems.append("title: must be a non-empty string")
+        skill_ids: list[UUID] = []
         try:
             skill_ids = _parse_uuid_list(item.get("skill_ids"), "skill_ids", i)
-            experience_id_raw = item.get("experience_id")
-            experience_uuid: UUID | None = None
-            if experience_id_raw:
-                if not isinstance(experience_id_raw, str):
-                    raise ValueError("experience_id must be a UUID string")
-                experience_uuid = UUID(experience_id_raw)
         except ValueError as exc:
-            click.echo(f"[err] {title}: {exc}")
-            errors += 1
-            continue
+            problems.append(str(exc))
+        experience_uuid: UUID | None = None
+        experience_id_raw = item.get("experience_id")
+        if experience_id_raw:
+            if not isinstance(experience_id_raw, str):
+                problems.append("experience_id: must be a UUID string")
+            else:
+                try:
+                    experience_uuid = UUID(experience_id_raw)
+                except ValueError:
+                    problems.append(
+                        f"experience_id: invalid UUID {experience_id_raw!r}"
+                    )
+        outcome = item.get("outcome", "") or ""
+        if not isinstance(outcome, str):
+            problems.append("outcome: must be a string")
+        elif outcome and outcome not in _STORY_OUTCOME_VALUES:
+            problems.append(
+                f"outcome: must be one of {', '.join(_STORY_OUTCOME_VALUES)}; "
+                f"got {outcome!r}"
+            )
         theme_tags_raw = item.get("theme_tags") or []
         if not isinstance(theme_tags_raw, list) or not all(
             isinstance(t, str) for t in theme_tags_raw
         ):
-            click.echo(f"[err] {title}: theme_tags: must be a list of strings")
+            problems.append("theme_tags: must be a list of strings")
+            theme_tags_raw = []
+        if problems:
+            _report_item_problems(label, problems)
             errors += 1
             continue
+
+        assert isinstance(title, str) and isinstance(outcome, str)
         try:
             story = store.add_story(
                 title=title,
@@ -973,12 +1048,16 @@ def _batch_add_stories(store: VaultStore, items: list[dict[str, Any]]) -> int:
                 action=str(item.get("action", "") or ""),
                 result=str(item.get("result", "") or ""),
                 lesson=str(item.get("lesson", "") or ""),
-                outcome=str(item.get("outcome", "") or ""),
+                outcome=outcome,
                 theme_tags=list(theme_tags_raw),
                 skill_ids=skill_ids,
                 experience_id=experience_uuid,
             )
-        except (ValidationError, ValueError, TypeError) as exc:
+        except ValidationError as exc:
+            _report_item_problems(title, _validation_problems(exc))
+            errors += 1
+            continue
+        except (ValueError, TypeError) as exc:
             click.echo(f"[err] {title}: {exc}")
             errors += 1
             continue
@@ -1088,33 +1167,42 @@ def vault_add_philosophy(
 
 
 def _batch_add_philosophies(store: VaultStore, items: list[dict[str, Any]]) -> int:
-    """Add philosophies from parsed JSON items. Returns number of errors."""
+    """Add philosophies from parsed JSON items. Returns number of errors.
+
+    ALL violations for an item are reported in one pass.
+    """
     added = 0
     errors = 0
     for i, item in enumerate(items):
-        label = item.get("title") if isinstance(item.get("title"), str) else f"item {i}"
+        title = item.get("title")
+        label = title if isinstance(title, str) and title.strip() else f"item {i}"
+
+        problems: list[str] = []
         if "title" not in item:
-            click.echo(f"[err] {label}: missing field title")
-            errors += 1
-            continue
-        title = item["title"]
-        category = item.get("category", "")
-        if not isinstance(title, str) or not title.strip():
-            click.echo(f"[err] item {i}: title must be a non-empty string")
-            errors += 1
-            continue
+            problems.append("title: missing required field")
+        elif not isinstance(title, str) or not title.strip():
+            problems.append("title: must be a non-empty string")
+        category = item.get("category", "") or ""
         if not isinstance(category, str):
-            click.echo(f"[err] {title}: category must be a string")
-            errors += 1
-            continue
+            problems.append("category: must be a string")
+        elif category and category not in _PHILOSOPHY_CATEGORIES:
+            problems.append(
+                f"category: must be one of {', '.join(_PHILOSOPHY_CATEGORIES)}; "
+                f"got {category!r}"
+            )
+        evidence_ids: list[UUID] = []
         try:
             evidence_ids = _parse_uuid_list(
                 item.get("evidence_story_ids"), "evidence_story_ids", i
             )
         except ValueError as exc:
-            click.echo(f"[err] {title}: {exc}")
+            problems.append(str(exc))
+        if problems:
+            _report_item_problems(label, problems)
             errors += 1
             continue
+
+        assert isinstance(title, str) and isinstance(category, str)
         try:
             philosophy = store.add_philosophy(
                 title=title,
@@ -1122,7 +1210,11 @@ def _batch_add_philosophies(store: VaultStore, items: list[dict[str, Any]]) -> i
                 category=category,
                 evidence_story_ids=evidence_ids,
             )
-        except (ValidationError, ValueError, TypeError) as exc:
+        except ValidationError as exc:
+            _report_item_problems(title, _validation_problems(exc))
+            errors += 1
+            continue
+        except (ValueError, TypeError) as exc:
             click.echo(f"[err] {title}: {exc}")
             errors += 1
             continue
