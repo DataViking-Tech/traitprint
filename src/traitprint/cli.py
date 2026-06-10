@@ -25,6 +25,38 @@ if TYPE_CHECKING:
     from traitprint.sync import SyncPlan
 
 
+class UUIDParamType(click.ParamType[UUID]):
+    """Click param type for UUID flags.
+
+    Produces the same actionable style as batch mode ("invalid UUID 'x'")
+    instead of a raw ValueError traceback, with click's usage-error
+    exit code 2.
+    """
+
+    name = "uuid"
+
+    def convert(
+        self,
+        value: Any,
+        param: click.Parameter | None,
+        ctx: click.Context | None,
+    ) -> UUID:
+        if isinstance(value, UUID):
+            return value
+        try:
+            return UUID(str(value).strip())
+        except ValueError:
+            self.fail(
+                f"invalid UUID {str(value)!r} — copy real UUIDs from "
+                "'traitprint vault list' output",
+                param,
+                ctx,
+            )
+
+
+UUID_PARAM = UUIDParamType()
+
+
 def _get_store(ctx: click.Context) -> VaultStore:
     """Retrieve the VaultStore from the Click context."""
     path: str | None = ctx.obj.get("path") if ctx.obj else None
@@ -768,10 +800,14 @@ def _batch_add_experiences(store: VaultStore, items: list[dict[str, Any]]) -> in
     "--skill-id",
     "skill_ids_opt",
     multiple=True,
+    type=UUID_PARAM,
     help="Skill UUID (repeatable).",
 )
 @click.option(
-    "--experience-id", default=None, help="Experience UUID this story belongs to."
+    "--experience-id",
+    default=None,
+    type=UUID_PARAM,
+    help="Experience UUID this story belongs to.",
 )
 @click.option(
     "--interactive", "-i", is_flag=True, default=True, help="Guided STAR prompts."
@@ -793,8 +829,8 @@ def vault_add_story(
     task: str | None,
     action: str | None,
     result: str | None,
-    skill_ids_opt: tuple[str, ...],
-    experience_id: str | None,
+    skill_ids_opt: tuple[UUID, ...],
+    experience_id: UUID | None,
     interactive: bool,
     from_json: IO[str] | None,
 ) -> None:
@@ -819,17 +855,14 @@ def vault_add_story(
             ctx.exit(1)
         return
 
-    def _parse_uuids(raw: tuple[str, ...]) -> list[UUID]:
-        return [UUID(s.strip()) for s in raw if s and s.strip()]
-
     non_interactive = title is not None
     if non_interactive:
         situation = situation if situation is not None else ""
         task = task if task is not None else ""
         action = action if action is not None else ""
         result = result if result is not None else ""
-        skill_ids = _parse_uuids(skill_ids_opt)
-        experience_uuid = UUID(experience_id) if experience_id else None
+        skill_ids = list(skill_ids_opt)
+        experience_uuid = experience_id
     else:
         click.echo("Enter your story in STAR format:")
         title = click.prompt("Title")
@@ -838,7 +871,7 @@ def vault_add_story(
         action = click.prompt("Action")
         result = click.prompt("Result")
         if skill_ids_opt:
-            skill_ids = _parse_uuids(skill_ids_opt)
+            skill_ids = list(skill_ids_opt)
         else:
             raw_skills = click.prompt(
                 "Skill IDs (comma-separated UUIDs, or blank)", default=""
@@ -850,7 +883,7 @@ def vault_add_story(
                     if sid:
                         skill_ids.append(UUID(sid))
         if experience_id:
-            experience_uuid = UUID(experience_id)
+            experience_uuid = experience_id
         else:
             raw_exp = click.prompt("Experience ID (UUID, or blank)", default="")
             experience_uuid = UUID(raw_exp) if raw_exp else None
@@ -933,6 +966,7 @@ _PHILOSOPHY_CATEGORIES = [c.value for c in PhilosophyCategory]
     "--evidence-id",
     "evidence_ids_opt",
     multiple=True,
+    type=UUID_PARAM,
     help="Evidence story UUID (repeatable).",
 )
 @click.option("--interactive", "-i", is_flag=True, default=True, help="Guided prompts.")
@@ -951,7 +985,7 @@ def vault_add_philosophy(
     title: str | None,
     description: str | None,
     category: str | None,
-    evidence_ids_opt: tuple[str, ...],
+    evidence_ids_opt: tuple[UUID, ...],
     interactive: bool,
     from_json: IO[str] | None,
 ) -> None:
@@ -979,7 +1013,7 @@ def vault_add_philosophy(
     non_interactive = title is not None
     if non_interactive:
         description = description if description is not None else ""
-        evidence_ids = [UUID(s.strip()) for s in evidence_ids_opt if s and s.strip()]
+        evidence_ids = list(evidence_ids_opt)
     else:
         title = click.prompt("Philosophy title")
         description = click.prompt("Description")
@@ -991,9 +1025,7 @@ def vault_add_philosophy(
             type=click.Choice([*_PHILOSOPHY_CATEGORIES, ""], case_sensitive=False),
         )
         if evidence_ids_opt:
-            evidence_ids = [
-                UUID(s.strip()) for s in evidence_ids_opt if s and s.strip()
-            ]
+            evidence_ids = list(evidence_ids_opt)
         else:
             raw_evidence = click.prompt(
                 "Evidence story IDs (comma-separated UUIDs, or blank)", default=""
@@ -1126,23 +1158,19 @@ def vault_add_education(
 
 
 @vault.command(name="remove")
-@click.argument("item_id")
+@click.argument("item_id", type=UUID_PARAM)
 @click.option(
     "--yes", "-y", is_flag=True, default=False, help="Skip confirmation prompt."
 )
 @click.pass_context
-def vault_remove(ctx: click.Context, item_id: str, yes: bool) -> None:
+def vault_remove(ctx: click.Context, item_id: UUID, yes: bool) -> None:
     """Remove an item from the vault by UUID."""
     store = _get_store(ctx)
     if not store.exists():
         click.echo("No vault found. Run 'traitprint init' first.")
         return
 
-    try:
-        uid = UUID(item_id)
-    except ValueError:
-        click.echo(f"Invalid UUID: {item_id}")
-        return
+    uid = item_id
 
     if not yes and not click.confirm(f"Remove item {uid}?"):
         click.echo("Cancelled.")

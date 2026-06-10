@@ -1004,6 +1004,110 @@ class TestAddPhilosophyCLI:
 
 
 # ------------------------------------------------------------------
+# CLI: UUID flag validation (no raw tracebacks)
+# ------------------------------------------------------------------
+
+
+class TestUUIDFlagValidation:
+    """Invalid UUIDs in flags are usage errors (exit 2), never tracebacks."""
+
+    def _assert_uuid_usage_error(self, result: object, bad: str) -> None:
+        assert result.exit_code == 2, result.output  # type: ignore[attr-defined]
+        assert f"invalid UUID '{bad}'" in result.output  # type: ignore[attr-defined]
+        assert result.exception is None or isinstance(  # type: ignore[attr-defined]
+            result.exception,  # type: ignore[attr-defined]
+            SystemExit,
+        )
+
+    def test_add_philosophy_evidence_id(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-philosophy",
+                "--title",
+                "T",
+                "--evidence-id",
+                "PLACEHOLDER",
+            ],
+        )
+        self._assert_uuid_usage_error(result, "PLACEHOLDER")
+        assert VaultStore(vault_dir).load().philosophies == []
+
+    def test_add_story_skill_id(self, runner: CliRunner, vault_dir: Path) -> None:
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-story",
+                "--title",
+                "T",
+                "--skill-id",
+                "not-a-uuid",
+            ],
+        )
+        self._assert_uuid_usage_error(result, "not-a-uuid")
+        assert VaultStore(vault_dir).load().stories == []
+
+    def test_add_story_experience_id(self, runner: CliRunner, vault_dir: Path) -> None:
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-story",
+                "--title",
+                "T",
+                "--experience-id",
+                "not-a-uuid",
+            ],
+        )
+        self._assert_uuid_usage_error(result, "not-a-uuid")
+
+    def test_remove_argument(self, runner: CliRunner, vault_dir: Path) -> None:
+        result = runner.invoke(
+            cli, ["--path", str(vault_dir), "vault", "remove", "nope", "-y"]
+        )
+        self._assert_uuid_usage_error(result, "nope")
+
+    def test_valid_uuid_still_accepted(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        store = VaultStore(vault_dir)
+        skill = store.add_skill(name="Go", proficiency=3, category="technical")
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-story",
+                "--title",
+                "T",
+                "--situation",
+                "s",
+                "--task",
+                "t",
+                "--action",
+                "a",
+                "--result",
+                "r",
+                "--skill-id",
+                str(skill.id),
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        assert store.load().stories[0].skill_ids == [skill.id]
+
+
+# ------------------------------------------------------------------
 # CLI: vault history / diff / rollback
 # ------------------------------------------------------------------
 
