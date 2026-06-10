@@ -80,18 +80,6 @@ jobs:
           fi
           echo "PKG_VERSION=$PKG_VERSION" >> "$GITHUB_ENV"
 
-      - name: Create release tag (dispatch / main-push)
-        if: steps.guard.outputs.skip != 'true' && (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main')
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          if git ls-remote --exit-code origin "refs/tags/v$PKG_VERSION" >/dev/null 2>&1; then
-            echo "Tag v$PKG_VERSION already exists — publishing existing version" >&2
-          else
-            git tag "v$PKG_VERSION"
-            git push origin "v$PKG_VERSION"
-          fi
-
       - name: Build sdist and wheel
         if: steps.guard.outputs.skip != 'true'
         run: |
@@ -142,3 +130,28 @@ jobs:
 
       - name: Publish to PyPI (trusted publishing)
         uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # release/v1
+
+  tag:
+    # Tag only after the publish succeeded — a tag created earlier would
+    # make the version-change guard skip retries of a failed release
+    # forever (Codex P1 on #43). Tag pushes re-trigger this workflow, but
+    # that run no-ops at the guard because the tag now exists.
+    needs: [build, publish]
+    if: needs.build.outputs.skip != 'true' && (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create release tag
+        run: |
+          PKG_VERSION="$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git ls-remote --exit-code origin "refs/tags/v$PKG_VERSION" >/dev/null 2>&1; then
+            echo "Tag v$PKG_VERSION already exists."
+          else
+            git tag "v$PKG_VERSION"
+            git push origin "v$PKG_VERSION"
+          fi
