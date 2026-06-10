@@ -34,9 +34,9 @@ Severity = Literal["critical", "major", "minor"]
 # Higher rank = more severe. Used for sorting and ``--severity`` filtering.
 _SEVERITY_RANK: dict[Severity, int] = {"minor": 0, "major": 1, "critical": 2}
 
-# Proficiency (1-10) at or above which a skill is a "strong claim" that should
+# Proficiency (1-5) at or above which a skill is a "strong claim" that should
 # be backed by a story. Maps to the MCP server's "expert"/"authority" buckets.
-STRONG_PROFICIENCY = 7
+STRONG_PROFICIENCY = 4
 
 
 @dataclass(frozen=True)
@@ -207,7 +207,7 @@ def _audit_skills(
                     "major",
                     "skill.unsupported_strength",
                     "skills",
-                    f"Skill {skill.name!r} is claimed at {skill.proficiency}/10 "
+                    f"Skill {skill.name!r} is claimed at {skill.proficiency}/5 "
                     "but no story demonstrates it. Strong claims read as more "
                     "credible with a STAR story behind them.",
                     str(skill.id),

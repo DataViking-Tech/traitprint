@@ -1,4 +1,11 @@
-"""Git versioning helpers for the vault directory."""
+"""Git versioning helpers for the vault directory.
+
+The vault is a v1 file tree (manifest + JSON arrays + markdown files),
+so every operation works on the whole tree rather than a single
+``vault.json``: commits stage everything (``.credentials`` is
+gitignored), log/diff cover the full repo, and rollback restores all
+tracked files to the previous commit.
+"""
 
 from __future__ import annotations
 
@@ -32,10 +39,12 @@ def init_repo(path: Path) -> None:
 
 
 def commit(path: Path, message: str) -> None:
-    """Stage vault.json (and .gitignore if present) then commit."""
-    _run(["git", "add", "vault.json"], cwd=path)
-    if (path / ".gitignore").is_file():
-        _run(["git", "add", ".gitignore"], cwd=path)
+    """Stage all vault content and commit.
+
+    ``.credentials`` is gitignored at init time, so ``git add -A`` never
+    stages secrets.
+    """
+    _run(["git", "add", "-A"], cwd=path)
     _run(["git", "commit", "-m", message, "--allow-empty"], cwd=path)
 
 
@@ -56,27 +65,36 @@ def head_sha(path: Path, *, short: bool = True) -> str:
 
 
 def log(path: Path, n: int = 10) -> list[str]:
-    """Return the last *n* log entries as one-line strings."""
-    result = _run(
-        ["git", "log", f"-{n}", "--oneline", "--", "vault.json"],
-        cwd=path,
-    )
+    """Return the last *n* log entries (whole tree) as one-line strings."""
+    result = _run(["git", "log", f"-{n}", "--oneline"], cwd=path)
     if result.returncode != 0:
         return []
     return [line for line in result.stdout.strip().splitlines() if line]
 
 
 def diff(path: Path) -> str:
-    """Return the diff between HEAD and HEAD~1 for vault.json."""
-    result = _run(
-        ["git", "diff", "HEAD~1", "--", "vault.json"],
-        cwd=path,
-    )
+    """Return the diff between HEAD~1 and the working tree."""
+    result = _run(["git", "diff", "HEAD~1"], cwd=path)
     return result.stdout if result.returncode == 0 else ""
 
 
 def rollback(path: Path) -> None:
-    """Revert vault.json to the previous commit."""
-    _run(["git", "checkout", "HEAD~1", "--", "vault.json"], cwd=path)
-    _run(["git", "add", "vault.json"], cwd=path)
+    """Revert the whole vault tree to the previous commit.
+
+    Restores every tracked file from HEAD~1 and removes files that were
+    added in the last commit, then commits the result.
+    """
+    # Files added in the latest commit don't exist in HEAD~1; a plain
+    # ``checkout HEAD~1 -- .`` would leave them behind, so delete them.
+    added = _run(
+        ["git", "diff", "--diff-filter=A", "--name-only", "HEAD~1", "HEAD"],
+        cwd=path,
+    )
+    if added.returncode == 0:
+        for name in added.stdout.splitlines():
+            target = path / name
+            if name and target.is_file():
+                target.unlink()
+    _run(["git", "checkout", "HEAD~1", "--", "."], cwd=path)
+    _run(["git", "add", "-A"], cwd=path)
     _run(["git", "commit", "-m", "Rollback to previous state"], cwd=path)

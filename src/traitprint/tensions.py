@@ -227,11 +227,14 @@ def detect_tensions(
 
     Returns tensions sorted by confidence (descending).
     """
-    category = new_philosophy.category.value
+    category = new_philosophy.category
+    if not category:
+        # Uncategorized philosophies have no opposition table to compare on.
+        return []
     same_category = [
         p
         for p in existing_philosophies
-        if p.category.value == category and p.id != new_philosophy.id
+        if p.category == category and p.id != new_philosophy.id
     ]
     if not same_category:
         return []

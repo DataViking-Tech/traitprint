@@ -173,7 +173,7 @@ def _render_vault_summary(v: VaultSchema) -> None:
     click.echo(f"Skills ({len(v.skills)}):")
     top_skills = sorted(v.skills, key=lambda s: (-s.proficiency, s.name.lower()))[:5]
     for s in top_skills:
-        click.echo(f"  - {s.name} ({s.proficiency}/10)")
+        click.echo(f"  - {s.name} ({s.proficiency}/5)")
     if len(v.skills) > 5:
         click.echo(f"  ... {len(v.skills) - 5} more")
 
@@ -198,7 +198,8 @@ def _render_vault_summary(v: VaultSchema) -> None:
     if v.philosophies:
         counts: dict[str, int] = {}
         for ph in v.philosophies:
-            counts[ph.category.value] = counts.get(ph.category.value, 0) + 1
+            cat = ph.category or "uncategorized"
+            counts[cat] = counts.get(cat, 0) + 1
         parts = ", ".join(f"{cat} ({n})" for cat, n in sorted(counts.items()))
         click.echo(f"Philosophies ({len(v.philosophies)}): {parts}")
     else:
@@ -238,7 +239,7 @@ def _render_vault_verbose(store: VaultStore, v: VaultSchema) -> None:
     for s in v.skills:
         click.echo(f"  - {s.name}  [id={s.id}]")
         click.echo(f"      category:    {s.category or '-'}")
-        click.echo(f"      proficiency: {s.proficiency}/10")
+        click.echo(f"      proficiency: {s.proficiency}/5")
         click.echo(f"      source:      {s.source}")
         click.echo(f"      taxonomy_id: {s.taxonomy_id or '-'}")
         if s.notes:
@@ -292,7 +293,7 @@ def _render_vault_verbose(store: VaultStore, v: VaultSchema) -> None:
     click.echo(f"Philosophies ({len(v.philosophies)}):")
     for ph in v.philosophies:
         click.echo(f"  - {ph.title}  [id={ph.id}]")
-        click.echo(f"      category:    {ph.category.value}")
+        click.echo(f"      category:    {ph.category or '-'}")
         if ph.description:
             click.echo(f"      description: {ph.description}")
         if ph.evidence_story_ids:
@@ -373,7 +374,7 @@ def vault_list(ctx: click.Context, section: str) -> None:
         click.echo(f"{'Title':<35} {'Category':<20} {'ID'}")
         click.echo("-" * 80)
         for p in items:
-            click.echo(f"{p.title:<35} {p.category.value:<20} {p.id}")
+            click.echo(f"{p.title:<35} {p.category:<20} {p.id}")
     elif section == "education":
         click.echo(f"{'Institution':<30} {'Degree':<20} {'Field':<20} {'ID'}")
         click.echo("-" * 80)
@@ -444,9 +445,10 @@ def vault_set_profile(
 @click.option(
     "--proficiency",
     "-p",
-    type=click.IntRange(1, 10),
+    type=click.IntRange(1, 5),
     default=None,
-    help="Proficiency level (1-10).",
+    help="Proficiency level (1-5): 1 familiar, 2 working, 3 proficient, "
+    "4 expert, 5 authority.",
 )
 @click.option(
     "--category",
@@ -550,7 +552,7 @@ def vault_add_skill(
         )
         ctx.exit(1)
         return
-    click.echo(f"Added skill: {skill.name} ({skill.proficiency}/10) [{skill.id}]")
+    click.echo(f"Added skill: {skill.name} ({skill.proficiency}/5) [{skill.id}]")
 
 
 def _batch_add_skills(store: VaultStore, items: list[dict[str, Any]]) -> int:
@@ -577,7 +579,7 @@ def _batch_add_skills(store: VaultStore, items: list[dict[str, Any]]) -> int:
             errors += 1
             continue
         if not isinstance(proficiency, int) or isinstance(proficiency, bool):
-            click.echo(f"[err] {name}: proficiency must be an integer 1-10")
+            click.echo(f"[err] {name}: proficiency must be an integer 1-5")
             errors += 1
             continue
         if not isinstance(category, str):
@@ -604,7 +606,7 @@ def _batch_add_skills(store: VaultStore, items: list[dict[str, Any]]) -> int:
             click.echo(f"[err] {name}: {exc}")
             errors += 1
             continue
-        click.echo(f"[ok] {skill.name} ({skill.proficiency}/10) [{skill.id}]")
+        click.echo(f"[ok] {skill.name} ({skill.proficiency}/5) [{skill.id}]")
         added += 1
     click.echo(f"Summary: added {added}, errors {errors}")
     return errors
@@ -925,7 +927,7 @@ _PHILOSOPHY_CATEGORIES = [c.value for c in PhilosophyCategory]
     "--category",
     default=None,
     type=click.Choice(_PHILOSOPHY_CATEGORIES, case_sensitive=False),
-    help="Philosophy category.",
+    help="Philosophy category (optional).",
 )
 @click.option(
     "--evidence-id",
@@ -940,7 +942,7 @@ _PHILOSOPHY_CATEGORIES = [c.value for c in PhilosophyCategory]
     type=click.File("r"),
     default=None,
     help="Batch mode: load philosophies from a JSON file (or '-' for stdin). "
-    "Expects a JSON array of {title, description?, category, evidence_story_ids?} "
+    "Expects a JSON array of {title, description?, category?, evidence_story_ids?} "
     "objects.",
 )
 @click.pass_context
@@ -955,7 +957,8 @@ def vault_add_philosophy(
 ) -> None:
     """Add a work philosophy to your vault.
 
-    Pass --title, --description, --category for non-interactive use.
+    Pass --title and --description for non-interactive use; --category
+    is optional.
     """
     store = _get_store(ctx)
     if not store.exists():
@@ -976,21 +979,16 @@ def vault_add_philosophy(
     non_interactive = title is not None
     if non_interactive:
         description = description if description is not None else ""
-        if category is None:
-            click.echo(
-                "--category is required when --title is provided. "
-                f"Choices: {', '.join(_PHILOSOPHY_CATEGORIES)}"
-            )
-            ctx.exit(1)
-            return
         evidence_ids = [UUID(s.strip()) for s in evidence_ids_opt if s and s.strip()]
     else:
         title = click.prompt("Philosophy title")
         description = click.prompt("Description")
-        click.echo(f"Categories: {', '.join(_PHILOSOPHY_CATEGORIES)}")
+        click.echo(f"Categories: {', '.join(_PHILOSOPHY_CATEGORIES)} (or blank)")
         category = click.prompt(
             "Category",
-            type=click.Choice(_PHILOSOPHY_CATEGORIES, case_sensitive=False),
+            default="",
+            show_default=False,
+            type=click.Choice([*_PHILOSOPHY_CATEGORIES, ""], case_sensitive=False),
         )
         if evidence_ids_opt:
             evidence_ids = [
@@ -1008,11 +1006,10 @@ def vault_add_philosophy(
                         evidence_ids.append(UUID(eid))
 
     assert title is not None
-    assert category is not None
     philosophy = store.add_philosophy(
         title=title,
         description=description or "",
-        category=category,
+        category=category or "",
         evidence_story_ids=evidence_ids,
     )
     click.echo(f"Added philosophy: {philosophy.title} [{philosophy.id}]")
@@ -1024,13 +1021,12 @@ def _batch_add_philosophies(store: VaultStore, items: list[dict[str, Any]]) -> i
     errors = 0
     for i, item in enumerate(items):
         label = item.get("title") if isinstance(item.get("title"), str) else f"item {i}"
-        missing = [f for f in ("title", "category") if f not in item]
-        if missing:
-            click.echo(f"[err] {label}: missing field(s) {', '.join(missing)}")
+        if "title" not in item:
+            click.echo(f"[err] {label}: missing field title")
             errors += 1
             continue
         title = item["title"]
-        category = item["category"]
+        category = item.get("category", "")
         if not isinstance(title, str) or not title.strip():
             click.echo(f"[err] item {i}: title must be a non-empty string")
             errors += 1
@@ -1246,7 +1242,7 @@ def vault_export(
 )
 @click.pass_context
 def vault_history(ctx: click.Context, count: int) -> None:
-    """Show vault git history."""
+    """Show git history for the whole vault file tree."""
     store = _get_store(ctx)
     if not store.exists():
         click.echo("No vault found. Run 'traitprint init' first.")
@@ -1266,7 +1262,7 @@ def vault_history(ctx: click.Context, count: int) -> None:
 @vault.command(name="diff")
 @click.pass_context
 def vault_diff_cmd(ctx: click.Context) -> None:
-    """Show changes since the last commit."""
+    """Show changes across the vault file tree since the previous commit."""
     store = _get_store(ctx)
     if not store.exists():
         click.echo("No vault found. Run 'traitprint init' first.")
@@ -1288,7 +1284,7 @@ def vault_diff_cmd(ctx: click.Context) -> None:
 )
 @click.pass_context
 def vault_rollback_cmd(ctx: click.Context, yes: bool) -> None:
-    """Roll back vault to the previous commit."""
+    """Roll back the whole vault file tree to the previous commit."""
     store = _get_store(ctx)
     if not store.exists():
         click.echo("No vault found. Run 'traitprint init' first.")
@@ -1300,6 +1296,112 @@ def vault_rollback_cmd(ctx: click.Context, yes: bool) -> None:
 
     git_rollback(store.directory)
     click.echo("Vault rolled back to previous state.")
+
+
+# --- vault migrate ---
+
+
+@vault.command(name="migrate")
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    default=False,
+    help="Show the planned v1 file list and proficiency remaps without writing.",
+)
+@click.option(
+    "--json",
+    "as_json",
+    is_flag=True,
+    default=False,
+    help="Emit the plan/result as JSON.",
+)
+@click.pass_context
+def vault_migrate(ctx: click.Context, dry_run: bool, as_json: bool) -> None:
+    """Migrate a legacy v0 vault.json to the v1 file tree.
+
+    Remaps skill proficiency from the old 1-10 scale to 1-5 (ceil(x/2)),
+    writes the v1 tree (traitprint.json, profile.json, skills.json,
+    education.json, experiences/, stories/, philosophies/), removes
+    vault.json, and records everything as a single git commit
+    "Migrate vault to schema v1". Idempotent: a vault that is already
+    v1 is a no-op.
+    """
+    from traitprint.vault_io import build_tree, remap_proficiency
+
+    store = _get_store(ctx)
+    if not store.exists():
+        click.echo("No vault found. Run 'traitprint init' first.")
+        return
+    if store.is_v1():
+        if as_json:
+            click.echo(json.dumps({"status": "already-v1", "migrated": False}))
+        else:
+            click.echo("Vault is already schema v1 — nothing to migrate.")
+        return
+
+    # Read the raw v0 file so the remap report shows original values.
+    try:
+        raw = json.loads(store.vault_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise click.ClickException(
+            f"Invalid JSON in {store.vault_path}: {exc}"
+        ) from exc
+    remaps: list[dict[str, Any]] = []
+    raw_skills = raw.get("skills") or [] if isinstance(raw, dict) else []
+    for skill in raw_skills:
+        if isinstance(skill, dict) and isinstance(skill.get("proficiency"), int):
+            old = skill["proficiency"]
+            remaps.append(
+                {
+                    "id": str(skill.get("id", "")),
+                    "name": str(skill.get("name", "")),
+                    "from": old,
+                    "to": remap_proficiency(old),
+                }
+            )
+
+    vault_obj = store.load()  # v0 reader — proficiency already remapped in memory
+    vault_obj.schema_version = 1
+    files = sorted(build_tree(vault_obj, store.directory))
+
+    if dry_run:
+        if as_json:
+            payload = {
+                "status": "planned",
+                "migrated": False,
+                "files": files,
+                "proficiency_remaps": remaps,
+            }
+            click.echo(json.dumps(payload, indent=2))
+            return
+        click.echo("Planned v1 files:")
+        for f in files:
+            click.echo(f"  {f}")
+        if remaps:
+            click.echo("Proficiency remaps (1-10 -> 1-5):")
+            for r in remaps:
+                click.echo(f"  {r['name']}: {r['from']} -> {r['to']}")
+        click.echo("Dry run — vault not modified.")
+        return
+
+    store.save(vault_obj)  # writes the v1 tree and removes vault.json
+    commit(store.directory, "Migrate vault to schema v1")
+
+    if as_json:
+        payload = {
+            "status": "migrated",
+            "migrated": True,
+            "files": files,
+            "proficiency_remaps": remaps,
+        }
+        click.echo(json.dumps(payload, indent=2))
+        return
+    click.echo(f"Migrated vault to schema v1 ({len(files)} files).")
+    if remaps:
+        click.echo(
+            f"Remapped {len(remaps)} skill proficiencies from 1-10 to 1-5 "
+            "(ceil(x/2))."
+        )
 
 
 # --- vault audit ---

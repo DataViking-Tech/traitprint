@@ -41,12 +41,16 @@ PROFICIENCY_ORDER = {label: i for i, label in enumerate(PROFICIENCY_LABELS)}
 
 
 def _map_proficiency(level: int) -> str:
-    """Bucket a 1-10 proficiency into the cloud's 4-label enum."""
-    if level <= 2:
+    """Bucket a 1-5 proficiency into the cloud's 4-label enum.
+
+    3 ("proficient") folds into "working" because the cloud enum has no
+    separate proficient label.
+    """
+    if level <= 1:
         return "familiar"
-    if level <= 5:
+    if level <= 3:
         return "working"
-    if level <= 8:
+    if level <= 4:
         return "expert"
     return "authority"
 
@@ -458,7 +462,8 @@ def _handle_find_story(
 
     scored: list[tuple[StorySchema, float, str]] = []
     for story in complete:
-        story_outcome = _infer_outcome(story.result)
+        # Prefer the user-recorded outcome; fall back to the heuristic.
+        story_outcome = story.outcome or _infer_outcome(story.result)
         if outcome and story_outcome != outcome:
             continue
         content = " ".join(
@@ -489,7 +494,7 @@ def _handle_find_story(
                 "task": story.task,
                 "action": story.action,
                 "result": story.result,
-                "lesson": None,
+                "lesson": story.lesson or None,
                 "outcome": story_outcome,
                 "related_skills": related_skills,
                 "related_experience_id": (
@@ -575,8 +580,9 @@ user discover and articulate their professional experience. Your role:
 
 VOICE: Always use second person. Address the user as "you" ("Tell me about…", \
 "Walk me through how you…", "What was your role in…"). Keep follow-ups concise \
-(2-3 sentences). Rate proficiency on a 1-10 scale from DEMONSTRATED evidence, \
-not self-report — if they claim expertise but describe basic usage, rate at \
+(2-3 sentences). Rate proficiency on a 1-5 scale (1 familiar, 2 working, \
+3 proficient, 4 expert, 5 authority) from DEMONSTRATED evidence, not \
+self-report — if they claim expertise but describe basic usage, rate at \
 the evidence-supported level."""
 
 # How the agent writes what it learns. Cloud emits tagged blocks a parser
@@ -584,7 +590,7 @@ the evidence-supported level."""
 # shell, otherwise by handing the user the exact command).
 _WRITE_PATH = """\
 Write each thing you learn to the vault with the CLI:
-- Skill: `traitprint vault add-skill "Postgres" --proficiency 8 --category technical`
+- Skill: `traitprint vault add-skill "Postgres" --proficiency 4 --category technical`
 - Experience: `traitprint vault add-experience --title ... --company ... \
 --start-date YYYY-MM`
 - Story (STAR): `traitprint vault add-story --title ... --situation ... \
@@ -736,8 +742,8 @@ detail to ask for. Don't edit the vault without confirming with the user."""
 def create_server(store: VaultStore) -> FastMCP:
     """Build a FastMCP instance bound to ``store``.
 
-    Each tool loads the vault fresh so that edits to ``vault.json``
-    between tool calls are picked up without restarting the server.
+    Each tool loads the vault fresh so that edits to the vault file
+    tree between tool calls are picked up without restarting the server.
     """
     taxonomy = load_taxonomy()
     mcp = FastMCP(SERVER_NAME)
