@@ -27,6 +27,7 @@ from traitprint.vault import DuplicateSkillError, VaultStore
 
 if TYPE_CHECKING:
     from traitprint.credentials import Credentials
+    from traitprint.gitsync import GitSyncClient, IngestReport
     from traitprint.sync import SyncPlan
 
 
@@ -2850,7 +2851,11 @@ def logout_cmd(ctx: click.Context) -> None:
 def push_cmd(
     ctx: click.Context, dry_run: bool, strict: bool, skip_audit: bool
 ) -> None:
-    """Upload the local vault to Traitprint cloud (last-write-wins).
+    """Upload the local vault to Traitprint cloud (legacy last-write-wins).
+
+    Deprecated: prefer 'traitprint sync push' (git-native sync-v1, real
+    merges instead of whole-vault last-write-wins). This transport stays
+    for servers without the /vault-git endpoints.
 
     Before uploading, runs a coherence audit and blocks on error-level
     findings (broken stories, contradictions). Warnings such as dangling
@@ -2907,7 +2912,12 @@ def push_cmd(
 )
 @click.pass_context
 def pull_cmd(ctx: click.Context, dry_run: bool) -> None:
-    """Download the cloud vault to local disk (last-write-wins)."""
+    """Download the cloud vault to local disk (legacy last-write-wins).
+
+    Deprecated: prefer 'traitprint sync pull' (git-native sync-v1, real
+    merges instead of whole-vault last-write-wins). This transport stays
+    for servers without the /vault-git endpoints.
+    """
     _require_cloud_extras()
     from traitprint.cloud import AuthError, CloudClient, CloudError
     from traitprint.sync import do_pull
@@ -2937,3 +2947,303 @@ def pull_cmd(ctx: click.Context, dry_run: bool) -> None:
         raise click.ClickException(plan.reason)
     if plan.direction == "pull":
         click.echo("Pull complete.")
+
+
+# ------------------------------------------------------------------
+# sync command group: git-native sync-v1 (tp-an-020)
+# ------------------------------------------------------------------
+
+
+_SYNC_RELATION_NOTES = {
+    "empty": "no commits anywhere",
+    "first-push-pending": "run 'traitprint sync push' to upload",
+    "in-sync": "local and server match",
+    "ahead": "run 'traitprint sync push' to upload local commits",
+    "behind": "run 'traitprint sync pull' to fetch server commits",
+    "diverged": "run 'traitprint sync pull', resolve, then 'traitprint sync push'",
+    "unknown": "server history not fetched yet — run 'traitprint sync pull'",
+}
+
+
+def _short(sha: str | None) -> str:
+    return sha[:12] if sha else "(none)"
+
+
+def _echo_ingest(ingest: IngestReport | None) -> None:
+    """Render the server's ingest report (status + quarantined entities)."""
+    if ingest is None or not ingest.status:
+        return
+    if ingest.status == "quarantined" and ingest.quarantined:
+        click.echo(f"Ingest: quarantined ({len(ingest.quarantined)} entities)")
+        for item in ingest.quarantined:
+            file = item.get("file", "")
+            entity = item.get("entity_id", "")
+            reason = item.get("reason", "")
+            click.echo(f"  - {file} ({entity}): {reason}")
+    else:
+        click.echo(f"Ingest: {ingest.status}")
+
+
+def _ingest_status_value(ingest: IngestReport | None) -> str | None:
+    return ingest.status if ingest is not None and ingest.status else None
+
+
+def _echo_conflict_guidance(vault_dir: str, conflicts: list[str]) -> None:
+    """Print the merge-conflict UX: files + the exact commands to finish."""
+    click.echo(f"Merge conflicts in {len(conflicts)} file(s):")
+    for name in conflicts:
+        click.echo(f"  - {name}")
+    click.echo("")
+    click.echo(
+        "Resolve the conflict markers (<<<<<<</=======/>>>>>>>) in each "
+        "file, then run:"
+    )
+    click.echo(f"  git -C {vault_dir} add -A")
+    click.echo(f'  git -C {vault_dir} commit -m "Merge remote vault changes"')
+    click.echo("Then run 'traitprint sync push' to upload the merge.")
+    click.echo(f"To abandon the merge instead: git -C {vault_dir} merge --abort")
+
+
+@cli.group(name="sync")
+def sync_group() -> None:
+    """Git-native cloud sync (sync-v1: git bundles over HTTPS).
+
+    Syncs the vault's git history with your hosted remote. Concurrent
+    edits to different files merge cleanly; real conflicts surface as
+    standard git conflicts in the affected files only. Replaces the
+    legacy whole-vault 'push'/'pull'.
+    """
+
+
+def _sync_client(ctx: click.Context) -> tuple[VaultStore, GitSyncClient]:
+    """Resolve the vault + an authenticated sync-v1 client (shared plumbing)."""
+    _require_cloud_extras()
+    from traitprint.gitsync import GitSyncClient
+
+    store = _get_store(ctx)
+    if not store.exists():
+        raise click.ClickException(
+            f"No vault found at {store.directory}. Run 'traitprint init' first."
+        )
+    creds = _require_credentials(store)
+    return store, GitSyncClient.from_credentials(creds)
+
+
+@sync_group.command(name="push")
+@click.option(
+    "--json",
+    "as_json",
+    is_flag=True,
+    default=False,
+    help="Emit {pushed, head, server_head, ingest_status} as JSON.",
+)
+@click.pass_context
+def sync_push_cmd(ctx: click.Context, as_json: bool) -> None:
+    """Push local vault commits to the hosted remote (git bundle).
+
+    Uncommitted hand edits are committed first. Sends a thin bundle
+    against the last-known server head (full bundle on first push). If
+    the server has commits you don't have (409), run
+    'traitprint sync pull', resolve any conflicts, then push again.
+    """
+    from traitprint.gitsync import (
+        GitSyncError,
+        NonFastForwardError,
+        SchemaViolationError,
+        SyncAuthError,
+        sync_push,
+    )
+
+    store, client = _sync_client(ctx)
+    with client:
+        try:
+            outcome = sync_push(store.directory, client)
+        except NonFastForwardError as exc:
+            if as_json:
+                payload: dict[str, Any] = {
+                    "pushed": False,
+                    "head": head_sha(store.directory, short=False) or None,
+                    "server_head": exc.server_head,
+                    "ingest_status": None,
+                    "error": {
+                        "code": "non_fast_forward",
+                        "message": str(exc),
+                        "hint": exc.hint,
+                    },
+                }
+                click.echo(json.dumps(payload, indent=2))
+            else:
+                click.echo(str(exc))
+                click.echo(f"Server head: {_short(exc.server_head)}")
+                click.echo(exc.hint)
+            ctx.exit(1)
+        except SchemaViolationError as exc:
+            if as_json:
+                payload = {
+                    "pushed": False,
+                    "head": head_sha(store.directory, short=False) or None,
+                    "server_head": None,
+                    "ingest_status": None,
+                    "error": {
+                        "code": "schema_violation",
+                        "message": str(exc),
+                        "hint": exc.hint,
+                    },
+                    "violations": [v.as_dict() for v in exc.violations],
+                }
+                click.echo(json.dumps(payload, indent=2))
+            else:
+                click.echo(str(exc))
+                for v in exc.violations:
+                    location = f"{v.file} @ {v.pointer}" if v.pointer else v.file
+                    click.echo(f"[err] {location}: {v.message}")
+                    if v.hint:
+                        click.echo(f"      hint: {v.hint}")
+                if exc.hint:
+                    click.echo(exc.hint)
+            ctx.exit(1)
+        except SyncAuthError as exc:
+            raise click.ClickException(str(exc)) from exc
+        except GitSyncError as exc:
+            message = str(exc) + (f" {exc.hint}" if exc.hint else "")
+            raise click.ClickException(message) from exc
+
+    if as_json:
+        click.echo(
+            json.dumps(
+                {
+                    "pushed": outcome.pushed,
+                    "head": outcome.head,
+                    "server_head": outcome.server_head,
+                    "ingest_status": _ingest_status_value(outcome.ingest),
+                },
+                indent=2,
+            )
+        )
+        return
+    if not outcome.pushed:
+        click.echo(f"Already up to date with the server ({_short(outcome.head)}).")
+        return
+    kind = "full bundle" if outcome.full_bundle else "thin bundle"
+    if outcome.retried_full:
+        kind += ", retried after missing_prerequisites"
+    click.echo(
+        f"Pushed {outcome.commits} commit(s) to server main "
+        f"({_short(outcome.server_head)}, {kind})."
+    )
+    _echo_ingest(outcome.ingest)
+
+
+@sync_group.command(name="pull")
+@click.option(
+    "--json",
+    "as_json",
+    is_flag=True,
+    default=False,
+    help="Emit {fetched, result, conflicts, head} as JSON.",
+)
+@click.pass_context
+def sync_pull_cmd(ctx: click.Context, as_json: bool) -> None:
+    """Fetch server commits and fast-forward or merge them locally.
+
+    Applies the server's bundle with git fetch, then fast-forwards when
+    possible or merges otherwise. On merge conflicts the merge is left
+    in progress: resolve the listed files, commit, then
+    'traitprint sync push' (exit code 1 until resolved).
+    """
+    from traitprint.gitsync import GitSyncError, SyncAuthError, sync_pull
+
+    store, client = _sync_client(ctx)
+    with client:
+        try:
+            outcome = sync_pull(store.directory, client)
+        except SyncAuthError as exc:
+            raise click.ClickException(str(exc)) from exc
+        except GitSyncError as exc:
+            message = str(exc) + (f" {exc.hint}" if exc.hint else "")
+            raise click.ClickException(message) from exc
+
+    if as_json:
+        click.echo(
+            json.dumps(
+                {
+                    "fetched": outcome.fetched,
+                    "result": outcome.mode,
+                    "conflicts": outcome.conflicts,
+                    "head": outcome.head or None,
+                },
+                indent=2,
+            )
+        )
+        if outcome.mode == "conflicts":
+            ctx.exit(1)
+        return
+    if outcome.mode == "up_to_date":
+        if outcome.fetched:
+            click.echo(
+                "Fetched server commits — already part of local history "
+                f"({_short(outcome.head)})."
+            )
+        else:
+            click.echo(f"Already up to date ({_short(outcome.head)}).")
+        return
+    if outcome.mode == "fast_forward":
+        click.echo(f"Fast-forwarded to {_short(outcome.head)}.")
+        return
+    if outcome.mode == "merged":
+        click.echo(
+            f"Merged remote changes into the local vault "
+            f"(new head {_short(outcome.head)}). "
+            "Run 'traitprint sync push' to upload the merge."
+        )
+        return
+    _echo_conflict_guidance(str(store.directory), outcome.conflicts)
+    ctx.exit(1)
+
+
+@sync_group.command(name="status")
+@click.option(
+    "--json",
+    "as_json",
+    is_flag=True,
+    default=False,
+    help="Emit {local_head, server_head, ingest_status, quarantine_summary} as JSON.",
+)
+@click.pass_context
+def sync_status_cmd(ctx: click.Context, as_json: bool) -> None:
+    """Show local and server sync state (GET /vault-git/info)."""
+    from traitprint.gitsync import GitSyncError, SyncAuthError, sync_status
+
+    store, client = _sync_client(ctx)
+    with client:
+        try:
+            outcome = sync_status(store.directory, client)
+        except SyncAuthError as exc:
+            raise click.ClickException(str(exc)) from exc
+        except GitSyncError as exc:
+            message = str(exc) + (f" {exc.hint}" if exc.hint else "")
+            raise click.ClickException(message) from exc
+
+    if as_json:
+        click.echo(
+            json.dumps(
+                {
+                    "local_head": outcome.local_head,
+                    "server_head": outcome.server_head,
+                    "ingest_status": _ingest_status_value(outcome.ingest),
+                    "quarantine_summary": {
+                        "count": len(outcome.ingest.quarantined),
+                        "items": outcome.ingest.quarantined,
+                    },
+                    "relation": outcome.relation,
+                },
+                indent=2,
+            )
+        )
+        return
+
+    click.echo(f"Local HEAD:  {_short(outcome.local_head)}")
+    click.echo(f"Server HEAD: {_short(outcome.server_head)}")
+    note = _SYNC_RELATION_NOTES.get(outcome.relation, "")
+    click.echo(f"State: {outcome.relation}" + (f" — {note}" if note else ""))
+    _echo_ingest(outcome.ingest)
