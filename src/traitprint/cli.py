@@ -1385,7 +1385,16 @@ def vault_migrate(ctx: click.Context, dry_run: bool, as_json: bool) -> None:
         return
 
     store.save(vault_obj)  # writes the v1 tree and removes vault.json
-    commit(store.directory, "Migrate vault to schema v1")
+    # commit() initializes the repo if missing — migrate promises a single
+    # "Migrate vault to schema v1" commit even for a vault in a plain dir.
+    committed = commit(store.directory, "Migrate vault to schema v1")
+    if not committed:
+        click.echo(
+            "WARNING: the migration was written but could NOT be recorded "
+            "as a git commit. Fix the git error above, then commit inside "
+            "the vault directory to restore history/rollback.",
+            err=True,
+        )
 
     if as_json:
         payload = {
@@ -1398,9 +1407,9 @@ def vault_migrate(ctx: click.Context, dry_run: bool, as_json: bool) -> None:
         return
     click.echo(f"Migrated vault to schema v1 ({len(files)} files).")
     if remaps:
+        noun = "proficiency" if len(remaps) == 1 else "proficiencies"
         click.echo(
-            f"Remapped {len(remaps)} skill proficiencies from 1-10 to 1-5 "
-            "(ceil(x/2))."
+            f"Remapped {len(remaps)} skill {noun} from 1-10 to 1-5 (ceil(x/2))."
         )
 
 
