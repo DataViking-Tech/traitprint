@@ -74,6 +74,9 @@ traitprint vault history -n 10      # git log of vault changes; --json -> [{sha,
 traitprint vault diff               # changes since previous commit;
                                     # --json -> {from_sha, to_sha, diff_text}
 traitprint vault export -f json     # also: markdown|jsonresume|synthpanel-persona; -o FILE
+traitprint vault extract-text FILE  # deterministic text extraction from
+                                    # PDF|DOCX|TXT|MD (no LLM, no writes);
+                                    # --json -> {file, format, chars, text}
 ```
 
 Writes (flags only — omitting required flags triggers interactive prompts,
@@ -101,12 +104,22 @@ traitprint vault remove <UUID> -y         # any section, by UUID
 traitprint vault rollback -y              # undo the last vault commit
 traitprint vault migrate                  # legacy v0 vault -> v1 file tree
                                           # (remaps old proficiency scale to 1-5)
+traitprint vault import-resume FILE       # resolution order: --provider flag ->
+                                          # configured BYOK key -> agent-assist
+                                          # mode (emits extracted text + the
+                                          # extraction contract for YOU, the
+                                          # wrapping agent, to complete; exit 0);
+                                          # --json emits the assist payload as
+                                          # JSON; --assist forces the payload,
+                                          # --no-assist errors when no key;
+                                          # --yes/--dry-run apply to the BYOK path
 ```
 
 ### Batch mode (preferred for 3+ items)
 
-`add-skill`, `add-experience`, `add-story`, and `add-philosophy` accept
-`--from-json FILE` (or `--from-json -` for stdin). Input is a JSON array:
+`add-skill`, `add-experience`, `add-story`, `add-philosophy`, and
+`add-education` accept `--from-json FILE` (or `--from-json -` for stdin).
+Input is a JSON array:
 
 ```text
 add-skill:      [{"name": str, "proficiency": int 1-5, "category"?: str, "notes"?: str}]
@@ -119,6 +132,8 @@ add-story:      [{"title": str, "situation"?: str, "task"?: str, "action"?: str,
                   "experience_id"?: UUID str}]
 add-philosophy: [{"title": str, "description"?: str, "category"?: str,
                   "evidence_story_ids"?: [UUID str]}]
+add-education:  [{"institution": str, "degree"?: str, "field_of_study"?: str,
+                  "start_date"?: "YYYY", "end_date"?: "YYYY", "description"?: str}]
 ```
 
 Output is one `[ok]` / `[dup]` / `[err]` line per item plus

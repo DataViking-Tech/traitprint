@@ -83,6 +83,7 @@ shell. Use `-y` on `remove`/`rollback` to skip confirmation.
 | `traitprint vault history [-n N] [--json]` | Vault git log; `--json` emits `[{sha, message}]` |
 | `traitprint vault diff [--json]` | Changes since previous commit; `--json` emits `{from_sha, to_sha, diff_text}` |
 | `traitprint vault export -f <fmt> [-o FILE]` | Formats: `json` (lossless single doc), `markdown`, `jsonresume`, `synthpanel-persona`. `traitprint export` is a top-level alias |
+| `traitprint vault extract-text FILE [--json]` | Deterministic text extraction from PDF/DOCX/TXT/MD — no LLM, no vault writes; `--json` emits `{file, format, chars, text}`. PDF/DOCX need `pip install 'traitprint[import]'` |
 
 ### Write commands (each auto-commits)
 
@@ -94,17 +95,35 @@ shell. Use `-y` on `remove`/`rollback` to skip confirmation.
 | `traitprint vault add-experience` | `--title` | `--company --start-date YYYY-MM --end-date YYYY-MM --description --accomplishment ...` (repeatable) |
 | `traitprint vault add-story` | `--title` | `--situation --task --action --result --lesson --outcome win\|failure\|learning --theme-tag TAG` (repeatable) `--skill-id UUID` (repeatable) `--experience-id UUID` |
 | `traitprint vault add-philosophy` | `--title` | `--description --category --evidence-id STORY_UUID` (repeatable); categories: `leadership`, `collaboration`, `technical-approach`, `culture`, `decision-making` |
-| `traitprint vault add-education` | `--institution` | `--degree --field --start-date YYYY --end-date YYYY --description` (no batch mode) |
+| `traitprint vault add-education` | `--institution` | `--degree --field --start-date YYYY --end-date YYYY --description` |
 | `traitprint vault remove UUID -y` | UUID | searches all sections |
 | `traitprint vault rollback -y` | — | reset tree to previous commit |
 | `traitprint vault migrate [--dry-run] [--json]` | — | v0 → v1 file tree; idempotent |
-| `traitprint vault import-resume PATH` | path | BYOK LLM extraction; `--provider --model --yes --dry-run`; needs `pip install 'traitprint[import]'` |
+| `traitprint vault import-resume PATH` | path | LLM extraction; `--provider --model --yes --dry-run --assist/--no-assist --json`; PDF/DOCX need `pip install 'traitprint[import]'`. Resolution (D11): `--provider` flag → configured BYOK key → agent-assist mode (below) → actionable error |
+
+#### Agent-assist mode (D11)
+
+When no LLM provider is resolvable (no `--provider`, no API key in env or
+`.credentials`, no explicit `OLLAMA_HOST`), `import-resume` does not error:
+it prints an **assist payload** and exits 0. The payload contains the
+extracted document text, the exact extraction contract the BYOK prompt
+uses (JSON shape + rules + D9 proposal rules), and write-back
+instructions. If you are the wrapping agent, YOU are the model: produce
+the contract JSON, propose it to the user (offer approve-all), write the
+approved items via `traitprint vault set-profile` and the `--from-json`
+batch commands, then run `traitprint vault audit --json`. `--json` emits
+the payload as `{"mode": "agent-assist", "contract": ..., "text": ...,
+"write_back": ...}`. `--assist` forces the payload even when a key is
+configured; `--no-assist` restores the hard error for headless runs.
+BYOK remains required when no agent is wrapping the CLI. The full loop is
+the `traitprint-import-resume` skill.
 
 ### Batch input (`--from-json`)
 
-`add-skill`, `add-experience`, `add-story`, `add-philosophy` accept
-`--from-json FILE` or `--from-json -` (stdin). Cannot be combined with
-single-item arguments (exit 2). Input is a JSON array:
+`add-skill`, `add-experience`, `add-story`, `add-philosophy`,
+`add-education` accept `--from-json FILE` or `--from-json -` (stdin).
+Cannot be combined with single-item arguments (exit 2). Input is a JSON
+array:
 
 ```text
 add-skill:      [{"name": str, "proficiency": int 1-5, "category"?: str, "notes"?: str}]
@@ -116,6 +135,8 @@ add-story:      [{"title": str, "situation"?: str, "task"?: str, "action"?: str,
                   "experience_id"?: UUID str}]
 add-philosophy: [{"title": str, "description"?: str, "category"?: str,
                   "evidence_story_ids"?: [UUID str]}]
+add-education:  [{"institution": str, "degree"?: str, "field_of_study"?: str,
+                  "start_date"?: "YYYY", "end_date"?: "YYYY", "description"?: str}]
 ```
 
 Output: one `[ok] <name> [<uuid>]` / `[dup]` / `[err]` line per item, then
@@ -215,7 +236,7 @@ the Agent Skills below, so prompt and skill never drift.
 
 ## Agent Skills
 
-Five SKILL.md workflow skills (agentskills.io format) live under
+Six SKILL.md workflow skills (agentskills.io format) live under
 [`skills/`](skills/), with a shared CLI cheatsheet at
 [`skills/shared/cli-reference.md`](skills/shared/cli-reference.md). Install
 into any skills-aware agent with `npx skills add DataViking-Tech/traitprint`;
@@ -235,10 +256,15 @@ they also ship inside the wheel as `traitprint/data/skills/`.
   `--force-category` to keep yours.
 - **Hand-edited frontmatter**: allowed keys only; unknown keys violate the
   schema. Dangling UUID references become audit findings, not errors.
-- **`education.json` has no batch mode** — loop `add-education`.
 - **Cloud commands need extras**: `login`/`logout`/`push`/`pull` require
-  `pip install 'traitprint[cloud]'`; `import-resume` requires
-  `'traitprint[import]'`. A base install makes zero network calls.
+  `pip install 'traitprint[cloud]'`; PDF/DOCX in `import-resume` and
+  `extract-text` require `'traitprint[import]'`. A base install makes
+  zero network calls.
+- **Default-host Ollama is not an auto-detect signal.** `import-resume`
+  only counts Ollama as configured when `OLLAMA_HOST` (env or
+  `.credentials`) is set; otherwise a keyless run enters agent-assist
+  mode. Pass `--provider ollama` or set `OLLAMA_HOST` to use a local
+  default-port server.
 - **`push` runs a pre-push audit** and blocks on critical findings
   (`--strict` blocks on major too; `--skip-audit` bypasses). Token auth:
   `TRAITPRINT_API_TOKEN` beats `TRAITPRINT_PASSWORD` beats the prompt.
