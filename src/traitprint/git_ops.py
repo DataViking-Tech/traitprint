@@ -91,20 +91,25 @@ def commit(path: Path, message: str) -> bool:
     return True
 
 
+def rev_sha(path: Path, rev: str = "HEAD", *, short: bool = True) -> str:
+    """Return the commit SHA for *rev* in the repo at *path*.
+
+    Returns an empty string when the rev does not resolve (no commits,
+    no parent, not a repo).
+    """
+    args = ["git", "rev-parse", *(["--short"] if short else []), rev]
+    result = _run(args, cwd=path)
+    if result.returncode != 0:
+        return ""
+    return result.stdout.strip()
+
+
 def head_sha(path: Path, *, short: bool = True) -> str:
     """Return the current HEAD commit SHA for the repo at *path*.
 
     Returns an empty string if the repo has no commits or is not a repo.
     """
-    args = (
-        ["git", "rev-parse", "--short", "HEAD"]
-        if short
-        else ["git", "rev-parse", "HEAD"]
-    )
-    result = _run(args, cwd=path)
-    if result.returncode != 0:
-        return ""
-    return result.stdout.strip()
+    return rev_sha(path, "HEAD", short=short)
 
 
 def log(path: Path, n: int = 10) -> list[str]:

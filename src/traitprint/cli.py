@@ -12,7 +12,7 @@ import click
 from pydantic import ValidationError
 
 from traitprint import __version__
-from traitprint.git_ops import commit, head_sha, init_repo
+from traitprint.git_ops import commit, head_sha, init_repo, rev_sha
 from traitprint.git_ops import diff as git_diff
 from traitprint.git_ops import log as git_log
 from traitprint.git_ops import rollback as git_rollback
@@ -188,14 +188,24 @@ def vault() -> None:
     default=False,
     help="Show full vault contents including all fields, timestamps, and git metadata.",
 )
+@click.option(
+    "--json",
+    "as_json",
+    is_flag=True,
+    default=False,
+    help="Emit the full vault (every entity, all fields) as JSON.",
+)
 @click.pass_context
-def vault_show(ctx: click.Context, verbose: bool) -> None:
-    """Pretty-print a summary of vault contents."""
+def vault_show(ctx: click.Context, verbose: bool, as_json: bool) -> None:
+    """Pretty-print a summary of vault contents (JSON with --json)."""
     store = _get_store(ctx)
     if not store.exists():
         click.echo("No vault found. Run 'traitprint init' first.")
         return
     v = store.load()
+    if as_json:
+        click.echo(json.dumps(v.model_dump(mode="json"), indent=2))
+        return
     if not verbose:
         _render_vault_summary(v)
         return
@@ -386,6 +396,15 @@ def _render_vault_verbose(store: VaultStore, v: VaultSchema) -> None:
 # --- vault list ---
 
 
+_LIST_ITEM_TYPE = {
+    "skills": "skill",
+    "experiences": "experience",
+    "stories": "story",
+    "philosophies": "philosophy",
+    "education": "education",
+}
+
+
 @vault.command(name="list")
 @click.argument(
     "section",
@@ -394,15 +413,36 @@ def _render_vault_verbose(store: VaultStore, v: VaultSchema) -> None:
         case_sensitive=False,
     ),
 )
+@click.option(
+    "--json",
+    "as_json",
+    is_flag=True,
+    default=False,
+    help="Emit a JSON array of {id, type, name|title} objects.",
+)
 @click.pass_context
-def vault_list(ctx: click.Context, section: str) -> None:
-    """List items in a vault section (table format)."""
+def vault_list(ctx: click.Context, section: str, as_json: bool) -> None:
+    """List items in a vault section (table format, or JSON with --json)."""
     store = _get_store(ctx)
     if not store.exists():
         click.echo("No vault found. Run 'traitprint init' first.")
         return
     v = store.load()
     items = getattr(v, section)
+
+    if as_json:
+        rows: list[dict[str, str]] = []
+        for item in items:
+            row = {"id": str(item.id), "type": _LIST_ITEM_TYPE[section]}
+            if section == "skills":
+                row["name"] = item.name
+            elif section == "education":
+                row["title"] = item.institution
+            else:
+                row["title"] = item.title
+            rows.append(row)
+        click.echo(json.dumps(rows, indent=2))
+        return
 
     if not items:
         click.echo(f"No {section} found.")
@@ -1400,8 +1440,15 @@ def vault_export(
 @click.option(
     "--count", "-n", default=10, help="Number of entries to show.", show_default=True
 )
+@click.option(
+    "--json",
+    "as_json",
+    is_flag=True,
+    default=False,
+    help="Emit a JSON array of {sha, message} objects.",
+)
 @click.pass_context
-def vault_history(ctx: click.Context, count: int) -> None:
+def vault_history(ctx: click.Context, count: int, as_json: bool) -> None:
     """Show git history for the whole vault file tree."""
     store = _get_store(ctx)
     if not store.exists():
@@ -1409,6 +1456,13 @@ def vault_history(ctx: click.Context, count: int) -> None:
         return
 
     entries = git_log(store.directory, n=count)
+    if as_json:
+        rows = []
+        for entry in entries:
+            sha, _, message = entry.partition(" ")
+            rows.append({"sha": sha, "message": message})
+        click.echo(json.dumps(rows, indent=2))
+        return
     if not entries:
         click.echo("No history found.")
         return
@@ -1420,8 +1474,15 @@ def vault_history(ctx: click.Context, count: int) -> None:
 
 
 @vault.command(name="diff")
+@click.option(
+    "--json",
+    "as_json",
+    is_flag=True,
+    default=False,
+    help="Emit a {from_sha, to_sha, diff_text} JSON object.",
+)
 @click.pass_context
-def vault_diff_cmd(ctx: click.Context) -> None:
+def vault_diff_cmd(ctx: click.Context, as_json: bool) -> None:
     """Show changes across the vault file tree since the previous commit."""
     store = _get_store(ctx)
     if not store.exists():
@@ -1429,6 +1490,14 @@ def vault_diff_cmd(ctx: click.Context) -> None:
         return
 
     changes = git_diff(store.directory)
+    if as_json:
+        payload = {
+            "from_sha": rev_sha(store.directory, "HEAD~1"),
+            "to_sha": rev_sha(store.directory, "HEAD"),
+            "diff_text": changes,
+        }
+        click.echo(json.dumps(payload, indent=2))
+        return
     if not changes:
         click.echo("No changes since last commit.")
         return

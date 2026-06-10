@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import subprocess
 from pathlib import Path
 from uuid import UUID, uuid4
@@ -1034,6 +1035,109 @@ class TestAddPhilosophyCLI:
         v = store.load()
         p = v.philosophies[0]
         assert p.evidence_story_ids == [s.id]
+
+
+# ------------------------------------------------------------------
+# CLI: --json read surface (show / list / history / diff) — tp-an-002
+# ------------------------------------------------------------------
+
+
+class TestJsonReadSurface:
+    @pytest.fixture()
+    def seeded_dir(self, vault_dir: Path) -> Path:
+        store = VaultStore(vault_dir)
+        skill = store.add_skill(name="Python", proficiency=4, category="technical")
+        store.add_experience(
+            title="Staff Engineer", company="Acme", start_date="2020-01"
+        )
+        store.add_story(
+            title="Migration",
+            situation="s",
+            task="t",
+            action="a",
+            result="r",
+            skill_ids=[skill.id],
+        )
+        return vault_dir
+
+    def test_show_json_emits_full_vault(
+        self, runner: CliRunner, seeded_dir: Path
+    ) -> None:
+        result = runner.invoke(
+            cli, ["--path", str(seeded_dir), "vault", "show", "--json"]
+        )
+        assert result.exit_code == 0, result.output
+        payload = json.loads(result.output)
+        assert payload["schema_version"] == 1
+        assert {
+            "vault_id",
+            "updated_at",
+            "profile",
+            "skills",
+            "experiences",
+            "stories",
+            "philosophies",
+            "education",
+        } <= set(payload)
+        skill = payload["skills"][0]
+        assert skill["name"] == "Python"
+        assert skill["proficiency"] == 4
+        UUID(skill["id"])
+        story = payload["stories"][0]
+        assert {"lesson", "outcome", "theme_tags", "skill_ids"} <= set(story)
+
+    def test_list_json_shape(self, runner: CliRunner, seeded_dir: Path) -> None:
+        result = runner.invoke(
+            cli, ["--path", str(seeded_dir), "vault", "list", "skills", "--json"]
+        )
+        assert result.exit_code == 0, result.output
+        rows = json.loads(result.output)
+        assert len(rows) == 1
+        assert set(rows[0]) == {"id", "type", "name"}
+        assert rows[0]["type"] == "skill"
+        assert rows[0]["name"] == "Python"
+        UUID(rows[0]["id"])
+
+        result = runner.invoke(
+            cli, ["--path", str(seeded_dir), "vault", "list", "stories", "--json"]
+        )
+        rows = json.loads(result.output)
+        assert set(rows[0]) == {"id", "type", "title"}
+        assert rows[0]["type"] == "story"
+        assert rows[0]["title"] == "Migration"
+
+    def test_list_json_empty_section_is_empty_array(
+        self, runner: CliRunner, seeded_dir: Path
+    ) -> None:
+        result = runner.invoke(
+            cli, ["--path", str(seeded_dir), "vault", "list", "education", "--json"]
+        )
+        assert result.exit_code == 0, result.output
+        assert json.loads(result.output) == []
+
+    def test_history_json_shape(self, runner: CliRunner, seeded_dir: Path) -> None:
+        result = runner.invoke(
+            cli, ["--path", str(seeded_dir), "vault", "history", "--json"]
+        )
+        assert result.exit_code == 0, result.output
+        rows = json.loads(result.output)
+        assert len(rows) >= 3
+        for row in rows:
+            assert set(row) == {"sha", "message"}
+            assert row["sha"]
+        assert any("Add skill: Python" in row["message"] for row in rows)
+
+    def test_diff_json_shape(self, runner: CliRunner, seeded_dir: Path) -> None:
+        result = runner.invoke(
+            cli, ["--path", str(seeded_dir), "vault", "diff", "--json"]
+        )
+        assert result.exit_code == 0, result.output
+        payload = json.loads(result.output)
+        assert set(payload) == {"from_sha", "to_sha", "diff_text"}
+        assert payload["from_sha"]
+        assert payload["to_sha"]
+        # The last commit added a story file.
+        assert "stories/migration.md" in payload["diff_text"]
 
 
 # ------------------------------------------------------------------
