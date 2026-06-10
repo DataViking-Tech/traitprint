@@ -343,11 +343,41 @@ def _mirror_main_ref(vault: Path, sha: str) -> None:
     _git_ok(vault, "update-ref", SYNC_REF, sha)
 
 
+def unmerged_files(vault: Path) -> list[str]:
+    """Files with unresolved merge conflicts (empty when no merge pending)."""
+    result = _git(vault, "diff", "--name-only", "--diff-filter=U")
+    if result.returncode != 0:
+        return []
+    return [line for line in result.stdout.splitlines() if line]
+
+
+def _require_no_unresolved_merge(vault: Path) -> None:
+    """Refuse to proceed while conflict markers are unresolved.
+
+    Without this guard the pre-sync auto-commit would commit the
+    conflict markers themselves and silently conclude the merge.
+    """
+    conflicts = unmerged_files(vault)
+    if conflicts:
+        raise GitSyncError(
+            "A merge is in progress with unresolved conflicts: " + ", ".join(conflicts),
+            hint=(
+                "Resolve the conflict markers, then run "
+                f"'git -C {vault} add -A' and "
+                f"'git -C {vault} commit -m \"{MERGE_COMMIT_MESSAGE}\"', "
+                "then retry."
+            ),
+        )
+
+
 def commit_if_dirty(vault: Path, message: str) -> bool:
     """Commit any uncommitted vault changes (hand edits) before syncing.
 
     Returns True when a commit was made. Unlike :func:`git_ops.commit`,
-    a clean tree is a no-op — no empty commits.
+    a clean tree is a no-op — no empty commits. A resolved-but-uncommitted
+    merge is committed too (concluding the merge); an *unresolved* merge
+    is never committed — callers guard with
+    :func:`_require_no_unresolved_merge` first.
     """
     status = _git(vault, "status", "--porcelain")
     if status.returncode != 0 or not status.stdout.strip():
@@ -614,6 +644,7 @@ def sync_push(vault: Path, client: GitSyncClient) -> PushOutcome:
     a full bundle. Raises :class:`NonFastForwardError` on 409 — the
     caller routes the user/agent through ``sync pull`` + merge.
     """
+    _require_no_unresolved_merge(vault)
     commit_if_dirty(vault, "traitprint sync push")
     head = head_sha(vault, short=False)
     if not head:
@@ -680,6 +711,17 @@ def sync_pull(vault: Path, client: GitSyncClient) -> PullOutcome:
     files are returned — resolve them with file tools, commit, then
     ``sync push``.
     """
+    pending = unmerged_files(vault)
+    if pending:
+        # A previous pull's merge is still unresolved; repeat the
+        # conflict report instead of committing conflict markers.
+        return PullOutcome(
+            fetched=False,
+            mode="conflicts",
+            conflicts=pending,
+            head=head_sha(vault, short=False),
+            server_head=read_server_head(vault),
+        )
     commit_if_dirty(vault, "traitprint sync pull")
     since = read_server_head(vault)
     if since is not None and not commit_exists(vault, since):
