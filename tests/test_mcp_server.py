@@ -26,6 +26,7 @@ from traitprint.git_ops import commit, init_repo
 from traitprint.mcp_server import (
     SERVER_NAME,
     SERVER_VERSION,
+    _coerce_min_proficiency,
     _envelope,
     _handle_find_story,
     _handle_get_philosophy,
@@ -116,19 +117,40 @@ def populated_store(vault_dir: Path) -> VaultStore:
 
 class TestProficiencyMapping:
     def test_bucket_edges(self) -> None:
-        # 1-5 scale: 1 familiar, 2 working, 3 proficient (folds into
-        # working — the cloud enum has no proficient label), 4 expert,
-        # 5 authority.
+        # Five-label contract, one label per level: 1 familiar, 2 working,
+        # 3 proficient, 4 expert, 5 authority.
         assert _map_proficiency(1) == "familiar"
         assert _map_proficiency(2) == "working"
-        assert _map_proficiency(3) == "working"
+        assert _map_proficiency(3) == "proficient"
         assert _map_proficiency(4) == "expert"
         assert _map_proficiency(5) == "authority"
 
     def test_meets_proficiency(self) -> None:
         assert _meets_proficiency("expert", "working")
+        assert _meets_proficiency("expert", "proficient")
         assert _meets_proficiency("authority", "authority")
         assert not _meets_proficiency("familiar", "working")
+        assert not _meets_proficiency("working", "proficient")
+
+    def test_coerce_accepts_all_five_labels(self) -> None:
+        for label in ("familiar", "working", "proficient", "expert", "authority"):
+            assert _coerce_min_proficiency(label) == label
+
+    def test_coerce_accepts_integers_1_to_5(self) -> None:
+        assert _coerce_min_proficiency(1) == "familiar"
+        assert _coerce_min_proficiency(3) == "proficient"
+        assert _coerce_min_proficiency(5) == "authority"
+
+    def test_coerce_rejects_bad_values(self) -> None:
+        with pytest.raises(ValueError, match="min_proficiency"):
+            _coerce_min_proficiency(0)
+        with pytest.raises(ValueError, match="min_proficiency"):
+            _coerce_min_proficiency(6)
+        with pytest.raises(ValueError, match="min_proficiency"):
+            _coerce_min_proficiency("ninja")
+
+    def test_coerce_none_passthrough(self) -> None:
+        assert _coerce_min_proficiency(None) is None
 
 
 class TestEnvelope:
@@ -227,6 +249,42 @@ class TestSearchSkills:
             populated_store.load(), load_taxonomy(), "sql", "authority", 10
         )
         assert all(m["name"] != "SQL" for m in out["matches"])
+
+    def test_proficient_label_accepted_and_level_3_renders_proficient(
+        self, populated_store: VaultStore
+    ) -> None:
+        # Team Leadership is 3/5 → "proficient" (not folded into working).
+        out = _handle_search_skills(
+            populated_store.load(), load_taxonomy(), "leadership", "proficient", 10
+        )
+        match = next(m for m in out["matches"] if m["name"] == "Team Leadership")
+        assert match["proficiency"] == "proficient"
+
+        # "expert" excludes the level-3 skill.
+        out = _handle_search_skills(
+            populated_store.load(), load_taxonomy(), "leadership", "expert", 10
+        )
+        assert all(m["name"] != "Team Leadership" for m in out["matches"])
+
+    def test_min_proficiency_accepts_integers(
+        self, populated_store: VaultStore
+    ) -> None:
+        out = _handle_search_skills(
+            populated_store.load(), load_taxonomy(), "sql", 4, 10
+        )
+        assert any(m["name"] == "SQL" for m in out["matches"])
+        out = _handle_search_skills(
+            populated_store.load(), load_taxonomy(), "sql", 5, 10
+        )
+        assert all(m["name"] != "SQL" for m in out["matches"])
+
+    def test_min_proficiency_invalid_raises_actionable_error(
+        self, populated_store: VaultStore
+    ) -> None:
+        with pytest.raises(ValueError, match="proficient"):
+            _handle_search_skills(
+                populated_store.load(), load_taxonomy(), "sql", "wizard", 10
+            )
 
     def test_name_fallback_without_taxonomy(self, populated_store: VaultStore) -> None:
         out = _handle_search_skills(
@@ -457,6 +515,61 @@ class TestFindStory:
         assert out["stories"][0]["outcome"] == "win"
 
 
+class TestFindStoryThemeTags:
+    @pytest.fixture()
+    def tagged_store(self, vault_dir: Path) -> VaultStore:
+        store = VaultStore(vault_dir)
+        vault = VaultSchema(profile=ProfileSchema(display_name="t"))
+        tagged = StorySchema(
+            title="Pager Storm",
+            situation="A cascading outage hit the payment service overnight.",
+            task="Restore service and prevent recurrence.",
+            action="Coordinated the bridge, rolled back, wrote the postmortem.",
+            result="Service restored in 40 minutes; on-call load halved.",
+            theme_tags=["incident-response", "process-change"],
+        )
+        untagged = StorySchema(
+            title="Quarterly Planning",
+            situation="The team lacked a roadmap and incident priorities slipped.",
+            task="Build the quarterly plan.",
+            action="Ran planning workshops with stakeholders.",
+            result="Shipped the plan; incident backlog triaged.",
+        )
+        vault.stories = [tagged, untagged]
+        store.save(vault)
+        return store
+
+    def test_exact_tag_match_returns_story(self, tagged_store: VaultStore) -> None:
+        out = _handle_find_story(
+            tagged_store.load(), None, "incident-response", None, 3
+        )
+        titles = [s["title"] for s in out["stories"]]
+        assert "Pager Storm" in titles
+        top = next(s for s in out["stories"] if s["title"] == "Pager Storm")
+        assert top["match_score"] == 1.0
+
+    def test_exact_tag_outranks_body_text_match(
+        self, tagged_store: VaultStore
+    ) -> None:
+        # "process-change" is an exact tag on Pager Storm only.
+        out = _handle_find_story(tagged_store.load(), None, "process-change", None, 3)
+        assert out["stories"][0]["title"] == "Pager Storm"
+
+    def test_keyword_in_tags_beats_body_text(self, tagged_store: VaultStore) -> None:
+        # "incident" hits Pager Storm's tag (substring) and Quarterly
+        # Planning's body text; the tag hit must rank first.
+        out = _handle_find_story(tagged_store.load(), None, "incident", None, 3)
+        titles = [s["title"] for s in out["stories"]]
+        assert titles[0] == "Pager Storm"
+        scores = {s["title"]: s["match_score"] for s in out["stories"]}
+        if "Quarterly Planning" in scores:
+            assert scores["Pager Storm"] > scores["Quarterly Planning"]
+
+    def test_body_text_fallback_still_matches(self, tagged_store: VaultStore) -> None:
+        out = _handle_find_story(tagged_store.load(), None, "roadmap", None, 3)
+        assert [s["title"] for s in out["stories"]] == ["Quarterly Planning"]
+
+
 class TestGetPhilosophy:
     def test_topic_match(self, populated_store: VaultStore) -> None:
         out = _handle_get_philosophy(populated_store.load(), "delegation", 3)
@@ -486,6 +599,56 @@ class TestGetPhilosophy:
         store.save(VaultSchema())
         out = _handle_get_philosophy(store.load(), "anything", 3)
         assert out == {"philosophies": []}
+
+
+class TestGetPhilosophyCategoryFilter:
+    @pytest.fixture()
+    def mixed_store(self, vault_dir: Path) -> VaultStore:
+        store = VaultStore(vault_dir)
+        vault = VaultSchema(profile=ProfileSchema(display_name="t"))
+        vault.philosophies = [
+            PhilosophySchema(
+                title="Blameless Postmortems",
+                description="Treat incidents as systems failures, not people.",
+                category=PhilosophyCategory.CULTURE,
+            ),
+            PhilosophySchema(
+                title="Write Things Down",
+                description="Decisions live in documents, not meetings.",
+            ),
+        ]
+        store.save(vault)
+        return store
+
+    def test_category_filter_excludes_non_matching(
+        self, mixed_store: VaultStore
+    ) -> None:
+        # The trial bug: category='leadership' returned both entries at 0.0.
+        out = _handle_get_philosophy(
+            mixed_store.load(), "", 3, category="leadership"
+        )
+        assert out == {"philosophies": []}
+
+    def test_category_match_scores_meaningfully(
+        self, mixed_store: VaultStore
+    ) -> None:
+        out = _handle_get_philosophy(mixed_store.load(), "", 3, category="culture")
+        assert [p["topic"] for p in out["philosophies"]] == ["Blameless Postmortems"]
+        assert out["philosophies"][0]["match_score"] == 1.0
+
+    def test_topic_query_ranks(self, mixed_store: VaultStore) -> None:
+        out = _handle_get_philosophy(mixed_store.load(), "postmortems", 3)
+        assert out["philosophies"][0]["topic"] == "Blameless Postmortems"
+        assert out["philosophies"][0]["match_score"] > 0
+        # Non-matching philosophy is excluded, not returned at 0.0.
+        assert [p["topic"] for p in out["philosophies"]] == ["Blameless Postmortems"]
+
+    def test_category_and_topic_combined(self, mixed_store: VaultStore) -> None:
+        out = _handle_get_philosophy(
+            mixed_store.load(), "incidents", 3, category="culture"
+        )
+        assert [p["topic"] for p in out["philosophies"]] == ["Blameless Postmortems"]
+        assert out["philosophies"][0]["match_score"] >= 0.5
 
 
 # ── In-process server: tool registration ────────────────────────────
