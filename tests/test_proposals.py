@@ -155,6 +155,41 @@ class TestProposalStore:
         }
         assert all(i.problem for i in issues)
 
+    def test_contract_invalid_files_load_as_findings(self, vault_dir: Path) -> None:
+        # Hand-edited/synced files that parse but violate the contract
+        # (update_* without target_id, unknown payload keys) must surface
+        # as findings, never as approvable pending items (Codex P2 on #40).
+        pdir = vault_dir / "proposals"
+        pdir.mkdir()
+        (pdir / "no-target.json").write_text(
+            json.dumps(
+                {
+                    "id": str(uuid4()),
+                    "kind": "update_skill",
+                    "payload": {"proficiency": 4},
+                    "status": "pending",
+                    "created_at": "2026-06-10T00:00:00Z",
+                }
+            ),
+            encoding="utf-8",
+        )
+        (pdir / "bad-keys.json").write_text(
+            json.dumps(
+                {
+                    "id": str(uuid4()),
+                    "kind": "add_skill",
+                    "payload": {"name": "Rust", "proficiency": 2, "level": 9},
+                    "status": "pending",
+                    "created_at": "2026-06-10T00:00:00Z",
+                }
+            ),
+            encoding="utf-8",
+        )
+        store = ProposalStore(vault_dir)
+        loaded, issues = store.load_all()
+        assert loaded == []
+        assert {i.file for i in issues} == {"no-target.json", "bad-keys.json"}
+
     def test_find_by_prefix_and_full_uuid(self, vault_dir: Path) -> None:
         store = ProposalStore(vault_dir)
         lp = store.create("add_skill", {"name": "Rust", "proficiency": 2})

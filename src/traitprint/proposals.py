@@ -379,6 +379,20 @@ class ProposalStore:
                 )
                 issues.append(ProposalFileIssue(file.name, f"{loc}: {msg}"))
                 continue
+            # Contract validation beyond shape (target rules, allowed
+            # payload keys) — synced or hand-edited files must surface as
+            # findings here, never crash later in approve (Codex P2 on #40).
+            problems = validate_proposal_fields(
+                proposal.kind,
+                str(proposal.target_id) if proposal.target_id else None,
+                proposal.payload,
+                proposal.rationale,
+            )
+            if problems:
+                issues.append(
+                    ProposalFileIssue(file.name, "; ".join(problems))
+                )
+                continue
             loaded.append(LoadedProposal(proposal, file))
         loaded.sort(key=lambda lp: (lp.proposal.created_at, str(lp.proposal.id)))
         return loaded, issues
@@ -551,7 +565,14 @@ def _apply_update(vault: VaultSchema, proposal: ProposalSchema) -> str:
     kind = proposal.kind
     entity = kind_entity(kind)
     section = _KIND_SECTION[entity]
-    assert proposal.target_id is not None  # guaranteed by contract validation
+    if proposal.target_id is None:
+        # Contract validation at load/add time should prevent this; keep
+        # an actionable error rather than an assert so a path that skips
+        # validation can never crash the review queue.
+        raise ProposalApplyError(
+            f"{kind} proposal has no target_id — re-create it with "
+            "--target-id or reject it."
+        )
     current = _find_item(getattr(vault, section), proposal.target_id)
     if current is None:
         raise ProposalApplyError(
