@@ -1810,12 +1810,12 @@ def _pre_push_audit(
 ) -> None:
     """Run the coherence audit before a push.
 
-    Blocks (exit 1) on critical findings — broken stories, dangling
-    references, contradicting roles, anything you should never publish. When
-    ``strict`` is set, major findings block too, matching ``traitprint vault
-    audit --strict``. Non-blocking findings are summarized as an advisory
-    line. When ``enforce`` is False (a dry run) nothing blocks; findings are
-    advisory only.
+    Blocks (exit 1) on critical findings — broken stories, contradicting
+    roles, anything you should never publish. When ``strict`` is set, major
+    findings (warnings, e.g. dangling references) block too, matching
+    ``traitprint vault audit --strict``. Non-blocking findings are
+    summarized as an advisory line. When ``enforce`` is False (a dry run)
+    nothing blocks; findings are advisory only.
     """
     from traitprint.audit import audit_vault, severity_rank, summarize
 
@@ -1990,8 +1990,9 @@ def push_cmd(
     """Upload the local vault to Traitprint cloud (last-write-wins).
 
     Before uploading, runs a coherence audit and blocks on error-level
-    findings (broken stories, dangling references). Pass --strict to block
-    on warnings too, or --skip-audit to bypass the check.
+    findings (broken stories, contradictions). Warnings such as dangling
+    references never block by default; pass --strict to block on warnings
+    too, or --skip-audit to bypass the check.
     """
     _require_cloud_extras()
     from traitprint.cloud import AuthError, CloudClient, CloudError, ConflictError

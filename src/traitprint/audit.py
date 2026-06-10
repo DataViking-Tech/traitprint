@@ -38,6 +38,14 @@ _SEVERITY_RANK: dict[Severity, int] = {"minor": 0, "major": 1, "critical": 2}
 # be backed by a story. Maps to the MCP server's "expert"/"authority" buckets.
 STRONG_PROFICIENCY = 4
 
+# Severity for dangling cross-link references (skill_ids, experience_id,
+# evidence_story_ids). Contract rule 2 (docs/schema/vault-v1/README.md) and
+# the architecture's D10/Layer 1 mandate that dangling UUIDs are a *warning*
+# locally — they surface as findings but do not block a default push
+# (which blocks on critical only; --strict opts in to blocking on
+# warnings/major too). Cloud ingest accepts and quarantines them.
+DANGLING_REFERENCE_SEVERITY: Severity = "major"
+
 
 @dataclass(frozen=True)
 class Finding:
@@ -163,7 +171,7 @@ def _audit_story_references(
             if str(ref) not in skill_ids:
                 out.append(
                     Finding(
-                        "critical",
+                        DANGLING_REFERENCE_SEVERITY,
                         "story.dangling_skill",
                         "stories",
                         f"Story {story.title!r} references skill {ref} that no "
@@ -174,7 +182,7 @@ def _audit_story_references(
         if story.experience_id and str(story.experience_id) not in experience_ids:
             out.append(
                 Finding(
-                    "critical",
+                    DANGLING_REFERENCE_SEVERITY,
                     "story.dangling_experience",
                     "stories",
                     f"Story {story.title!r} references experience "
@@ -236,7 +244,7 @@ def _audit_philosophies(
             if str(ref) not in story_ids:
                 out.append(
                     Finding(
-                        "critical",
+                        DANGLING_REFERENCE_SEVERITY,
                         "philosophy.dangling_evidence",
                         "philosophies",
                         f"Philosophy {phil.title!r} references evidence story "
@@ -392,6 +400,7 @@ def summarize(findings: list[Finding]) -> dict[str, int]:
 
 
 __all__ = [
+    "DANGLING_REFERENCE_SEVERITY",
     "STRONG_PROFICIENCY",
     "AuditReport",
     "Finding",
