@@ -152,6 +152,14 @@ verbatim, so the two surfaces never drift. A shared CLI cheatsheet lives at
 [`skills/shared/cli-reference.md`](skills/shared/cli-reference.md), and the
 agent operating manual is [`AGENTS.md`](AGENTS.md).
 
+Gemini CLI users can install the whole bundle — skills, a
+[`GEMINI.md`](GEMINI.md) context file, and the hosted MCP server — as one
+extension:
+
+```
+gemini extensions install https://github.com/DataViking-Tech/traitprint
+```
+
 ### Fill out the vault
 
 Hand an agent the `fill_vault` prompt (or just ask it to "help me build my
@@ -349,6 +357,32 @@ contradicting roles, anything you'd never want on a public profile. Major and
 minor findings are advisory by default; pass `--strict` to block on major ones
 too (full `vault audit --strict` semantics), or `--skip-audit` to bypass the
 check entirely.
+
+### Connect from claude.ai / ChatGPT / Gemini CLI
+
+With a traitprint.com account, your synced vault is reachable from the
+chat apps through the hosted MCP server — paste one URL, approve the
+OAuth consent, done:
+
+```
+https://api.traitprint.com/functions/v1/mcp-server
+```
+
+- **claude.ai** — Settings → Connectors → **Add custom connector** →
+  paste the URL. Claude walks you through sign-in and scope consent.
+- **ChatGPT** — Settings → Apps & Connectors → enable Developer mode
+  (Advanced settings), then Connectors → **Create** → paste the URL.
+- **Gemini CLI** —
+  `gemini extensions install https://github.com/DataViking-Tech/traitprint`
+  wires the same server (plus the [Agent Skills](#agent-skills) and a
+  `GEMINI.md` context file); approve the sign-in with `/mcp auth traitprint`.
+
+Headless clients (CI, scripts, `mcp-remote`) can skip OAuth: generate an
+`sk_` API key in the web app (Settings → API Keys) and send it as
+`Authorization: Bearer sk_…`. Reads return your vault; writes are always
+staged as proposals you approve — see
+[`docs/distribution-runbook.md`](docs/distribution-runbook.md) for the
+full surface list.
 
 ### Non-interactive auth (CI, agents, Docker)
 
