@@ -43,7 +43,7 @@ narrative text. Constraints:
 - **Frontmatter accepts allowed keys only** (`additionalProperties: false`
   in the schema):
   - experiences: `id, title, company, start_date, end_date,
-    accomplishments, source, created_at, updated_at`
+    accomplishments, skill_ids, source, created_at, updated_at`
   - stories: `id, title, skill_ids, experience_id, outcome, theme_tags,
     source, created_at, updated_at`
   - philosophies: `id, title, category, evidence_story_ids, source,
@@ -52,10 +52,12 @@ narrative text. Constraints:
   `## Task`, `## Action`, `## Result`, each required, in that order;
   optional `## Lesson`. Markdown bodies are the source of truth for
   narrative text.
-- **Cross-links are UUIDs** (`skill_ids`, `experience_id`,
-  `evidence_story_ids`). A dangling UUID does not break parsing — it
-  surfaces as an audit finding. Never fabricate UUIDs; copy them from
-  `traitprint vault list` output.
+- **Cross-links are UUIDs** (`skill_ids` on stories *and* experiences,
+  `experience_id`, `evidence_story_ids`). A story's `skill_ids` are the
+  skills the story evidences; an experience's `skill_ids` are the skills
+  exercised in that role (contract revision 1.1, optional). A dangling
+  UUID does not break parsing — it surfaces as an audit finding. Never
+  fabricate UUIDs; copy them from `traitprint vault list` output.
 - Hand edits are not auto-committed; the next CLI write commits the whole
   tree, or commit yourself inside the vault directory.
 
@@ -93,7 +95,7 @@ shell. Use `-y` on `remove`/`rollback` to skip confirmation.
 | `traitprint init` | — | creates dir, git repo, empty v1 vault |
 | `traitprint vault set-profile` | at least one flag | `--name --headline --summary --location --email`; omitted fields keep values, `""` clears |
 | `traitprint vault add-skill NAME -p 1..5` | name, proficiency | `-c CAT` (optional; taxonomy category fills it on a match, else empty), `--notes`, `--force-category` (keep your category over the taxonomy's) |
-| `traitprint vault add-experience` | `--title` | `--company --start-date YYYY-MM --end-date YYYY-MM --description --accomplishment ...` (repeatable) |
+| `traitprint vault add-experience` | `--title` | `--company --start-date YYYY-MM --end-date YYYY-MM --description --accomplishment ...` (repeatable) `--skill-id UUID` (repeatable) |
 | `traitprint vault add-story` | `--title` | `--situation --task --action --result --lesson --outcome win\|failure\|learning --theme-tag TAG` (repeatable) `--skill-id UUID` (repeatable) `--experience-id UUID` |
 | `traitprint vault add-philosophy` | `--title` | `--description --category --evidence-id STORY_UUID` (repeatable); categories: `leadership`, `collaboration`, `technical-approach`, `culture`, `decision-making` |
 | `traitprint vault add-education` | `--institution` | `--degree --field --start-date YYYY --end-date YYYY --description` |
@@ -160,7 +162,8 @@ array:
 ```text
 add-skill:      [{"name": str, "proficiency": int 1-5, "category"?: str, "notes"?: str}]
 add-experience: [{"title": str, "company"?: str, "start_date"?: "YYYY-MM",
-                  "end_date"?: "YYYY-MM", "description"?: str, "accomplishments"?: [str]}]
+                  "end_date"?: "YYYY-MM", "description"?: str, "accomplishments"?: [str],
+                  "skill_ids"?: [UUID str]}]
 add-story:      [{"title": str, "situation"?: str, "task"?: str, "action"?: str,
                   "result"?: str, "lesson"?: str, "outcome"?: "win|failure|learning",
                   "theme_tags"?: [str], "skill_ids"?: [UUID str],
@@ -200,7 +203,8 @@ written even when others fail.
 ```
 
 Finding codes worth acting on: `skill.unsupported_strength` (strong skill,
-no story), `experience.no_story`, `story.*` (thin/broken STAR fields,
+no story), `experience.no_story`, `experience.no_skills` (role links no
+skills), `story.*` (thin/broken STAR fields,
 missing metrics), dangling-reference findings, contradiction findings
 (conflicting metrics or leader-vs-IC claims between stories),
 `proposals.pending` (staged writes awaiting review — point the user at
