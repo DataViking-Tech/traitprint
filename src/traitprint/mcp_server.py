@@ -343,11 +343,20 @@ def _handle_get_profile_summary(vault: VaultSchema, depth: str) -> dict[str, Any
         return result
 
     experiences = sorted(vault.experiences, key=lambda e: -e.created_at.timestamp())[:3]
+    # related_skills mirrors find_story's related_skills (names, dangling
+    # refs skipped). Contract revision 1.1; the cloud MCP server catches
+    # up separately — until then this server is deliberately ahead.
+    skill_name_by_id = {s.id: s.name for s in vault.skills}
     result["signature_experiences"] = [
         {
             "title": e.title,
             "organization": e.company or None,
             "period": _period(e.start_date, e.end_date),
+            "related_skills": [
+                skill_name_by_id[sid]
+                for sid in e.skill_ids
+                if sid in skill_name_by_id
+            ],
             "evidence": None,
             "disputed": False,
         }

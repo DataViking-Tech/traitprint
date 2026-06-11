@@ -341,6 +341,39 @@ class TestApplyProposal:
                 ),
             )
 
+    def test_experience_skill_ids_accepted_and_applied(self) -> None:
+        # Contract revision 1.1: skill_ids is part of the experience
+        # entity shape, so experience proposals may carry it.
+        vault = VaultSchema()
+        sid = uuid4()
+        assert (
+            validate_proposal_fields(
+                "add_experience",
+                None,
+                {"title": "Staff Engineer", "skill_ids": [str(sid)]},
+            )
+            == []
+        )
+        apply_proposal(
+            vault,
+            ProposalSchema(
+                kind="add_experience",
+                payload={"title": "Staff Engineer", "skill_ids": [str(sid)]},
+            ),
+        )
+        assert vault.experiences[0].skill_ids == [sid]
+        # update_experience can change the links too.
+        sid2 = uuid4()
+        apply_proposal(
+            vault,
+            ProposalSchema(
+                kind="update_experience",
+                target_id=vault.experiences[0].id,
+                payload={"skill_ids": [str(sid2)]},
+            ),
+        )
+        assert vault.experiences[0].skill_ids == [sid2]
+
     def test_update_profile_maps_basics(self) -> None:
         vault = VaultSchema()
         p = ProposalSchema(

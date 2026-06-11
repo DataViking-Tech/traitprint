@@ -85,6 +85,7 @@ _EXPERIENCE_KEYS = (
     "start_date",
     "end_date",
     "accomplishments",
+    "skill_ids",
     "source",
     "created_at",
     "updated_at",
