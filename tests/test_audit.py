@@ -57,6 +57,7 @@ def _coherent_vault() -> VaultSchema:
         start_date="2020-01",
         description="Led the data platform.",
         accomplishments=["Cut warehouse spend"],
+        skill_ids=[skill.id],
     )
     story = _strong_story(skill_ids=[skill.id], experience_id=exp.id)
     phil = PhilosophySchema(
@@ -226,6 +227,34 @@ class TestAuditVault:
             f for f in audit_vault(v).findings if f.code == "experience.no_story"
         )
         assert f.severity == "major"
+
+    def test_experience_dangling_skill_reference_is_major_warning(self) -> None:
+        # Contract rule 2 (revision 1.1) / D10: experience skill_ids follow
+        # the same Layer 1 rules as story skill_ids — warn, never block.
+        ghost = SkillSchema(name="ghost", category="x", proficiency=1)
+        v = _coherent_vault()
+        v.experiences[0].skill_ids = [ghost.id]
+        f = next(
+            f
+            for f in audit_vault(v).findings
+            if f.code == "experience.dangling_skill"
+        )
+        assert f.severity == "major"
+        assert f.item_id == str(v.experiences[0].id)
+
+    def test_experience_without_skills_is_minor(self) -> None:
+        # Mirrors story.no_skills: a role with zero linked skills is a gap.
+        v = _coherent_vault()
+        v.experiences[0].skill_ids = []
+        f = next(
+            f for f in audit_vault(v).findings if f.code == "experience.no_skills"
+        )
+        assert f.severity == "minor"
+
+    def test_experience_with_linked_skill_not_flagged(self) -> None:
+        codes = _codes(_coherent_vault())
+        assert "experience.no_skills" not in codes
+        assert "experience.dangling_skill" not in codes
 
     def test_cross_story_contradiction_becomes_finding(self) -> None:
         exp = ExperienceSchema(title="Role")

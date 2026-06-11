@@ -227,8 +227,13 @@ class VaultStore:
         end_date: str | None = None,
         description: str = "",
         accomplishments: list[str] | None = None,
+        skill_ids: list[UUID] | None = None,
     ) -> ExperienceSchema:
-        """Add an experience to the vault, save, and auto-commit."""
+        """Add an experience to the vault, save, and auto-commit.
+
+        ``skill_ids`` links the skills exercised in this role (contract
+        revision 1.1); dangling references surface as audit warnings.
+        """
         vault = self.load()
         experience = ExperienceSchema(
             title=title,
@@ -237,6 +242,7 @@ class VaultStore:
             end_date=end_date or "",
             description=description,
             accomplishments=accomplishments or [],
+            skill_ids=skill_ids or [],
         )
         vault.experiences.append(experience)
         self._save_and_commit(vault, f"Add experience: {title} at {company}")

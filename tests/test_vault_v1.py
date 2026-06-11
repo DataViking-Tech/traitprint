@@ -36,6 +36,7 @@ from traitprint.vault_io import (
     parse_markdown,
     parse_story_body,
     remap_proficiency,
+    render_markdown,
     render_story_body,
     slugify,
 )
@@ -65,6 +66,7 @@ def _full_vault() -> VaultSchema:
         end_date="2024-06",
         description="Led the data platform.\n\nOwned cost and reliability.",
         accomplishments=["Cut spend 45%", "Zero-downtime migration"],
+        skill_ids=[skill.id],
     )
     story = StorySchema(
         title="Redshift to BigQuery",
@@ -254,6 +256,36 @@ class TestMarkdownBodies:
         )
         assert body == "Prefer small, reversible changes."
 
+    def test_experience_skill_ids_in_frontmatter_round_trip(
+        self, vault_dir: Path
+    ) -> None:
+        """Contract revision 1.1: experience skill_ids live in frontmatter
+        and survive a save→load round trip."""
+        store = VaultStore(vault_dir)
+        vault = _full_vault()
+        store.save(vault)
+        fm, _ = parse_markdown(
+            (vault_dir / "experiences" / "staff-engineer-acme.md").read_text()
+        )
+        assert fm["skill_ids"] == [str(vault.skills[0].id)]
+        loaded = store.load()
+        assert loaded.experiences[0].skill_ids == [vault.skills[0].id]
+
+    def test_experience_without_skill_ids_key_still_loads(
+        self, vault_dir: Path
+    ) -> None:
+        """Pre-1.1 experience files omit skill_ids — they must keep loading
+        (additive contract change; missing key reads as empty list)."""
+        store = VaultStore(vault_dir)
+        store.save(_full_vault())
+        path = vault_dir / "experiences" / "staff-engineer-acme.md"
+        # Strip the skill_ids key from the frontmatter, as a pre-1.1 file.
+        fm, body = parse_markdown(path.read_text(), path=path)
+        fm.pop("skill_ids")
+        path.write_text(render_markdown(fm, body))
+        loaded = store.load()
+        assert loaded.experiences[0].skill_ids == []
+
     def test_hand_edited_unquoted_date_still_loads(self, vault_dir: Path) -> None:
         """Agents hand-edit these files; YAML-native dates must not break."""
         store = VaultStore(vault_dir)
@@ -442,6 +474,8 @@ class TestMigrateCommand:
 
         # Cross-links survive the split into files.
         story = loaded.stories[0]
+        # v0 predates experience skill links (contract 1.1) — empty, valid.
+        assert loaded.experiences[0].skill_ids == []
         assert [str(x) for x in story.skill_ids] == [ids["skill"]]
         assert str(story.experience_id) == ids["experience"]
         assert [str(x) for x in loaded.philosophies[0].evidence_story_ids] == [

@@ -255,10 +255,37 @@ def _audit_philosophies(
 
 
 def _audit_experiences(
-    vault: VaultSchema, experiences_with_story: set[str], out: list[Finding]
+    vault: VaultSchema,
+    skill_ids: set[str],
+    experiences_with_story: set[str],
+    out: list[Finding],
 ) -> None:
     for exp in vault.experiences:
         eid = str(exp.id)
+        for ref in exp.skill_ids:
+            if str(ref) not in skill_ids:
+                out.append(
+                    Finding(
+                        DANGLING_REFERENCE_SEVERITY,
+                        "experience.dangling_skill",
+                        "experiences",
+                        f"Experience {exp.title!r} references skill {ref} that "
+                        "no longer exists in the vault.",
+                        eid,
+                    )
+                )
+        if not exp.skill_ids:
+            out.append(
+                Finding(
+                    "minor",
+                    "experience.no_skills",
+                    "experiences",
+                    f"Experience {exp.title!r} is not linked to any skill. "
+                    "Link the skills exercised in this role so the role "
+                    "backs up your skill claims.",
+                    eid,
+                )
+            )
         if eid not in experiences_with_story:
             out.append(
                 Finding(
@@ -399,7 +426,7 @@ def audit_vault(
 
     _audit_profile(vault, findings)
     _audit_skills(vault, skills_with_evidence, findings)
-    _audit_experiences(vault, experiences_with_story, findings)
+    _audit_experiences(vault, skill_ids, experiences_with_story, findings)
     _audit_story_references(vault, skill_ids, experience_ids, findings)
     _audit_philosophies(vault, story_ids, findings)
 

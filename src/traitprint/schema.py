@@ -57,7 +57,14 @@ class SkillSchema(BaseModel):
 
 
 class ExperienceSchema(BaseModel):
-    """A work experience entry."""
+    """A work experience entry.
+
+    ``skill_ids`` (contract revision 1.1, additive) links the skills
+    exercised in this role — same UUID-array reference style as story
+    ``skill_ids``. Vaults written before 1.1 omit the key; it defaults
+    to an empty list. Dangling references are a Layer 1 audit warning,
+    never a parse error.
+    """
 
     id: UUID = Field(default_factory=uuid4)
     title: str
@@ -66,6 +73,7 @@ class ExperienceSchema(BaseModel):
     end_date: str = ""
     description: str = ""
     accomplishments: list[str] = Field(default_factory=list)
+    skill_ids: list[UUID] = Field(default_factory=list)
     source: str = "manual"
     created_at: datetime = Field(default_factory=_now)
     updated_at: datetime = Field(default_factory=_now)
