@@ -16,7 +16,7 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import pytest
 from mcp import ClientSession, StdioServerParameters
@@ -37,6 +37,7 @@ from traitprint.mcp_server import (
     create_server,
 )
 from traitprint.schema import (
+    ExperienceSchema,
     PhilosophyCategory,
     PhilosophySchema,
     ProfileSchema,
@@ -84,6 +85,15 @@ def populated_store(vault_dir: Path) -> VaultStore:
         name="Team Leadership", category="soft", proficiency=3
     )
     vault.skills = [python_skill, sql_skill, leadership_skill]
+
+    experience = ExperienceSchema(
+        title="Staff Data Engineer",
+        company="Acme",
+        start_date="2020-01",
+        description="Led the data platform.",
+        skill_ids=[python_skill.id, sql_skill.id],
+    )
+    vault.experiences = [experience]
 
     story_win = StorySchema(
         title="Redshift to BigQuery Migration",
@@ -197,6 +207,33 @@ class TestGetProfileSummary:
         phil = out["core_philosophies"][0]
         assert set(phil) == {"topic", "stance", "evidence", "disputed"}
         assert phil["topic"] == "Delegation as Leverage"
+
+    def test_detailed_experiences_carry_related_skills(
+        self, populated_store: VaultStore
+    ) -> None:
+        # Contract revision 1.1: experience skill links surface as skill
+        # names, mirroring find_story's related_skills.
+        out = _handle_get_profile_summary(populated_store.load(), "detailed")
+        exp = out["signature_experiences"][0]
+        assert set(exp) == {
+            "title",
+            "organization",
+            "period",
+            "related_skills",
+            "evidence",
+            "disputed",
+        }
+        assert exp["title"] == "Staff Data Engineer"
+        assert set(exp["related_skills"]) == {"Python", "SQL"}
+
+    def test_related_skills_skip_dangling_refs(
+        self, populated_store: VaultStore
+    ) -> None:
+        vault = populated_store.load()
+        vault.experiences[0].skill_ids.append(uuid4())  # dangling
+        out = _handle_get_profile_summary(vault, "detailed")
+        exp = out["signature_experiences"][0]
+        assert set(exp["related_skills"]) == {"Python", "SQL"}
 
 
 class TestSearchSkills:

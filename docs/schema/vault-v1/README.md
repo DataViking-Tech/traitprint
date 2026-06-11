@@ -2,6 +2,7 @@
 
 **Status:** Stable contract (Phase 0 of the
 [agent-native architecture](../../agent-native-architecture.md))
+**Contract revision:** 1.1 (additive over 1.0 — see [Versioning](#versioning))
 **Consumers:** the `traitprint` CLI/MCP server (read+write) and the
 traitprint-cloud ingest pipeline (validate+project).
 
@@ -32,9 +33,16 @@ validation happens against [`vault-v1.schema.json`](vault-v1.schema.json)
    Filenames are kebab-case slugs derived from the title; on collision the
    first 8 chars of the id are appended. Renames are git-tracked and do not
    break links.
-2. **Cross-links are by UUID**: `skill_ids[]`, `experience_id`,
-   `evidence_story_ids[]`. Dangling references are a validation *warning*
-   (audit finding), not a parse error.
+2. **Cross-links are by UUID**: `skill_ids[]` (on stories *and*, since
+   revision 1.1, experiences), `experience_id`, `evidence_story_ids[]`.
+   Dangling references are a validation *warning*, never a parse error:
+   Layer 1 referential checks warn locally (audit finding) and are
+   accepted + quarantined as disputed at cloud ingest (architecture D10).
+   - A story's `skill_ids[]` are the skills the story *evidences*.
+   - An experience's `skill_ids[]` (optional, revision 1.1) are the
+     skills *exercised in that role*. The field is additive — vaults
+     written before 1.1 omit it and remain valid; readers treat a
+     missing key as an empty list.
 3. **Markdown bodies are the source of truth for narrative text.**
    - `experiences/*.md`: body = role description.
    - `stories/*.md`: body uses `## Situation`, `## Task`, `## Action`,
@@ -63,6 +71,20 @@ validation happens against [`vault-v1.schema.json`](vault-v1.schema.json)
 
 ## Versioning
 
-`traitprint.json#schema_version` is the only version signal. Additive,
-backward-compatible changes (new optional fields) do not bump the version;
-anything that changes meaning or layout does.
+`traitprint.json#schema_version` is the only version signal *on disk*.
+Additive, backward-compatible changes (new optional fields) do not bump
+the version; anything that changes meaning or layout does. Additive
+changes are tracked as contract *revisions* of this document and the
+schema (`$comment` in `vault-v1.schema.json`) so consumers can cite what
+they implement.
+
+### Revision history
+
+- **1.1 (2026-06-11)** — additive: optional `skill_ids[]` on the
+  experience entity (`$defs/experienceFrontmatter`) — the skills
+  exercised in that role, same UUID-array reference style as story
+  `skill_ids[]`. Referential rules mirror story skill refs (rule 2):
+  dangling references are a Layer 1 warning locally and are accepted +
+  quarantined at cloud ingest, never rejected. Older vaults without the
+  key remain valid; `schema_version` stays `1`.
+- **1.0** — initial stable contract.

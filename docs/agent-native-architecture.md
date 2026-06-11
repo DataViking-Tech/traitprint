@@ -106,7 +106,8 @@ narratives become markdown with YAML frontmatter.
 ├── education.json
 ├── experiences/
 │   └── 2023-acme-staff-eng.md  # frontmatter: id, title, company, dates,
-│                               #   accomplishments[]; body: narrative
+│                               #   accomplishments[], skill_ids[] (v1.1);
+│                               #   body: narrative
 ├── stories/
 │   └── incident-recovery.md    # frontmatter: id, skill_ids[], experience_id,
 │                               #   outcome, theme_tags[]; body: S/T/A/R sections
@@ -146,6 +147,11 @@ Local leads; Cloud conforms (migration plan in the cloud spec).
 - **Stories:** superset of both shapes — STAR fields + `lesson`,
   `outcome (win|failure|learning)`, `theme_tags[]` (from Cloud) +
   `skill_ids[]`, `experience_id` (from Local).
+- **Experiences:** optional `skill_ids[]` — the skills exercised in that
+  role. *(Backlog item "experience_skills links need vault v1 contract
+  extension" — addressed by contract revision 1.1, 2026-06-11: additive,
+  older vaults remain valid, Layer 1 referential rules mirror story
+  skill refs. Cloud-side parity ships separately.)*
 - **Philosophies:** `topic` + `stance` (Cloud) + optional `category` enum +
   `evidence_story_ids[]` (Local). `supporting_examples[]` folds into the
   markdown body.

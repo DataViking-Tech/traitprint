@@ -336,6 +336,8 @@ def _render_vault_verbose(store: VaultStore, v: VaultSchema) -> None:
             click.echo("      accomplishments:")
             for a in e.accomplishments:
                 click.echo(f"        - {a}")
+        if e.skill_ids:
+            click.echo(f"      skill_ids:   {', '.join(str(x) for x in e.skill_ids)}")
         click.echo(f"      source:      {e.source}")
         click.echo(f"      created_at:  {e.created_at.isoformat()}")
         click.echo(f"      updated_at:  {e.updated_at.isoformat()}")
@@ -469,11 +471,14 @@ def vault_list(ctx: click.Context, section: str, as_json: bool) -> None:
         for s in items:
             click.echo(f"{s.name:<25} {s.proficiency:>4}  {s.category:<15} {s.id}")
     elif section == "experiences":
-        click.echo(f"{'Title':<30} {'Company':<20} {'Dates':<15} {'ID'}")
+        click.echo(f"{'Title':<30} {'Company':<20} {'Dates':<15} {'Skills':>6}  {'ID'}")
         click.echo("-" * 80)
         for e in items:
             dates = f"{e.start_date}-{e.end_date}" if e.end_date else e.start_date
-            click.echo(f"{e.title:<30} {e.company:<20} {dates:<15} {e.id}")
+            click.echo(
+                f"{e.title:<30} {e.company:<20} {dates:<15} "
+                f"{len(e.skill_ids):>6}  {e.id}"
+            )
     elif section == "stories":
         click.echo(f"{'Title':<40} {'Skills':>6}  {'ID'}")
         click.echo("-" * 80)
@@ -764,6 +769,13 @@ def _batch_add_skills(store: VaultStore, items: list[dict[str, Any]]) -> int:
     multiple=True,
     help="An accomplishment line (repeatable).",
 )
+@click.option(
+    "--skill-id",
+    "skill_ids_opt",
+    multiple=True,
+    type=UUID_PARAM,
+    help="Skill UUID exercised in this role (repeatable).",
+)
 @click.option("--interactive", "-i", is_flag=True, default=True, help="Guided prompts.")
 @click.option(
     "--from-json",
@@ -772,7 +784,7 @@ def _batch_add_skills(store: VaultStore, items: list[dict[str, Any]]) -> int:
     default=None,
     help="Batch mode: load experiences from a JSON file (or '-' for stdin). "
     "Expects a JSON array of {title, company?, start_date?, end_date?, "
-    "description?, accomplishments?} objects.",
+    "description?, accomplishments?, skill_ids?} objects.",
 )
 @click.pass_context
 def vault_add_experience(
@@ -783,6 +795,7 @@ def vault_add_experience(
     end_date: str | None,
     description: str | None,
     accomplishments: tuple[str, ...],
+    skill_ids_opt: tuple[UUID, ...],
     interactive: bool,
     from_json: IO[str] | None,
 ) -> None:
@@ -790,7 +803,7 @@ def vault_add_experience(
 
     Only --title is required; all other fields are optional and default
     to empty. Omitting --title falls back to interactive prompts for
-    every field.
+    every field. --skill-id links the skills exercised in this role.
     """
     store = _get_store(ctx)
     if not store.exists():
@@ -800,6 +813,13 @@ def vault_add_experience(
     if from_json is not None:
         if title is not None:
             click.echo("--from-json cannot be combined with --title.")
+            ctx.exit(2)
+            return
+        if skill_ids_opt:
+            click.echo(
+                "--from-json cannot be combined with --skill-id; "
+                "put skill_ids on each batch item instead."
+            )
             ctx.exit(2)
             return
         items = _read_json_items(from_json)
@@ -815,6 +835,7 @@ def vault_add_experience(
         end_date_val = end_date if end_date else None
         description = description if description is not None else ""
         accomplishment_list = [a for a in accomplishments if a]
+        skill_ids = list(skill_ids_opt)
     else:
         title = click.prompt("Job title")
         company = click.prompt("Company")
@@ -833,6 +854,18 @@ def vault_add_experience(
             accomplishment_list = (
                 [a.strip() for a in raw_acc.split(",") if a.strip()] if raw_acc else []
             )
+        if skill_ids_opt:
+            skill_ids = list(skill_ids_opt)
+        else:
+            raw_skills = click.prompt(
+                "Skill IDs (comma-separated UUIDs, or blank)", default=""
+            )
+            skill_ids = []
+            if raw_skills:
+                for sid in raw_skills.split(","):
+                    sid = sid.strip()
+                    if sid:
+                        skill_ids.append(UUID(sid))
 
     assert title is not None
     exp = store.add_experience(
@@ -842,6 +875,7 @@ def vault_add_experience(
         end_date=end_date_val,
         description=description or "",
         accomplishments=accomplishment_list,
+        skill_ids=skill_ids,
     )
     click.echo(f"Added experience: {exp.title} at {exp.company} [{exp.id}]")
 
@@ -868,6 +902,11 @@ def _batch_add_experiences(store: VaultStore, items: list[dict[str, Any]]) -> in
         ):
             problems.append("accomplishments: must be a list of strings")
             accomplishments_raw = []
+        skill_ids: list[UUID] = []
+        try:
+            skill_ids = _parse_uuid_list(item.get("skill_ids"), "skill_ids", i)
+        except ValueError as exc:
+            problems.append(str(exc))
         if problems:
             _report_item_problems(label, problems)
             errors += 1
@@ -886,6 +925,7 @@ def _batch_add_experiences(store: VaultStore, items: list[dict[str, Any]]) -> in
                 end_date=str(end_date) if end_date else None,
                 description=str(description),
                 accomplishments=list(accomplishments_raw),
+                skill_ids=skill_ids,
             )
         except ValidationError as exc:
             _report_item_problems(title, _validation_problems(exc))

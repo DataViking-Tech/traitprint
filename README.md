@@ -34,7 +34,7 @@ up the structure agents read:
 |---|---|---|
 | **Profile** | Name, headline, summary, location | `vault set-profile` |
 | **Skills** | What you can do, with a 1–5 proficiency (familiar → authority) and an O*NET taxonomy link | `vault add-skill` |
-| **Experiences** | Roles you've held — title, company, dates, accomplishments | `vault add-experience` |
+| **Experiences** | Roles you've held — title, company, dates, accomplishments, linked to the skills exercised in the role | `vault add-experience` |
 | **Stories** | STAR-format narratives (Situation, Task, Action, Result), linked to the skills and experience they prove | `vault add-story` |
 | **Philosophies** | Stated beliefs on leadership, collaboration, technical approach, culture, decision-making — each backed by evidence stories | `vault add-philosophy` |
 | **Education** | Institutions, degrees, fields of study | `vault add-education` |

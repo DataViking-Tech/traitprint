@@ -30,7 +30,7 @@ narrative text. Rules:
   `id`.
 - **Frontmatter allows specific keys only** (`additionalProperties: false`):
   - experiences: `id, title, company, start_date, end_date, accomplishments,
-    source, created_at, updated_at`
+    skill_ids, source, created_at, updated_at`
   - stories: `id, title, skill_ids, experience_id, outcome, theme_tags,
     source, created_at, updated_at`
   - philosophies: `id, title, category, evidence_story_ids, source,
@@ -39,8 +39,10 @@ narrative text. Rules:
   `## Task`, `## Action`, `## Result` — each required, in that order —
   plus an optional `## Lesson`. The markdown body is the source of truth
   for narrative text.
-- **Cross-links are UUIDs** (`skill_ids`, `experience_id`,
-  `evidence_story_ids`). A dangling UUID is not a parse error — it becomes
+- **Cross-links are UUIDs** (`skill_ids` on stories *and* experiences,
+  `experience_id`, `evidence_story_ids`). A story's `skill_ids` are the
+  skills it evidences; an experience's `skill_ids` are the skills exercised
+  in that role. A dangling UUID is not a parse error — it becomes
   an audit finding. Never fabricate a UUID; copy real ones from
   `traitprint vault list` output.
 - After hand edits, run `traitprint vault audit` to validate; the change is
@@ -91,7 +93,8 @@ traitprint vault add-skill "Name" --proficiency 3 --category technical \
                         # a taxonomy match fills it when omitted
 traitprint vault add-experience --title "..." --company "..." \
   --start-date YYYY-MM --end-date YYYY-MM --description "..." \
-  --accomplishment "..."                  # --accomplishment is repeatable
+  --accomplishment "..." --skill-id <UUID>
+                                          # --accomplishment and --skill-id are repeatable
 traitprint vault add-story --title "..." --situation "..." --task "..." \
   --action "..." --result "..." --lesson "..." --outcome win|failure|learning \
   --theme-tag TAG --skill-id <UUID> --experience-id <UUID>
@@ -191,7 +194,7 @@ Input is a JSON array:
 add-skill:      [{"name": str, "proficiency": int 1-5, "category"?: str, "notes"?: str}]
 add-experience: [{"title": str, "company"?: str, "start_date"?: "YYYY-MM",
                   "end_date"?: "YYYY-MM", "description"?: str,
-                  "accomplishments"?: [str]}]
+                  "accomplishments"?: [str], "skill_ids"?: [UUID str]}]
 add-story:      [{"title": str, "situation"?: str, "task"?: str, "action"?: str,
                   "result"?: str, "lesson"?: str, "outcome"?: "win|failure|learning",
                   "theme_tags"?: [str], "skill_ids"?: [UUID str],

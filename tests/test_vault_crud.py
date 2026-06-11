@@ -141,6 +141,23 @@ class TestAddExperience:
         vault = store.load()
         assert len(vault.experiences) == 1
 
+    def test_with_skill_ids_cross_reference(self, store: VaultStore) -> None:
+        # Contract revision 1.1: experiences link the skills exercised
+        # in the role, same reference style as story skill_ids.
+        skill = store.add_skill(name="Python", proficiency=4, category="tech")
+        exp = store.add_experience(
+            title="Staff Engineer",
+            company="Acme",
+            start_date="2020-01",
+            skill_ids=[skill.id],
+        )
+        assert skill.id in exp.skill_ids
+        assert store.load().experiences[0].skill_ids == [skill.id]
+
+    def test_skill_ids_default_empty(self, store: VaultStore) -> None:
+        exp = store.add_experience(title="Dev", company="Co", start_date="2019-01")
+        assert exp.skill_ids == []
+
     def test_auto_commits(self, store: VaultStore) -> None:
         store.add_experience(
             title="Manager",
@@ -446,6 +463,24 @@ class TestVaultShowCLI:
         assert "technical-approach" in out
         assert "Git:" in out
 
+    def test_vault_show_verbose_experience_skill_ids(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        # Experience skill links surface like story skill links do.
+        store = VaultStore(vault_dir)
+        skill = store.add_skill(name="Python", proficiency=4, category="technical")
+        store.add_experience(
+            title="Staff Engineer",
+            company="Acme",
+            start_date="2020-01",
+            skill_ids=[skill.id],
+        )
+        result = runner.invoke(
+            cli, ["--path", str(vault_dir), "vault", "show", "--verbose"]
+        )
+        assert result.exit_code == 0, result.output
+        assert f"skill_ids:   {skill.id}" in result.output
+
     def test_vault_show_verbose_short_flag(
         self, runner: CliRunner, vault_dir: Path
     ) -> None:
@@ -470,6 +505,25 @@ class TestVaultListCLI:
         assert result.exit_code == 0
         assert "Python" in result.output
         assert "technical" in result.output
+
+    def test_list_experiences_shows_skill_count(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        # Experiences surface a Skills count column like stories do.
+        store = VaultStore(vault_dir)
+        skill = store.add_skill(name="Python", proficiency=4, category="technical")
+        exp = store.add_experience(
+            title="Staff Engineer",
+            company="Acme",
+            start_date="2020-01",
+            skill_ids=[skill.id],
+        )
+        result = runner.invoke(
+            cli, ["--path", str(vault_dir), "vault", "list", "experiences"]
+        )
+        assert result.exit_code == 0
+        assert "Skills" in result.output
+        assert f"     1  {exp.id}" in result.output
 
     def test_list_empty_section(self, runner: CliRunner, vault_dir: Path) -> None:
         result = runner.invoke(
@@ -822,6 +876,53 @@ class TestAddExperienceCLI:
         assert exp.description == "Built stuff"
         assert exp.accomplishments == ["Shipped X", "Reduced Y by 30%"]
 
+    def test_non_interactive_with_skill_ids(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        store = VaultStore(vault_dir)
+        skill = store.add_skill(name="Go", proficiency=4, category="technical")
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-experience",
+                "--title",
+                "Platform Lead",
+                "--company",
+                "Acme",
+                "--skill-id",
+                str(skill.id),
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        exp = store.load().experiences[0]
+        assert exp.skill_ids == [skill.id]
+
+    def test_batch_mode_rejects_skill_id_flag(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        store = VaultStore(vault_dir)
+        skill = store.add_skill(name="Go", proficiency=4, category="technical")
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-experience",
+                "--from-json",
+                "-",
+                "--skill-id",
+                str(skill.id),
+            ],
+            input="[]",
+        )
+        assert result.exit_code == 2
+        assert "--from-json cannot be combined with --skill-id" in result.output
+        assert store.load().experiences == []
+
 
 class TestAddEducationCLI:
     def test_non_interactive_required_only(
@@ -1048,7 +1149,10 @@ class TestJsonReadSurface:
         store = VaultStore(vault_dir)
         skill = store.add_skill(name="Python", proficiency=4, category="technical")
         store.add_experience(
-            title="Staff Engineer", company="Acme", start_date="2020-01"
+            title="Staff Engineer",
+            company="Acme",
+            start_date="2020-01",
+            skill_ids=[skill.id],
         )
         store.add_story(
             title="Migration",
@@ -1085,6 +1189,9 @@ class TestJsonReadSurface:
         UUID(skill["id"])
         story = payload["stories"][0]
         assert {"lesson", "outcome", "theme_tags", "skill_ids"} <= set(story)
+        experience = payload["experiences"][0]
+        assert "skill_ids" in experience
+        assert experience["skill_ids"] == [payload["skills"][0]["id"]]
 
     def test_list_json_shape(self, runner: CliRunner, seeded_dir: Path) -> None:
         result = runner.invoke(
@@ -1709,6 +1816,51 @@ class TestAddExperienceBatch:
         )
         assert result.exit_code == 1
         assert "title: missing required field" in result.output
+
+    def test_batch_adds_with_skill_refs(
+        self, runner: CliRunner, vault_dir: Path, tmp_path: Path
+    ) -> None:
+        store = VaultStore(vault_dir)
+        skill = store.add_skill(name="Go", proficiency=4, category="technical")
+        payload = tmp_path / "exp.json"
+        payload.write_text(
+            f'[{{"title":"Engineer","company":"Acme",'
+            f'"skill_ids":["{skill.id}"]}}]'
+        )
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-experience",
+                "--from-json",
+                str(payload),
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        exp = store.load().experiences[0]
+        assert exp.skill_ids == [skill.id]
+
+    def test_batch_invalid_skill_uuid(
+        self, runner: CliRunner, vault_dir: Path, tmp_path: Path
+    ) -> None:
+        payload = tmp_path / "exp.json"
+        payload.write_text('[{"title":"Bad","skill_ids":["not-a-uuid"]}]')
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-experience",
+                "--from-json",
+                str(payload),
+            ],
+        )
+        assert result.exit_code == 1
+        assert "[err] Bad" in result.output
+        assert "skill_ids" in result.output
 
 
 class TestAddStoryBatch:

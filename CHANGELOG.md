@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Experience skill links (vault contract revision 1.1, additive).**
+  Experiences carry an optional `skill_ids[]` — the skills exercised in
+  that role, same UUID-array reference style as story `skill_ids`.
+  Older vaults remain valid (`schema_version` stays 1; missing key
+  reads as empty). Shipped across the local product:
+  - `vault add-experience --skill-id` (repeatable), interactive prompt,
+    and `skill_ids` in `--from-json` batch items.
+  - `vault show --verbose` / `--json` and `vault list experiences`
+    (new Skills count column) surface the links.
+  - `vault audit`: `experience.dangling_skill` (major warning, Layer 1,
+    mirrors `story.dangling_skill`) and `experience.no_skills` (minor
+    gap, mirrors `story.no_skills`).
+  - Proposals: `skill_ids` allowlisted in `add_experience` /
+    `update_experience` payloads.
+  - MCP `get_profile_summary` (detailed): `signature_experiences` carry
+    `related_skills` (names; dangling refs skipped). Cloud parity ships
+    separately.
+
 ## [0.10.0] - 2026-06-10
 
 ### Added

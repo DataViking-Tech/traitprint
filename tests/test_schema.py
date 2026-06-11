@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import pytest
 from pydantic import ValidationError
 
 from traitprint.schema import (
+    ExperienceSchema,
     PhilosophyCategory,
     PhilosophySchema,
     SkillSchema,
@@ -80,6 +81,30 @@ class TestSkillValidation:
         skill = SkillSchema(name="Python", proficiency=3)
         assert skill.created_at is not None
         assert skill.updated_at is not None
+
+
+class TestExperienceSchema:
+    def test_skill_ids_default_empty(self) -> None:
+        # Contract revision 1.1 is additive — pre-1.1 payloads omit the
+        # key and must keep validating.
+        exp = ExperienceSchema(title="Staff Engineer")
+        assert exp.skill_ids == []
+
+    def test_skill_ids_round_trip(self) -> None:
+        skill = SkillSchema(name="Python", proficiency=4)
+        exp = ExperienceSchema(title="Staff Engineer", skill_ids=[skill.id])
+        assert exp.skill_ids == [skill.id]
+
+    def test_skill_ids_accept_uuid_strings(self) -> None:
+        sid = uuid4()
+        exp = ExperienceSchema.model_validate(
+            {"title": "Eng", "skill_ids": [str(sid)]}
+        )
+        assert exp.skill_ids == [sid]
+
+    def test_invalid_skill_id_rejected(self) -> None:
+        with pytest.raises(ValidationError):
+            ExperienceSchema(title="Eng", skill_ids=["not-a-uuid"])  # type: ignore[list-item]
 
 
 class TestStorySchema:

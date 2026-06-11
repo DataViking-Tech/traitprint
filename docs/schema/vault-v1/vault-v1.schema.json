@@ -3,6 +3,7 @@
   "$id": "https://traitprint.com/schema/vault-v1.schema.json",
   "title": "Traitprint Vault v1",
   "description": "Contract for the vault v1 file tree. Each $defs entry validates one file type; see README.md for layout and markdown-body conventions.",
+  "$comment": "Contract revision 1.1 — adds optional experienceFrontmatter.skill_ids (additive; vaults written against 1.0 remain valid, schema_version stays 1). Revision history in README.md.",
   "$defs": {
     "uuid": {
       "type": "string",
@@ -97,6 +98,7 @@
         "start_date": { "type": "string" },
         "end_date": { "type": "string" },
         "accomplishments": { "type": "array", "items": { "type": "string" } },
+        "skill_ids": { "type": "array", "items": { "$ref": "#/$defs/uuid" } },
         "source": { "$ref": "#/$defs/source" },
         "created_at": { "$ref": "#/$defs/timestamp" },
         "updated_at": { "$ref": "#/$defs/timestamp" }
