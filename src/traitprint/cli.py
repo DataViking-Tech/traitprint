@@ -815,6 +815,13 @@ def vault_add_experience(
             click.echo("--from-json cannot be combined with --title.")
             ctx.exit(2)
             return
+        if skill_ids_opt:
+            click.echo(
+                "--from-json cannot be combined with --skill-id; "
+                "put skill_ids on each batch item instead."
+            )
+            ctx.exit(2)
+            return
         items = _read_json_items(from_json)
         errors = _batch_add_experiences(store, items)
         if errors:

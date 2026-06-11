@@ -900,6 +900,29 @@ class TestAddExperienceCLI:
         exp = store.load().experiences[0]
         assert exp.skill_ids == [skill.id]
 
+    def test_batch_mode_rejects_skill_id_flag(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        store = VaultStore(vault_dir)
+        skill = store.add_skill(name="Go", proficiency=4, category="technical")
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-experience",
+                "--from-json",
+                "-",
+                "--skill-id",
+                str(skill.id),
+            ],
+            input="[]",
+        )
+        assert result.exit_code == 2
+        assert "--from-json cannot be combined with --skill-id" in result.output
+        assert store.load().experiences == []
+
 
 class TestAddEducationCLI:
     def test_non_interactive_required_only(
