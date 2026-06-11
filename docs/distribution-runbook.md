@@ -330,6 +330,46 @@ Source: `vercel-labs/skills` README (fetched 2026-06-10).
 
 ---
 
+## 6. Community directories (lower priority, high leverage per minute)
+
+These are unofficial but heavily-trafficked discovery surfaces. None block
+anything; do them opportunistically after §1–§5.
+
+### mcp.so
+
+- Submit at <https://mcp.so/submit> (or the "Submit" link in the site
+  header): name `Traitprint`, the hosted MCP endpoint URL, and the
+  GitHub repo. No review gate observed; listings appear quickly.
+
+### PulseMCP (pulsemcp.com)
+
+- Submission form at <https://www.pulsemcp.com/submit>. PulseMCP also
+  auto-ingests from the official MCP registry — since §3 publishes
+  there, verify a listing exists before submitting manually to avoid a
+  duplicate.
+
+### Smithery (smithery.ai) and Glama (glama.ai)
+
+- Both index the official registry and GitHub automatically. After §3
+  lands, search each site for "traitprint"; only act if the listing is
+  missing or wrong. Smithery allows claiming a server via GitHub login
+  to edit metadata — worth claiming once it appears.
+
+### awesome-mcp-servers (github.com/punkpeye/awesome-mcp-servers)
+
+- Open a PR adding Traitprint under the most fitting category (likely
+  "Knowledge & Memory" or "Productivity"). Follow CONTRIBUTING.md:
+  one-line entry, alphabetical order, format
+  `[traitprint](https://github.com/DataViking-Tech/traitprint) - <one-line description>`
+  with language/scope emoji per their legend. Human review; turnaround
+  varies.
+
+**Wesley must:** all of the above are account/PR actions only you can
+take. Suggested order: mcp.so → PulseMCP check → awesome-mcp-servers PR
+→ claim Smithery/Glama listings when they materialize.
+
+---
+
 ## Order of operations
 
 1. Merge this branch → `main` (skills.sh + Gemini git-install become live
