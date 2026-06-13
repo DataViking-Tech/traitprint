@@ -2,7 +2,7 @@
 
 **Status:** Stable contract (Phase 0 of the
 [agent-native architecture](../../agent-native-architecture.md))
-**Contract revision:** 1.1 (additive over 1.0 — see [Versioning](#versioning))
+**Contract revision:** 1.2 (additive over 1.1 — see [Versioning](#versioning))
 **Consumers:** the `traitprint` CLI/MCP server (read+write) and the
 traitprint-cloud ingest pipeline (validate+project).
 
@@ -43,6 +43,14 @@ validation happens against [`vault-v1.schema.json`](vault-v1.schema.json)
      skills *exercised in that role*. The field is additive — vaults
      written before 1.1 omit it and remain valid; readers treat a
      missing key as an empty list.
+   - An experience's `skill_links[]` (optional, revision 1.2) annotate a
+     per-skill `proficiency` (1–5) for skills already in `skill_ids[]`.
+     `skill_ids[]` stays authoritative for membership: an entry whose
+     `skill_id` is not in `skill_ids[]` carries no membership effect and
+     is ignored, and a skill in `skill_ids[]` with no matching link has
+     unset proficiency. Additive — vaults before 1.2 omit it; an empty
+     `skill_links` is not emitted (kept out of frontmatter) so 1.1 vaults
+     round-trip byte-identically.
 3. **Markdown bodies are the source of truth for narrative text.**
    - `experiences/*.md`: body = role description.
    - `stories/*.md`: body uses `## Situation`, `## Task`, `## Action`,
@@ -80,6 +88,16 @@ they implement.
 
 ### Revision history
 
+- **1.2 (2026-06-13)** — additive: optional `skill_links[]` on the
+  experience entity (`$defs/experienceFrontmatter`, `$defs/skillLink`) —
+  an array of `{ skill_id, proficiency? }` objects annotating a per-skill
+  proficiency (1–5) for skills already listed in `skill_ids[]`.
+  `skill_ids[]` remains authoritative for membership: an entry whose
+  `skill_id` is not in `skill_ids[]` is ignored (no membership effect),
+  and a skill in `skill_ids[]` with no matching link has unset
+  proficiency. Empty `skill_links` is omitted from frontmatter so 1.1
+  vaults round-trip byte-identically. Stories are unchanged. Older vaults
+  without the key remain valid; `schema_version` stays `1`.
 - **1.1 (2026-06-11)** — additive: optional `skill_ids[]` on the
   experience entity (`$defs/experienceFrontmatter`) — the skills
   exercised in that role, same UUID-array reference style as story

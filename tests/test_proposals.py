@@ -374,6 +374,63 @@ class TestApplyProposal:
         )
         assert vault.experiences[0].skill_ids == [sid2]
 
+    def test_experience_skill_links_accepted_and_applied(self) -> None:
+        # Contract revision 1.2: skill_links is part of the experience
+        # entity shape, so experience proposals may carry it; stories
+        # are unchanged.
+        vault = VaultSchema()
+        sid = uuid4()
+        assert (
+            validate_proposal_fields(
+                "add_experience",
+                None,
+                {
+                    "title": "Staff Engineer",
+                    "skill_ids": [str(sid)],
+                    "skill_links": [{"skill_id": str(sid), "proficiency": 4}],
+                },
+            )
+            == []
+        )
+        apply_proposal(
+            vault,
+            ProposalSchema(
+                kind="add_experience",
+                payload={
+                    "title": "Staff Engineer",
+                    "skill_ids": [str(sid)],
+                    "skill_links": [{"skill_id": str(sid), "proficiency": 4}],
+                },
+            ),
+        )
+        assert vault.experiences[0].skill_links[0].skill_id == sid
+        assert vault.experiences[0].skill_links[0].proficiency == 4
+        # update_experience can change the annotations too.
+        apply_proposal(
+            vault,
+            ProposalSchema(
+                kind="update_experience",
+                target_id=vault.experiences[0].id,
+                payload={
+                    "skill_links": [{"skill_id": str(sid), "proficiency": 2}],
+                },
+            ),
+        )
+        assert vault.experiences[0].skill_links[0].proficiency == 2
+
+    def test_skill_links_rejected_on_story_proposals(self) -> None:
+        # skill_links is experience-only; story payloads must not accept it.
+        sid = uuid4()
+        problems = validate_proposal_fields(
+            "add_story",
+            None,
+            {
+                "title": "A Story",
+                "skill_links": [{"skill_id": str(sid), "proficiency": 4}],
+            },
+        )
+        assert any("skill_links" in p for p in problems)
+
     def test_update_profile_maps_basics(self) -> None:
         vault = VaultSchema()
         p = ProposalSchema(

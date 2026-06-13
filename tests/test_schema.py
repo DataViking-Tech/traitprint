@@ -11,6 +11,7 @@ from traitprint.schema import (
     ExperienceSchema,
     PhilosophyCategory,
     PhilosophySchema,
+    SkillLink,
     SkillSchema,
     StorySchema,
     VaultSchema,
@@ -105,6 +106,37 @@ class TestExperienceSchema:
     def test_invalid_skill_id_rejected(self) -> None:
         with pytest.raises(ValidationError):
             ExperienceSchema(title="Eng", skill_ids=["not-a-uuid"])  # type: ignore[list-item]
+
+    def test_skill_links_default_empty(self) -> None:
+        # Contract revision 1.2 is additive — pre-1.2 payloads omit the
+        # key and must keep validating.
+        exp = ExperienceSchema(title="Staff Engineer")
+        assert exp.skill_links == []
+
+    def test_skill_links_round_trip(self) -> None:
+        sid = uuid4()
+        exp = ExperienceSchema.model_validate(
+            {
+                "title": "Eng",
+                "skill_ids": [str(sid)],
+                "skill_links": [{"skill_id": str(sid), "proficiency": 4}],
+            }
+        )
+        assert exp.skill_links == [SkillLink(skill_id=sid, proficiency=4)]
+
+    def test_skill_link_proficiency_optional(self) -> None:
+        sid = uuid4()
+        link = SkillLink.model_validate({"skill_id": str(sid)})
+        assert link.proficiency is None
+
+    @pytest.mark.parametrize("bad", [0, 6, -1, 10])
+    def test_skill_link_proficiency_out_of_range_rejected(self, bad: int) -> None:
+        with pytest.raises(ValidationError):
+            SkillLink(skill_id=uuid4(), proficiency=bad)
+
+    def test_skill_link_requires_skill_id(self) -> None:
+        with pytest.raises(ValidationError):
+            SkillLink.model_validate({"proficiency": 3})
 
 
 class TestStorySchema:

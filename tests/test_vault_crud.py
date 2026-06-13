@@ -158,6 +158,83 @@ class TestAddExperience:
         exp = store.add_experience(title="Dev", company="Co", start_date="2019-01")
         assert exp.skill_ids == []
 
+    def test_skill_links_round_trip(self, store: VaultStore) -> None:
+        # Contract revision 1.2: skill_links annotates per-skill
+        # proficiency for skills already in skill_ids; skill_ids stays
+        # authoritative for membership.
+        skill = store.add_skill(name="Python", proficiency=4, category="tech")
+        exp = store.add_experience(
+            title="Staff Engineer",
+            company="Acme",
+            start_date="2020-01",
+            skill_ids=[skill.id],
+            skill_links=[{"skill_id": skill.id, "proficiency": 5}],
+        )
+        assert len(exp.skill_links) == 1
+        assert exp.skill_links[0].skill_id == skill.id
+        assert exp.skill_links[0].proficiency == 5
+        # Survives a save → reload round-trip.
+        reloaded = store.load().experiences[0]
+        assert reloaded.skill_links[0].skill_id == skill.id
+        assert reloaded.skill_links[0].proficiency == 5
+
+    def test_skill_links_default_empty(self, store: VaultStore) -> None:
+        exp = store.add_experience(title="Dev", company="Co", start_date="2019-01")
+        assert exp.skill_links == []
+
+    def test_skill_links_entry_without_matching_skill_id_dropped(
+        self, store: VaultStore
+    ) -> None:
+        # skill_ids is authoritative: a link whose skill_id is not in
+        # skill_ids carries no membership effect and is dropped.
+        skill = store.add_skill(name="Python", proficiency=4, category="tech")
+        stray = uuid4()
+        exp = store.add_experience(
+            title="Eng",
+            company="Co",
+            start_date="2019-01",
+            skill_ids=[skill.id],
+            skill_links=[
+                {"skill_id": skill.id, "proficiency": 3},
+                {"skill_id": stray, "proficiency": 2},
+            ],
+        )
+        assert [sl.skill_id for sl in exp.skill_links] == [skill.id]
+
+    def test_empty_skill_links_not_emitted_to_frontmatter(
+        self, store: VaultStore
+    ) -> None:
+        # A v1.1-style experience (skill_ids only, no skill_links) must not
+        # gain a `skill_links:` line — preserves byte-compat / clean diffs.
+        skill = store.add_skill(name="Python", proficiency=4, category="tech")
+        exp = store.add_experience(
+            title="Engineer",
+            company="Acme",
+            start_date="2020-01",
+            skill_ids=[skill.id],
+        )
+        md_files = list((store.directory / "experiences").glob("*.md"))
+        assert len(md_files) == 1
+        text = md_files[0].read_text(encoding="utf-8")
+        assert "skill_links" not in text
+        assert "skill_ids" in text
+        # And it round-trips back with an empty list.
+        assert store.load().experiences[0].skill_links == []
+        assert exp.skill_links == []
+
+    def test_skill_links_emitted_when_present(self, store: VaultStore) -> None:
+        skill = store.add_skill(name="Python", proficiency=4, category="tech")
+        store.add_experience(
+            title="Engineer",
+            company="Acme",
+            start_date="2020-01",
+            skill_ids=[skill.id],
+            skill_links=[{"skill_id": skill.id, "proficiency": 5}],
+        )
+        md_files = list((store.directory / "experiences").glob("*.md"))
+        text = md_files[0].read_text(encoding="utf-8")
+        assert "skill_links" in text
+
     def test_auto_commits(self, store: VaultStore) -> None:
         store.add_experience(
             title="Manager",

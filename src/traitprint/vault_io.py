@@ -60,10 +60,17 @@ EXPERIENCE_FRONTMATTER_KEYS = (
     "end_date",
     "accomplishments",
     "skill_ids",
+    "skill_links",
     "source",
     "created_at",
     "updated_at",
 )
+
+# Frontmatter keys that are omitted entirely when empty, so a vault that
+# never sets them round-trips byte-identically against the prior contract
+# revision (e.g. ``skill_links`` is additive in revision 1.2 — a 1.1 vault
+# must not gain an empty ``skill_links: []`` line on rewrite).
+_OMIT_WHEN_EMPTY = ("skill_links",)
 STORY_FRONTMATTER_KEYS = (
     "id",
     "title",
@@ -221,7 +228,15 @@ def _profile_doc(profile: ProfileSchema) -> str:
 
 def _frontmatter(item: Any, keys: tuple[str, ...]) -> dict[str, Any]:
     dump = item.model_dump(mode="json")
-    return {k: dump[k] for k in keys}
+    fm: dict[str, Any] = {}
+    for k in keys:
+        value = dump[k]
+        # Additive optional collections are omitted when empty to keep
+        # diffs clean and preserve byte-compat with prior revisions.
+        if k in _OMIT_WHEN_EMPTY and not value:
+            continue
+        fm[k] = value
+    return fm
 
 
 def _scan_markdown_dir(dirpath: Path) -> dict[UUID, Path]:

@@ -3,7 +3,7 @@
   "$id": "https://traitprint.com/schema/vault-v1.schema.json",
   "title": "Traitprint Vault v1",
   "description": "Contract for the vault v1 file tree. Each $defs entry validates one file type; see README.md for layout and markdown-body conventions.",
-  "$comment": "Contract revision 1.1 — adds optional experienceFrontmatter.skill_ids (additive; vaults written against 1.0 remain valid, schema_version stays 1). Revision history in README.md.",
+  "$comment": "Contract revision 1.1 — adds optional experienceFrontmatter.skill_ids (additive; vaults written against 1.0 remain valid, schema_version stays 1). Revision 1.2 — adds optional experienceFrontmatter.skill_links (additive; vaults written against 1.0/1.1 remain valid). Revision history in README.md.",
   "$defs": {
     "uuid": {
       "type": "string",
@@ -24,6 +24,16 @@
       "minimum": 1,
       "maximum": 5,
       "description": "1 familiar, 2 working, 3 proficient, 4 expert, 5 authority."
+    },
+    "skillLink": {
+      "type": "object",
+      "description": "Revision 1.2: a per-skill proficiency annotation on an experience. skill_ids stays authoritative for membership; an entry whose skill_id is not in the experience's skill_ids carries no membership effect.",
+      "required": ["skill_id"],
+      "properties": {
+        "skill_id": { "$ref": "#/$defs/uuid" },
+        "proficiency": { "$ref": "#/$defs/proficiency" }
+      },
+      "additionalProperties": false
     },
     "manifest": {
       "type": "object",
@@ -99,6 +109,7 @@
         "end_date": { "type": "string" },
         "accomplishments": { "type": "array", "items": { "type": "string" } },
         "skill_ids": { "type": "array", "items": { "$ref": "#/$defs/uuid" } },
+        "skill_links": { "type": "array", "items": { "$ref": "#/$defs/skillLink" } },
         "source": { "$ref": "#/$defs/source" },
         "created_at": { "$ref": "#/$defs/timestamp" },
         "updated_at": { "$ref": "#/$defs/timestamp" }
