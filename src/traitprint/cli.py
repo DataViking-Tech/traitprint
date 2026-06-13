@@ -776,6 +776,13 @@ def _batch_add_skills(store: VaultStore, items: list[dict[str, Any]]) -> int:
     type=UUID_PARAM,
     help="Skill UUID exercised in this role (repeatable).",
 )
+@click.option(
+    "--skill-link",
+    "skill_links_opt",
+    multiple=True,
+    help="Per-skill proficiency annotation as '<skill-uuid>:<1-5>' "
+    "(repeatable; contract 1.2). The skill-uuid must also be a --skill-id.",
+)
 @click.option("--interactive", "-i", is_flag=True, default=True, help="Guided prompts.")
 @click.option(
     "--from-json",
@@ -796,6 +803,7 @@ def vault_add_experience(
     description: str | None,
     accomplishments: tuple[str, ...],
     skill_ids_opt: tuple[UUID, ...],
+    skill_links_opt: tuple[str, ...],
     interactive: bool,
     from_json: IO[str] | None,
 ) -> None:
@@ -815,10 +823,10 @@ def vault_add_experience(
             click.echo("--from-json cannot be combined with --title.")
             ctx.exit(2)
             return
-        if skill_ids_opt:
+        if skill_ids_opt or skill_links_opt:
             click.echo(
-                "--from-json cannot be combined with --skill-id; "
-                "put skill_ids on each batch item instead."
+                "--from-json cannot be combined with --skill-id/--skill-link; "
+                "put skill_ids/skill_links on each batch item instead."
             )
             ctx.exit(2)
             return
@@ -867,6 +875,8 @@ def vault_add_experience(
                     if sid:
                         skill_ids.append(UUID(sid))
 
+    skill_links = _parse_skill_link_opts(ctx, skill_links_opt)
+
     assert title is not None
     exp = store.add_experience(
         title=title,
@@ -876,8 +886,48 @@ def vault_add_experience(
         description=description or "",
         accomplishments=accomplishment_list,
         skill_ids=skill_ids,
+        skill_links=skill_links,
     )
     click.echo(f"Added experience: {exp.title} at {exp.company} [{exp.id}]")
+
+
+def _parse_skill_link_opts(
+    ctx: click.Context, raw: tuple[str, ...]
+) -> list[dict[str, Any]]:
+    """Parse ``--skill-link '<uuid>:<1-5>'`` options into payload dicts.
+
+    Proficiency is optional (a bare UUID yields an unset proficiency).
+    Raises :class:`click.BadParameter` on a malformed UUID or out-of-range
+    proficiency (Click exits 2).
+    """
+    links: list[dict[str, Any]] = []
+    for spec in raw:
+        sid, sep, prof = spec.partition(":")
+        try:
+            skill_id = UUID(sid.strip())
+        except ValueError as exc:
+            raise click.BadParameter(
+                f"invalid skill UUID {sid!r}", ctx=ctx, param_hint="--skill-link"
+            ) from exc
+        entry: dict[str, Any] = {"skill_id": skill_id}
+        if sep and prof.strip():
+            try:
+                proficiency = int(prof.strip())
+            except ValueError as exc:
+                raise click.BadParameter(
+                    f"proficiency must be an integer, got {prof!r}",
+                    ctx=ctx,
+                    param_hint="--skill-link",
+                ) from exc
+            if not 1 <= proficiency <= 5:
+                raise click.BadParameter(
+                    f"proficiency must be 1-5, got {proficiency}",
+                    ctx=ctx,
+                    param_hint="--skill-link",
+                )
+            entry["proficiency"] = proficiency
+        links.append(entry)
+    return links
 
 
 def _batch_add_experiences(store: VaultStore, items: list[dict[str, Any]]) -> int:
@@ -926,6 +976,7 @@ def _batch_add_experiences(store: VaultStore, items: list[dict[str, Any]]) -> in
                 description=str(description),
                 accomplishments=list(accomplishments_raw),
                 skill_ids=skill_ids,
+                skill_links=item.get("skill_links"),
             )
         except ValidationError as exc:
             _report_item_problems(title, _validation_problems(exc))

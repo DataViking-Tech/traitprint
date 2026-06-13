@@ -309,10 +309,19 @@ class TestFrontmatterContract:
             "stories": set(STORY_FRONTMATTER_KEYS),
             "philosophies": set(PHILOSOPHY_FRONTMATTER_KEYS),
         }
+        # Optional, additive collections are omitted when empty (revision
+        # 1.2's skill_links keeps 1.1 vaults byte-identical), so a saved
+        # file may lack them — every present key must still be allowed.
+        from traitprint.vault_io import _OMIT_WHEN_EMPTY
+
+        omittable = set(_OMIT_WHEN_EMPTY)
         for section, keys in allowed.items():
             for file in (vault_dir / section).glob("*.md"):
                 fm, body = parse_markdown(file.read_text(), path=file)
-                assert set(fm) == keys, f"{file} frontmatter keys mismatch"
+                assert set(fm) <= keys, f"{file} frontmatter has disallowed keys"
+                assert keys - set(fm) <= omittable, (
+                    f"{file} frontmatter missing required keys"
+                )
                 # Narrative text must not leak into frontmatter.
                 for narrative_key in ("description", "situation", "stance", "lesson"):
                     assert narrative_key not in fm

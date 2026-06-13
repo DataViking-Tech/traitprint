@@ -12,6 +12,7 @@ from __future__ import annotations
 import os
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 from uuid import UUID
 
 from traitprint.schema import (
@@ -20,6 +21,7 @@ from traitprint.schema import (
     PhilosophyCategory,
     PhilosophySchema,
     ProfileSchema,
+    SkillLink,
     SkillSchema,
     StorySchema,
     VaultSchema,
@@ -228,13 +230,26 @@ class VaultStore:
         description: str = "",
         accomplishments: list[str] | None = None,
         skill_ids: list[UUID] | None = None,
+        skill_links: list[SkillLink] | list[dict[str, Any]] | None = None,
     ) -> ExperienceSchema:
         """Add an experience to the vault, save, and auto-commit.
 
         ``skill_ids`` links the skills exercised in this role (contract
         revision 1.1); dangling references surface as audit warnings.
+
+        ``skill_links`` (contract revision 1.2) optionally annotates a
+        per-skill proficiency (1-5) for skills already in ``skill_ids``;
+        ``skill_ids`` stays authoritative for membership. Entries whose
+        ``skill_id`` is not in ``skill_ids`` are dropped here (they carry
+        no membership effect and would only be dangling annotations).
         """
         vault = self.load()
+        links = [
+            sl if isinstance(sl, SkillLink) else SkillLink.model_validate(sl)
+            for sl in (skill_links or [])
+        ]
+        ids = set(skill_ids or [])
+        links = [sl for sl in links if sl.skill_id in ids]
         experience = ExperienceSchema(
             title=title,
             company=company,
@@ -243,6 +258,7 @@ class VaultStore:
             description=description,
             accomplishments=accomplishments or [],
             skill_ids=skill_ids or [],
+            skill_links=links,
         )
         vault.experiences.append(experience)
         self._save_and_commit(vault, f"Add experience: {title} at {company}")

@@ -56,6 +56,20 @@ class SkillSchema(BaseModel):
     updated_at: datetime = Field(default_factory=_now)
 
 
+class SkillLink(BaseModel):
+    """A per-skill proficiency annotation on an experience.
+
+    Contract revision 1.2 (additive). ``skill_id`` must reference a skill
+    that is *also* present in the experience's ``skill_ids`` — that array
+    stays authoritative for membership. A ``skill_links`` entry only
+    annotates the proficiency demonstrated for that skill in this role;
+    ``proficiency`` is optional (unset means "no annotation").
+    """
+
+    skill_id: UUID
+    proficiency: int | None = Field(default=None, ge=1, le=5)
+
+
 class ExperienceSchema(BaseModel):
     """A work experience entry.
 
@@ -64,6 +78,14 @@ class ExperienceSchema(BaseModel):
     ``skill_ids``. Vaults written before 1.1 omit the key; it defaults
     to an empty list. Dangling references are a Layer 1 audit warning,
     never a parse error.
+
+    ``skill_links`` (contract revision 1.2, additive) optionally annotates
+    a per-skill ``proficiency`` for skills already listed in ``skill_ids``.
+    ``skill_ids`` remains authoritative for membership: an entry whose
+    ``skill_id`` is not in ``skill_ids`` carries no membership effect, and
+    a skill in ``skill_ids`` with no matching link simply has unset
+    proficiency. Vaults written before 1.2 omit the key; it defaults to an
+    empty list and is not emitted into frontmatter when empty.
     """
 
     id: UUID = Field(default_factory=uuid4)
@@ -74,6 +96,7 @@ class ExperienceSchema(BaseModel):
     description: str = ""
     accomplishments: list[str] = Field(default_factory=list)
     skill_ids: list[UUID] = Field(default_factory=list)
+    skill_links: list[SkillLink] = Field(default_factory=list)
     source: str = "manual"
     created_at: datetime = Field(default_factory=_now)
     updated_at: datetime = Field(default_factory=_now)
