@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 from uuid import NAMESPACE_URL, uuid5
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -74,7 +75,7 @@ def main() -> None:
 
     out_skills = []
     for s in sorted(skills, key=lambda x: x["name"].lower()):
-        entry: dict = {
+        entry: dict[str, Any] = {
             "id": skill_id(s["name"]),
             "name": s["name"],
             "category": s["category"],
@@ -98,6 +99,33 @@ def main() -> None:
             entry["neighbors"] = dict(sorted(nbrs.items()))
         out_skills.append(entry)
 
+    # Alias hygiene (global pass): an alias must unambiguously resolve to ONE
+    # skill and must not shadow a real skill's canonical name. The union of
+    # Cloud's aliases with Local's curated overlay introduced collisions —
+    # e.g. "Data Science"/"ETL"/"Web Development" are real canonical skills
+    # yet were also pasted on as aliases of Machine Learning / Data Engineering
+    # / JavaScript, and "backend"/"frontend" mapped to two skills each. Drop
+    # any alias that (a) equals a canonical skill name, or (b) is assigned to
+    # more than one skill. (Own-name and exact dupes were already excluded.)
+    names_lower = {e["name"].lower() for e in out_skills}
+    assigned: dict[str, set[str]] = {}
+    for e in out_skills:
+        for a in e.get("aliases", []):
+            assigned.setdefault(a.lower(), set()).add(e["name"])
+    dropped = 0
+    for e in out_skills:
+        if "aliases" not in e:
+            continue
+        kept = [
+            a for a in e["aliases"]
+            if a.lower() not in names_lower and len(assigned[a.lower()]) == 1
+        ]
+        dropped += len(e["aliases"]) - len(kept)
+        if kept:
+            e["aliases"] = kept
+        else:
+            del e["aliases"]
+
     envelope = {
         "version": CANONICAL_VERSION,
         "lineage": CANONICAL_LINEAGE,
@@ -106,8 +134,10 @@ def main() -> None:
     OUT.write_text(json.dumps(envelope, indent=2, ensure_ascii=False) + "\n")
 
     edge_count = sum(len(v) for v in neighbors.values())
-    print(f"wrote {len(out_skills)} skills, {edge_count} directed edges "
-          f"({skipped} relationship rows skipped as unresolved) -> {OUT}")
+    alias_count = sum(len(e.get("aliases", [])) for e in out_skills)
+    print(f"wrote {len(out_skills)} skills, {alias_count} aliases "
+          f"({dropped} ambiguous/shadowing aliases dropped), {edge_count} directed "
+          f"edges ({skipped} relationship rows skipped as unresolved) -> {OUT}")
 
 
 if __name__ == "__main__":

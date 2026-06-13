@@ -3315,6 +3315,17 @@ def sync_status_cmd(ctx: click.Context, as_json: bool) -> None:
             message = str(exc) + (f" {exc.hint}" if exc.hint else "")
             raise click.ClickException(message) from exc
 
+    from traitprint.taxonomy import (
+        load_taxonomy_lineage,
+        load_taxonomy_version,
+        taxonomy_update_advisory,
+    )
+
+    tax = outcome.server_taxonomy
+    advisory = (
+        taxonomy_update_advisory(tax.version, tax.lineage) if tax is not None else None
+    )
+
     if as_json:
         click.echo(
             json.dumps(
@@ -3327,6 +3338,13 @@ def sync_status_cmd(ctx: click.Context, as_json: bool) -> None:
                         "items": outcome.ingest.quarantined,
                     },
                     "relation": outcome.relation,
+                    "taxonomy": {
+                        "local_version": load_taxonomy_version(),
+                        "local_lineage": load_taxonomy_lineage(),
+                        "server_version": tax.version if tax else None,
+                        "server_lineage": tax.lineage if tax else None,
+                        "advisory": advisory,
+                    },
                 },
                 indent=2,
             )
@@ -3338,3 +3356,5 @@ def sync_status_cmd(ctx: click.Context, as_json: bool) -> None:
     note = _SYNC_RELATION_NOTES.get(outcome.relation, "")
     click.echo(f"State: {outcome.relation}" + (f" — {note}" if note else ""))
     _echo_ingest(outcome.ingest)
+    if advisory:
+        click.echo(f"⚠ {advisory}")
