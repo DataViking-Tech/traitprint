@@ -1,6 +1,10 @@
 # Versioned shared taxonomy artifact
 
-Status: **scaffolding shipped; content reconciliation GATED on a maintainer decision** (see [§6](#6-the-gated-decision)).
+Status: **canonical adoption shipped.** Local now bundles Cloud's full
+superset as the `canonical` lineage (v2), generated reproducibly by
+`scripts/build_canonical_taxonomy.py` from the vendored source dumps in
+`scripts/data/`. The maintainer decision in [§6](#6-the-decision-made) was
+"adopt full superset". Remaining follow-ups in [§7](#7-adoption-status).
 
 `traitprint` (this repo, MIT, local-first) is the canonical owner of the skill
 taxonomy. Cloud (`traitprint-cloud`) maintains its own taxonomy today; the goal
@@ -95,45 +99,41 @@ Reference data changes on the order of weeks, not per-request, so the model is
 The handshake is O(1) and cacheable; the artifact is a static asset fetched
 only on a bump — strictly cheaper than live lookups, and offline survives.
 
-## 6. The gated decision
+## 6. The decision (made)
 
-Unifying the **content** is product-shaping and is NOT done here. The open
-decision for a maintainer:
+The maintainer chose **adopt full superset**: Local ships Cloud's entire
+taxonomy as the `canonical` lineage. (UUID preservation was waived — there are
+no meaningful existing local-user vaults to keep back-compatible — so canonical
+ids are fresh deterministic `uuid5(name)`, stable across regenerations.)
 
-> **Does Local adopt Cloud's full ~618-skill superset, stay curated at ~26, or
-> take a middle tier?**
+Considered and not chosen: *stay curated* (Local as a named subset view) and
+*middle tier*. Trade-off accepted: the bundled package grew 26 → 1083 skills
+and the curated CLI character is replaced by full O*NET + tech coverage.
 
-Trade-offs:
-- **Adopt superset** — Local gains O*NET coverage (better agent skill search),
-  but the curated local-first CLI UX changes character and the bundled package
-  grows ~24×.
-- **Stay curated** — Local keeps its focused set; "shared artifact" then means
-  Local is a *named subset view* of the canonical lineage (same names/edges for
-  the skills it includes), which still kills drift on the overlap.
-- **Middle tier** — canonical lineage holds all 618; Local ships a curated
-  subset flagged from the canonical artifact.
+## 7. Adoption status
 
-Recommendation: **canonical lineage = Cloud's superset** (it's the production
-set real user data references), Local ships a **curated subset view** of it
-(preserving Local's existing 26 UUIDs for back-compat with local vaults, names
-reconciled, edges converted from Cloud's weighted DAG). This keeps Local
-curated while guaranteeing the overlap never drifts. But this is the
-maintainer's call — it changes the shipped package.
-
-## 7. Adoption plan
-
-1. **[shipped]** Versioned envelope + lineage on Local; `load_taxonomy_version()`.
+1. **[shipped]** Versioned envelope + lineage on Local; `load_taxonomy_version()`
+   / `load_taxonomy_lineage()`.
 2. **[shipped, Cloud]** `meta.taxonomy = { version, lineage }` in the hosted MCP
    handshake.
-3. **[gated — §6]** Build the canonical artifact generator: union Cloud's seed
-   with Local's set, reconcile the 2 naming mismatches, merge aliases, convert
-   edges, **preserve Local's existing UUIDs** for its 26 skills. Output the
-   canonical `taxonomy.json` (lineage `canonical`).
-4. **[gated]** Switch Cloud's seed and Local's bundle to generate from the
-   canonical artifact; flip both lineages to `canonical`. **Requires review of
-   the generated skill set** (matching-score and existing-data impact).
-5. **[follow-up]** Local opportunistic-refresh client + a drift-detection CI
-   check (fails if Local's subset names/edges diverge from canonical).
+3. **[shipped]** `scripts/build_canonical_taxonomy.py` generates the canonical
+   `taxonomy.json` (1083 skills, lineage `canonical`, v2) from the vendored
+   source dumps (`scripts/data/canonical-source-*.json`, pulled from the live
+   Cloud tables). Deterministic ids; neighbors derived from Cloud's weighted
+   relationships (distance = 1 − weight); Local's curated aliases unioned in so
+   adopting the superset doesn't lose synonyms (`py`, `python3`, …).
+4. **[shipped]** Local bundles canonical v2; Cloud's MCP handshake reports
+   lineage `canonical` v2. Both lineages now match.
 
-Until step 4, Local (`local-curated`) and Cloud (`cloud-onet`) version
-independently; the handshake exposes the mismatch honestly.
+### Remaining follow-ups (not blocking)
+
+- **Cloud sources from the artifact**: Cloud's `seed-skill-taxonomy.ts` is still
+  the hand-authored origin the artifact was derived *from*; ideally Cloud
+  regenerates its seed *from* the canonical artifact so traitprint is the true
+  single source. Until then a drift-detection check (regenerate from a fresh
+  Cloud dump, diff against the committed artifact) keeps them honest.
+- **Cloud alias backfill**: the canonical artifact carries Local's unioned
+  curated aliases for the overlap; Cloud's `skill_aliases` is sparser. Backfill
+  for full parity.
+- **Local opportunistic-refresh client**: poll the handshake on sync, fetch a
+  newer canonical artifact when behind.
