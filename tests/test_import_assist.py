@@ -698,7 +698,11 @@ class TestAgentAssistLoop:
         kube_entry = find_exact("Kubernetes")
         assert kube_entry is not None
         assert skills["Kubernetes"].taxonomy_id == kube_entry.id
-        assert skills["Terraform"].taxonomy_id is None  # unresolved, first-class
+        # Canonical taxonomy (item 4) now includes Terraform, so it resolves
+        # rather than landing as an unresolved first-class skill.
+        terraform_entry = find_exact("Terraform")
+        assert terraform_entry is not None
+        assert skills["Terraform"].taxonomy_id == terraform_entry.id
 
         assert len(vault.experiences) == 3
         assert vault.experiences[0].company == "Northwind Robotics"

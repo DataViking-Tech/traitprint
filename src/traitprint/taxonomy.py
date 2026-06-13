@@ -53,13 +53,12 @@ def build_neighbor_index(
 
 
 # Lineage identifies WHICH taxonomy this artifact is, independent of its
-# version number. Until the canonical shared artifact is adopted (see
-# docs/taxonomy-artifact.md), Local ships its own curated lineage while Cloud
-# ships "cloud-onet"; both happen to start at version 1 but are NOT the same
-# content. The handshake compares (lineage, version) so a client never
-# mistakes two different lineages that share a version number for being
-# aligned. Post-unification both lineages converge to "canonical".
-TAXONOMY_LINEAGE = "local-curated"
+# version number. The bundled artifact now ships the "canonical" lineage
+# (Cloud's full superset — see docs/taxonomy-artifact.md). The handshake
+# compares (lineage, version) so a client never mistakes two different
+# lineages that share a version number for being aligned. Legacy bare-array
+# files (no envelope) predate lineage and report this default.
+DEFAULT_LINEAGE = "local-curated"
 
 
 def _load_raw() -> Any:
@@ -81,6 +80,14 @@ def _version_from_raw(raw: Any) -> int:
     return int(raw["version"]) if isinstance(raw, dict) else 0
 
 
+def _lineage_from_raw(raw: Any) -> str:
+    # Lineage is the artifact's own field — the single source of truth, so the
+    # reported lineage can never drift from the bundled content.
+    if isinstance(raw, dict):
+        return str(raw.get("lineage", DEFAULT_LINEAGE))
+    return DEFAULT_LINEAGE
+
+
 def load_taxonomy() -> list[TaxonomyEntry]:
     """Load the embedded taxonomy packaged with traitprint."""
     return _entries_from_raw(_load_raw())
@@ -95,6 +102,11 @@ def load_taxonomy_version() -> int:
     bare-array files report ``0``.
     """
     return _version_from_raw(_load_raw())
+
+
+def load_taxonomy_lineage() -> str:
+    """Lineage of the embedded taxonomy artifact (read from the artifact)."""
+    return _lineage_from_raw(_load_raw())
 
 
 def search(

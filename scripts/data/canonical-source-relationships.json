@@ -1,0 +1,3854 @@
+[
+  {
+    "from_name": "A/B Testing",
+    "to_name": "Analytics",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Access Control",
+    "to_name": "Role-Based Access Control",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Account Management",
+    "to_name": "Technical Account Management",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Accounting",
+    "to_name": "Lease Accounting",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Accounting",
+    "to_name": "Technical Accounting",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Actix",
+    "to_name": "Rust",
+    "relationship": "prerequisite_for",
+    "weight": 0.9
+  },
+  {
+    "from_name": "Amazon Web Services",
+    "to_name": "AWS API Gateway",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Amazon Web Services",
+    "to_name": "AWS CDK",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Amazon Web Services",
+    "to_name": "AWS CloudFormation",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Amazon Web Services",
+    "to_name": "AWS CloudFront",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Amazon Web Services",
+    "to_name": "AWS CloudWatch",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Amazon Web Services",
+    "to_name": "AWS EC2",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Amazon Web Services",
+    "to_name": "AWS ECS",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Amazon Web Services",
+    "to_name": "AWS EKS",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Amazon Web Services",
+    "to_name": "AWS IAM",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Amazon Web Services",
+    "to_name": "AWS Kinesis",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Amazon Web Services",
+    "to_name": "AWS Lambda",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Amazon Web Services",
+    "to_name": "AWS RDS",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Amazon Web Services",
+    "to_name": "AWS S3",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Amazon Web Services",
+    "to_name": "AWS SNS",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Amazon Web Services",
+    "to_name": "AWS SQS",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Amazon Web Services",
+    "to_name": "AWS Step Functions",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Amazon Web Services",
+    "to_name": "Google Cloud Platform",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Amazon Web Services",
+    "to_name": "Microsoft Azure",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Amazon Web Services",
+    "to_name": "Redshift",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Analytics",
+    "to_name": "Adobe Analytics",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Analytics",
+    "to_name": "Analytics Engineering",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Android Development",
+    "to_name": "Kotlin",
+    "relationship": "prerequisite_for",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Angular",
+    "to_name": "TypeScript",
+    "relationship": "prerequisite_for",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Anthropic Claude API",
+    "to_name": "Large Language Models",
+    "relationship": "related_to",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Apache Flink",
+    "to_name": "Apache Kafka",
+    "relationship": "related_to",
+    "weight": 0.6
+  },
+  {
+    "from_name": "Apache Flink",
+    "to_name": "Apache Spark",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Apache Hive",
+    "to_name": "Hadoop",
+    "relationship": "prerequisite_for",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Apache Pulsar",
+    "to_name": "Apache Kafka",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Apache Spark",
+    "to_name": "Apache Kafka",
+    "relationship": "related_to",
+    "weight": 0.5
+  },
+  {
+    "from_name": "Architecture",
+    "to_name": "Component Architecture",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Architecture",
+    "to_name": "Computer Architecture",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Architecture",
+    "to_name": "Data Architecture",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Architecture",
+    "to_name": "Enterprise Architecture",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Architecture",
+    "to_name": "Information Architecture",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Architecture",
+    "to_name": "Security Architecture",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Architecture",
+    "to_name": "Service-Oriented Architecture",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Architecture",
+    "to_name": "Solution Architecture",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Architecture",
+    "to_name": "Systems Architecture",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "ArgoCD",
+    "to_name": "Helm",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "ArgoCD",
+    "to_name": "Kubernetes",
+    "relationship": "prerequisite_for",
+    "weight": 0.8
+  },
+  {
+    "from_name": "ASP.NET",
+    "to_name": "C#",
+    "relationship": "prerequisite_for",
+    "weight": 0.9
+  },
+  {
+    "from_name": "Astro",
+    "to_name": "JavaScript",
+    "relationship": "prerequisite_for",
+    "weight": 0.6
+  },
+  {
+    "from_name": "Auth0",
+    "to_name": "OAuth",
+    "relationship": "related_to",
+    "weight": 0.6
+  },
+  {
+    "from_name": "Auth0",
+    "to_name": "Okta",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "AWS EKS",
+    "to_name": "Azure Kubernetes Service",
+    "relationship": "related_to",
+    "weight": 0.8
+  },
+  {
+    "from_name": "AWS EKS",
+    "to_name": "Google Kubernetes Engine",
+    "relationship": "related_to",
+    "weight": 0.8
+  },
+  {
+    "from_name": "AWS Lambda",
+    "to_name": "Azure Functions",
+    "relationship": "related_to",
+    "weight": 0.8
+  },
+  {
+    "from_name": "AWS Lambda",
+    "to_name": "Google Cloud Functions",
+    "relationship": "related_to",
+    "weight": 0.8
+  },
+  {
+    "from_name": "AWS S3",
+    "to_name": "Azure Blob Storage",
+    "relationship": "related_to",
+    "weight": 0.8
+  },
+  {
+    "from_name": "AWS S3",
+    "to_name": "Google Cloud Storage",
+    "relationship": "related_to",
+    "weight": 0.8
+  },
+  {
+    "from_name": "AWS SQS",
+    "to_name": "Google Pub/Sub",
+    "relationship": "related_to",
+    "weight": 0.6
+  },
+  {
+    "from_name": "Azure Functions",
+    "to_name": "Google Cloud Functions",
+    "relationship": "related_to",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Azure Kubernetes Service",
+    "to_name": "Google Kubernetes Engine",
+    "relationship": "related_to",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Bootstrap",
+    "to_name": "Tailwind CSS",
+    "relationship": "related_to",
+    "weight": 0.5
+  },
+  {
+    "from_name": "Bun",
+    "to_name": "Node.js",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "C",
+    "to_name": "Account Management",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Account Research",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Account-Based Marketing",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Accounting",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Accounts Payable",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Accounts Receivable",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "AdTech",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Adversarial Machine Learning",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Advocacy",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Anomaly Detection",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Apache Iceberg",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Architecture",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "ASC 606",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Audio Processing",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Authentication",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Backend Development",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Business Acumen",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Business Intelligence",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "C++",
+    "relationship": "related_to",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Campaign Management",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Candidate Experience",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Canva",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Capacity Planning",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Causal Inference",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Change Management",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Channel Management",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Chaos Engineering",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Client Management",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Cloud Infrastructure",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Coachability",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Coalition Building",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Code Quality",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Cold Calling",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Collections",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Communications",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Community Building",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Compensation",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Competitive Analysis",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Compliance",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Concurrency",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Consultative Selling",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Consulting",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Container Orchestration",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Content Creation",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Content Moderation",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Context Engineering",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Continuous Learning",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Contract Negotiation",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Conversion Rate Optimization",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Cost Optimization",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Coupa",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Creative Direction",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Crisis Management",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "CRM",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Cross-Platform Development",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "CUDA",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Curation",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Curiosity",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Curriculum Design",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Customer Marketing",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Customer Success",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Customer Support",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Cybersecurity",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Data Governance",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Data Infrastructure",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Data Science",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Data Structures",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Data-Driven Decision Making",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Deal Structuring",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Decision Making",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Detection Engineering",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "DHCP",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Disaster Recovery",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Discovery",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Discretion",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Documentation",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Due Diligence",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Economics",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Electron",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Email Outreach",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Escalation Management",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Excel",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Execution",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Executive Presence",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Facilitation",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Feedback",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Financial Analysis",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Financial Modeling",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Financial Planning",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Financial Reporting",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Financial Services",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Forecasting",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Forensics",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Fraud Detection",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Full-Cycle Recruiting",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Full-Stack Development",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Goal Achievement",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Google Workspace",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "GPU/Accelerator Programming",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Healthcare",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Influencer Marketing",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Infrastructure",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Infrastructure as Code",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Infrastructure Engineering",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Intellectual Curiosity",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Intellectual Property",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Interaction Design",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Intercom",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "IT Risk Governance",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Job Architecture",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Lifecycle Marketing",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "macOS",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Market Research",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Mergers and Acquisitions",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Metrics Design",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Microsoft Excel",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Microsoft Office",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Mobile Device Management",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Motion Graphics",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Music Industry Knowledge",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Music Information Retrieval",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Offensive Security",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Open Source",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Operational Excellence",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Oracle",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Outreach",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Pattern Recognition",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Performance Management",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Policy Development",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Pricing Strategy",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Privacy",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Probabilistic Modeling",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Process Improvement",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Procurement",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Product Demonstrations",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Product Design",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Product Development",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Product Knowledge",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Product Marketing",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Product Operations",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Product Sense",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Product Strategy",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Product-Led Growth",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Production Ownership",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Prospecting",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Public Policy",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Qualification",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Recommendation Systems",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Reconciliation",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Recruitment",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Regulatory Compliance",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Research",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Resourcefulness",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Revenue Recognition",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Robotics",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Root Cause Analysis",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Salesforce",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Scalability",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Scheduling",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Scope Management",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Scripting",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Secure Coding",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Secure Design",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Security",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Security Engineering",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Security Operations",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Signal Processing",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Social Media Marketing",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Social Selling",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Solutions Architecture",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Sourcing",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Statistical Analysis",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Strategic Planning",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Strategic Sourcing",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Supply Chain Management",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Systems Security",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Technical Communication",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Technical Presentations",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Technical Program Management",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Technical Sales",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Technical Support",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Threat Intelligence",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Time Series Forecasting",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Transparency",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Variance Analysis",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Venture Capital",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Video Production",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Vulnerability Research",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "WebRTC",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "C",
+    "to_name": "Workforce Planning",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Capacitor",
+    "to_name": "JavaScript",
+    "relationship": "prerequisite_for",
+    "weight": 0.6
+  },
+  {
+    "from_name": "Celery",
+    "to_name": "Python",
+    "relationship": "prerequisite_for",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Celery",
+    "to_name": "RabbitMQ",
+    "relationship": "related_to",
+    "weight": 0.6
+  },
+  {
+    "from_name": "Chakra UI",
+    "to_name": "React",
+    "relationship": "prerequisite_for",
+    "weight": 0.8
+  },
+  {
+    "from_name": "CircleCI",
+    "to_name": "GitHub Actions",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "CircleCI",
+    "to_name": "Jenkins",
+    "relationship": "related_to",
+    "weight": 0.6
+  },
+  {
+    "from_name": "Cloud Architecture",
+    "to_name": "Multi-cloud Architecture",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Cloud Security",
+    "to_name": "Cloud Architecture",
+    "relationship": "prerequisite_for",
+    "weight": 0.6
+  },
+  {
+    "from_name": "Communication",
+    "to_name": "Presentation Skills",
+    "relationship": "related_to",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Communications",
+    "to_name": "Executive Communications",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Compliance",
+    "to_name": "PCI DSS Compliance",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Compliance",
+    "to_name": "SOX 2 Compliance",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Computer Vision",
+    "to_name": "Deep Learning",
+    "relationship": "prerequisite_for",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Consulting",
+    "to_name": "Technical Consulting",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Content Creation",
+    "to_name": "Technical Content Creation",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Coordination",
+    "to_name": "Interview Coordination",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Curation",
+    "to_name": "Data Curation",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Cypress",
+    "to_name": "Playwright",
+    "relationship": "related_to",
+    "weight": 0.8
+  },
+  {
+    "from_name": "D3.js",
+    "to_name": "JavaScript",
+    "relationship": "prerequisite_for",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Datadog",
+    "to_name": "New Relic",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "dbt",
+    "to_name": "Redshift",
+    "relationship": "related_to",
+    "weight": 0.6
+  },
+  {
+    "from_name": "dbt",
+    "to_name": "Snowflake",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Deep Learning",
+    "to_name": "Machine Learning",
+    "relationship": "prerequisite_for",
+    "weight": 0.9
+  },
+  {
+    "from_name": "Deno",
+    "to_name": "Bun",
+    "relationship": "related_to",
+    "weight": 0.6
+  },
+  {
+    "from_name": "Deno",
+    "to_name": "Node.js",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "DevOps",
+    "to_name": "CI/CD",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "DevOps",
+    "to_name": "Docker",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "DevOps",
+    "to_name": "Kubernetes",
+    "relationship": "related_to",
+    "weight": 0.6
+  },
+  {
+    "from_name": "DevSecOps",
+    "to_name": "DevOps",
+    "relationship": "prerequisite_for",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Django",
+    "to_name": "FastAPI",
+    "relationship": "related_to",
+    "weight": 0.6
+  },
+  {
+    "from_name": "Django",
+    "to_name": "Flask",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Django",
+    "to_name": "Python",
+    "relationship": "prerequisite_for",
+    "weight": 0.9
+  },
+  {
+    "from_name": "Docker",
+    "to_name": "Kubernetes",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Docker Compose",
+    "to_name": "Docker",
+    "relationship": "prerequisite_for",
+    "weight": 0.9
+  },
+  {
+    "from_name": "Documentation",
+    "to_name": "Technical Documentation",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Drizzle",
+    "to_name": "TypeScript",
+    "relationship": "prerequisite_for",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Economics",
+    "to_name": "Labor Economics",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Empathy",
+    "to_name": "User Empathy",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Engagement",
+    "to_name": "Executive Engagement",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "ESLint",
+    "to_name": "Biome",
+    "relationship": "related_to",
+    "weight": 0.6
+  },
+  {
+    "from_name": "Execution",
+    "to_name": "Autonomous Execution",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Expo",
+    "to_name": "React Native",
+    "relationship": "prerequisite_for",
+    "weight": 0.9
+  },
+  {
+    "from_name": "Express.js",
+    "to_name": "Node.js",
+    "relationship": "prerequisite_for",
+    "weight": 0.9
+  },
+  {
+    "from_name": "FastAPI",
+    "to_name": "Python",
+    "relationship": "prerequisite_for",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Feature Engineering",
+    "to_name": "Machine Learning",
+    "relationship": "prerequisite_for",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Feedback",
+    "to_name": "Product Feedback",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Fiber",
+    "to_name": "Go",
+    "relationship": "prerequisite_for",
+    "weight": 0.9
+  },
+  {
+    "from_name": "Figma",
+    "to_name": "Adobe XD",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Figma",
+    "to_name": "Sketch",
+    "relationship": "related_to",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Fivetran",
+    "to_name": "dbt",
+    "relationship": "related_to",
+    "weight": 0.6
+  },
+  {
+    "from_name": "Flask",
+    "to_name": "FastAPI",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Flask",
+    "to_name": "Python",
+    "relationship": "prerequisite_for",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Flutter",
+    "to_name": "Dart",
+    "relationship": "prerequisite_for",
+    "weight": 0.9
+  },
+  {
+    "from_name": "Framer Motion",
+    "to_name": "React",
+    "relationship": "prerequisite_for",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Gatsby",
+    "to_name": "React",
+    "relationship": "prerequisite_for",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Generative AI",
+    "to_name": "Deep Learning",
+    "relationship": "prerequisite_for",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Gin",
+    "to_name": "Engineering Management",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Gin",
+    "to_name": "Fiber",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Gin",
+    "to_name": "Go",
+    "relationship": "prerequisite_for",
+    "weight": 0.9
+  },
+  {
+    "from_name": "Gin",
+    "to_name": "Messaging",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Gin",
+    "to_name": "Platform Engineering",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Gin",
+    "to_name": "Sales Engineering",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Gin",
+    "to_name": "Software Engineering",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Gin",
+    "to_name": "Systems Engineering",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "GitHub Actions",
+    "to_name": "GitLab CI",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "GitHub Actions",
+    "to_name": "Jenkins",
+    "relationship": "related_to",
+    "weight": 0.6
+  },
+  {
+    "from_name": "Go",
+    "to_name": "Algorithms",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Go",
+    "to_name": "Go-to-Market Strategy",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Go",
+    "to_name": "Gong",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Go",
+    "to_name": "Google Sheets",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Go",
+    "to_name": "Google Slides",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Go",
+    "to_name": "Government Relations",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Go",
+    "to_name": "Rust",
+    "relationship": "related_to",
+    "weight": 0.5
+  },
+  {
+    "from_name": "Google Analytics",
+    "to_name": "Segment",
+    "relationship": "related_to",
+    "weight": 0.5
+  },
+  {
+    "from_name": "Google BigQuery",
+    "to_name": "Snowflake",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Google Cloud Platform",
+    "to_name": "Google BigQuery",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Google Cloud Platform",
+    "to_name": "Google Cloud Functions",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Google Cloud Platform",
+    "to_name": "Google Cloud Run",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Google Cloud Platform",
+    "to_name": "Google Cloud Storage",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Google Cloud Platform",
+    "to_name": "Google Kubernetes Engine",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Google Cloud Platform",
+    "to_name": "Google Pub/Sub",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Google Cloud Platform",
+    "to_name": "Google Vertex AI",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Google Cloud Platform",
+    "to_name": "Microsoft Azure",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Google Vertex AI",
+    "to_name": "Machine Learning",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Groovy",
+    "to_name": "Jenkins",
+    "relationship": "related_to",
+    "weight": 0.6
+  },
+  {
+    "from_name": "Helm",
+    "to_name": "Kubernetes",
+    "relationship": "prerequisite_for",
+    "weight": 0.9
+  },
+  {
+    "from_name": "Hono",
+    "to_name": "TypeScript",
+    "relationship": "prerequisite_for",
+    "weight": 0.6
+  },
+  {
+    "from_name": "Hugging Face",
+    "to_name": "Deep Learning",
+    "relationship": "prerequisite_for",
+    "weight": 0.7
+  },
+  {
+    "from_name": "InfluxDB",
+    "to_name": "Prometheus",
+    "relationship": "related_to",
+    "weight": 0.5
+  },
+  {
+    "from_name": "Infrastructure",
+    "to_name": "Infrastructure Security",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Integration Testing",
+    "to_name": "End-to-End Testing",
+    "relationship": "related_to",
+    "weight": 0.6
+  },
+  {
+    "from_name": "Integrity",
+    "to_name": "Data Integrity",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "iOS Development",
+    "to_name": "Swift",
+    "relationship": "prerequisite_for",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Istio",
+    "to_name": "Kubernetes",
+    "relationship": "prerequisite_for",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Java",
+    "to_name": "Kotlin",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Java",
+    "to_name": "Scala",
+    "relationship": "related_to",
+    "weight": 0.6
+  },
+  {
+    "from_name": "Jest",
+    "to_name": "Mocha",
+    "relationship": "related_to",
+    "weight": 0.6
+  },
+  {
+    "from_name": "Jest",
+    "to_name": "Vitest",
+    "relationship": "related_to",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Jira",
+    "to_name": "Linear",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Julia",
+    "to_name": "MATLAB",
+    "relationship": "related_to",
+    "weight": 0.6
+  },
+  {
+    "from_name": "Julia",
+    "to_name": "Python",
+    "relationship": "related_to",
+    "weight": 0.5
+  },
+  {
+    "from_name": "JUnit",
+    "to_name": "Java",
+    "relationship": "prerequisite_for",
+    "weight": 0.9
+  },
+  {
+    "from_name": "Kubernetes",
+    "to_name": "Docker",
+    "relationship": "prerequisite_for",
+    "weight": 0.8
+  },
+  {
+    "from_name": "LangChain",
+    "to_name": "Large Language Models",
+    "relationship": "prerequisite_for",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Laravel",
+    "to_name": "PHP",
+    "relationship": "prerequisite_for",
+    "weight": 0.9
+  },
+  {
+    "from_name": "Large Language Models",
+    "to_name": "Deep Learning",
+    "relationship": "prerequisite_for",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Large Language Models",
+    "to_name": "Natural Language Processing",
+    "relationship": "prerequisite_for",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Leadership",
+    "to_name": "Influence",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Leadership",
+    "to_name": "Sales Leadership",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Leadership",
+    "to_name": "Strategic Thinking",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Leadership",
+    "to_name": "Thought Leadership",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Looker",
+    "to_name": "Power BI",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Looker",
+    "to_name": "Tableau",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Machine Learning",
+    "to_name": "Mathematics",
+    "relationship": "prerequisite_for",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Machine Learning",
+    "to_name": "Python",
+    "relationship": "prerequisite_for",
+    "weight": 0.6
+  },
+  {
+    "from_name": "MariaDB",
+    "to_name": "MySQL",
+    "relationship": "related_to",
+    "weight": 0.9
+  },
+  {
+    "from_name": "Marketing",
+    "to_name": "B2B Marketing",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Marketing",
+    "to_name": "Content Marketing",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Marketing",
+    "to_name": "Digital Marketing",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Marketing",
+    "to_name": "Email Marketing",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Marketing",
+    "to_name": "Marketing Operations",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Marketing",
+    "to_name": "Performance Marketing",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Marketing",
+    "to_name": "Segment Marketing",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Marketing",
+    "to_name": "Technical Marketing",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Material UI",
+    "to_name": "Chakra UI",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Material UI",
+    "to_name": "React",
+    "relationship": "prerequisite_for",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Matplotlib",
+    "to_name": "Python",
+    "relationship": "prerequisite_for",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Matplotlib",
+    "to_name": "Seaborn",
+    "relationship": "related_to",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Memcached",
+    "to_name": "Redis",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Microsoft Azure",
+    "to_name": "Azure Active Directory",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Microsoft Azure",
+    "to_name": "Azure Blob Storage",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Microsoft Azure",
+    "to_name": "Azure Cosmos DB",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Microsoft Azure",
+    "to_name": "Azure Data Factory",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Microsoft Azure",
+    "to_name": "Azure DevOps",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Microsoft Azure",
+    "to_name": "Azure Functions",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Microsoft Azure",
+    "to_name": "Azure Kubernetes Service",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "MLflow",
+    "to_name": "Machine Learning",
+    "relationship": "prerequisite_for",
+    "weight": 0.7
+  },
+  {
+    "from_name": "MLflow",
+    "to_name": "Weights & Biases",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "MLOps",
+    "to_name": "Machine Learning",
+    "relationship": "prerequisite_for",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Mocha",
+    "to_name": "JavaScript",
+    "relationship": "prerequisite_for",
+    "weight": 0.8
+  },
+  {
+    "from_name": "MongoDB",
+    "to_name": "DynamoDB",
+    "relationship": "related_to",
+    "weight": 0.5
+  },
+  {
+    "from_name": "Mongoose",
+    "to_name": "MongoDB",
+    "relationship": "prerequisite_for",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Mongoose",
+    "to_name": "Node.js",
+    "relationship": "prerequisite_for",
+    "weight": 0.7
+  },
+  {
+    "from_name": "NATS",
+    "to_name": "RabbitMQ",
+    "relationship": "related_to",
+    "weight": 0.6
+  },
+  {
+    "from_name": "Natural Language Processing",
+    "to_name": "Machine Learning",
+    "relationship": "prerequisite_for",
+    "weight": 0.7
+  },
+  {
+    "from_name": "NestJS",
+    "to_name": "Node.js",
+    "relationship": "prerequisite_for",
+    "weight": 0.8
+  },
+  {
+    "from_name": "NestJS",
+    "to_name": "TypeScript",
+    "relationship": "prerequisite_for",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Next.js",
+    "to_name": "React",
+    "relationship": "prerequisite_for",
+    "weight": 0.9
+  },
+  {
+    "from_name": "Node.js",
+    "to_name": "JavaScript",
+    "relationship": "prerequisite_for",
+    "weight": 0.9
+  },
+  {
+    "from_name": "Nomad",
+    "to_name": "Kubernetes",
+    "relationship": "related_to",
+    "weight": 0.5
+  },
+  {
+    "from_name": "NumPy",
+    "to_name": "Pandas",
+    "relationship": "related_to",
+    "weight": 0.8
+  },
+  {
+    "from_name": "NumPy",
+    "to_name": "Python",
+    "relationship": "prerequisite_for",
+    "weight": 0.9
+  },
+  {
+    "from_name": "Nuxt.js",
+    "to_name": "Vue.js",
+    "relationship": "prerequisite_for",
+    "weight": 0.9
+  },
+  {
+    "from_name": "Objective-C",
+    "to_name": "Swift",
+    "relationship": "related_to",
+    "weight": 0.6
+  },
+  {
+    "from_name": "OpenAI API",
+    "to_name": "Anthropic Claude API",
+    "relationship": "related_to",
+    "weight": 0.8
+  },
+  {
+    "from_name": "OpenAI API",
+    "to_name": "Large Language Models",
+    "relationship": "related_to",
+    "weight": 0.8
+  },
+  {
+    "from_name": "OpenTelemetry",
+    "to_name": "Jaeger",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Optimization",
+    "to_name": "Inference Optimization",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Optimization",
+    "to_name": "Workload Optimization",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Organization",
+    "to_name": "Organizational Development",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Organization",
+    "to_name": "Organizational Skills",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Pandas",
+    "to_name": "Python",
+    "relationship": "prerequisite_for",
+    "weight": 0.9
+  },
+  {
+    "from_name": "Pandas",
+    "to_name": "Scikit-learn",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Plotly",
+    "to_name": "Python",
+    "relationship": "prerequisite_for",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Podman",
+    "to_name": "Docker",
+    "relationship": "related_to",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Positioning",
+    "to_name": "Product Positioning",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "PostgreSQL",
+    "to_name": "MySQL",
+    "relationship": "related_to",
+    "weight": 0.8
+  },
+  {
+    "from_name": "PostgreSQL",
+    "to_name": "SQLite",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Power BI",
+    "to_name": "Tableau",
+    "relationship": "related_to",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Presto",
+    "to_name": "Apache Hive",
+    "relationship": "related_to",
+    "weight": 0.6
+  },
+  {
+    "from_name": "Prettier",
+    "to_name": "Biome",
+    "relationship": "related_to",
+    "weight": 0.6
+  },
+  {
+    "from_name": "Prisma",
+    "to_name": "Drizzle",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Prisma",
+    "to_name": "Sequelize",
+    "relationship": "related_to",
+    "weight": 0.6
+  },
+  {
+    "from_name": "Prisma",
+    "to_name": "TypeORM",
+    "relationship": "related_to",
+    "weight": 0.6
+  },
+  {
+    "from_name": "Prisma",
+    "to_name": "TypeScript",
+    "relationship": "prerequisite_for",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Privacy",
+    "to_name": "Differential Privacy",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Problem Solving",
+    "to_name": "Analytical Thinking",
+    "relationship": "related_to",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Problem Solving",
+    "to_name": "Critical Thinking",
+    "relationship": "related_to",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Procurement",
+    "to_name": "Energy Procurement",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Programming",
+    "to_name": "Asynchronous Programming",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Programming",
+    "to_name": "C",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Programming",
+    "to_name": "C#",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Programming",
+    "to_name": "C++",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Programming",
+    "to_name": "Clojure",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Programming",
+    "to_name": "F#",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Programming",
+    "to_name": "Go",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Programming",
+    "to_name": "Groovy",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Programming",
+    "to_name": "Haskell",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Programming",
+    "to_name": "Java",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Programming",
+    "to_name": "JavaScript",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Programming",
+    "to_name": "Julia",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Programming",
+    "to_name": "Kotlin",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Programming",
+    "to_name": "Objective-C",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Programming",
+    "to_name": "Pair Programming",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Programming",
+    "to_name": "Perl",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Programming",
+    "to_name": "PHP",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Programming",
+    "to_name": "Python",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Programming",
+    "to_name": "Ruby",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Programming",
+    "to_name": "Rust",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Programming",
+    "to_name": "Shell Scripting",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Programming",
+    "to_name": "SQL",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Programming",
+    "to_name": "Swift",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Programming",
+    "to_name": "Systems Programming",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Programming",
+    "to_name": "TypeScript",
+    "relationship": "parent_of",
+    "weight": 1
+  },
+  {
+    "from_name": "Prometheus",
+    "to_name": "Grafana",
+    "relationship": "related_to",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Prometheus",
+    "to_name": "New Relic",
+    "relationship": "related_to",
+    "weight": 0.5
+  },
+  {
+    "from_name": "Prompt Engineering",
+    "to_name": "Large Language Models",
+    "relationship": "prerequisite_for",
+    "weight": 0.9
+  },
+  {
+    "from_name": "Prototyping",
+    "to_name": "Rapid Prototyping",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Pulumi",
+    "to_name": "AWS CDK",
+    "relationship": "related_to",
+    "weight": 0.6
+  },
+  {
+    "from_name": "pytest",
+    "to_name": "Python",
+    "relationship": "prerequisite_for",
+    "weight": 0.9
+  },
+  {
+    "from_name": "PyTorch",
+    "to_name": "Hugging Face",
+    "relationship": "related_to",
+    "weight": 0.6
+  },
+  {
+    "from_name": "R",
+    "to_name": "Adobe Target",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Airtable",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Anti-Money Laundering",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Attribution",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Auditoria",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Authorization",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Billing Operations",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Brand Management",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Brex",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Builder mentality",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Burp Suite",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Business Operations",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Data Integration",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Data Loss Prevention",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Data Migration",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Data Warehousing",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Demand Generation",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Developer Relations",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Diversity",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Employee Relations",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Employer Branding",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Enterprise Sales",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Entrepreneurship",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Equity Administration",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Event Marketing",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Experimental Design",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Experimentation Design",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Field Marketing",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Frontend Development",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Graph Neural Networks",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Greenhouse",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Growth Marketing",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Hiring",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "IFRS",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Information Retrieval",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Internal Audit",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "IT Operations",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Kernel Development",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Knowledge Sharing",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Lead Generation",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Legal Operations",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Legal Writing",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "LinkedIn Sales Navigator",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Malware Analysis",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Marketing",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Marketo",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Measurement",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Media Relations",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Model Training",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Networking",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Onboarding",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Operations Management",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Organization",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Partner Management",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Partner Marketing",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Partnership Management",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Payroll",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Personalization",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "PowerPoint",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "PowerShell",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Pragmatism",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Private Equity",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Program Management",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Prototyping",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Query Optimization",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Ranking Systems",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Ray",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Real-time Systems",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Red Teaming",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Relationship Building",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Reliability",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Retention",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Retool",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Revenue Operations",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Risk Management",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Roadmap Planning",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Sales Operations",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Sales Strategy",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Server-Side Rendering",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Storytelling",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Talent Strategy",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Territory Management",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Threat Hunting",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Total Rewards",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Training and Development",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Trend Analysis",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Triage",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Triton",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Trust and Safety",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Typography",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Vendor Management",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Vulnerability Management",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Workato",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Workday",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Workflow Optimization",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Workiva",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Zapier",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "R",
+    "to_name": "Zuora",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "React",
+    "to_name": "Angular",
+    "relationship": "related_to",
+    "weight": 0.6
+  },
+  {
+    "from_name": "React",
+    "to_name": "HTML",
+    "relationship": "prerequisite_for",
+    "weight": 0.7
+  },
+  {
+    "from_name": "React",
+    "to_name": "JavaScript",
+    "relationship": "prerequisite_for",
+    "weight": 0.8
+  },
+  {
+    "from_name": "React",
+    "to_name": "Svelte",
+    "relationship": "related_to",
+    "weight": 0.6
+  },
+  {
+    "from_name": "React",
+    "to_name": "Vue.js",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "React Native",
+    "to_name": "React",
+    "relationship": "prerequisite_for",
+    "weight": 0.8
+  },
+  {
+    "from_name": "React Query",
+    "to_name": "React",
+    "relationship": "prerequisite_for",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Reconciliation",
+    "to_name": "Account Reconciliation",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Redshift",
+    "to_name": "Google BigQuery",
+    "relationship": "related_to",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Redshift",
+    "to_name": "Snowflake",
+    "relationship": "related_to",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Redux",
+    "to_name": "React",
+    "relationship": "prerequisite_for",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Redux",
+    "to_name": "Zustand",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Reliability",
+    "to_name": "Reliability Engineering",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Remix",
+    "to_name": "React",
+    "relationship": "prerequisite_for",
+    "weight": 0.9
+  },
+  {
+    "from_name": "Research",
+    "to_name": "Scientific Research",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "REST API Design",
+    "to_name": "GraphQL",
+    "relationship": "related_to",
+    "weight": 0.6
+  },
+  {
+    "from_name": "Retrieval-Augmented Generation",
+    "to_name": "Large Language Models",
+    "relationship": "prerequisite_for",
+    "weight": 0.9
+  },
+  {
+    "from_name": "Risk Management",
+    "to_name": "Financial Risk Management",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Ruby on Rails",
+    "to_name": "Ruby",
+    "relationship": "prerequisite_for",
+    "weight": 0.9
+  },
+  {
+    "from_name": "Safety",
+    "to_name": "Child Safety",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Sales",
+    "to_name": "Sales Development",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Sales",
+    "to_name": "Sales Enablement",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Sales",
+    "to_name": "Sales Management",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Sales",
+    "to_name": "Sales Support",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Sales",
+    "to_name": "Salesloft",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "SASS/SCSS",
+    "to_name": "CSS",
+    "relationship": "prerequisite_for",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Scikit-learn",
+    "to_name": "NumPy",
+    "relationship": "prerequisite_for",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Scikit-learn",
+    "to_name": "Python",
+    "relationship": "prerequisite_for",
+    "weight": 0.9
+  },
+  {
+    "from_name": "Seaborn",
+    "to_name": "Python",
+    "relationship": "prerequisite_for",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Security",
+    "to_name": "Data Security",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Security",
+    "to_name": "Endpoint Security",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Security",
+    "to_name": "Enterprise Security",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Security",
+    "to_name": "Hardware Security",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Security",
+    "to_name": "National Security",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Security",
+    "to_name": "Physical Security",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Security",
+    "to_name": "Supply Chain Security",
+    "relationship": "parent_of",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Selenium",
+    "to_name": "Cypress",
+    "relationship": "related_to",
+    "weight": 0.6
+  },
+  {
+    "from_name": "Selenium",
+    "to_name": "Playwright",
+    "relationship": "related_to",
+    "weight": 0.6
+  },
+  {
+    "from_name": "Sentry",
+    "to_name": "Datadog",
+    "relationship": "related_to",
+    "weight": 0.4
+  },
+  {
+    "from_name": "SEO",
+    "to_name": "Web Performance",
+    "relationship": "related_to",
+    "weight": 0.5
+  },
+  {
+    "from_name": "Sequelize",
+    "to_name": "Node.js",
+    "relationship": "prerequisite_for",
+    "weight": 0.7
+  },
+  {
+    "from_name": "shadcn/ui",
+    "to_name": "React",
+    "relationship": "prerequisite_for",
+    "weight": 0.8
+  },
+  {
+    "from_name": "shadcn/ui",
+    "to_name": "Tailwind CSS",
+    "relationship": "prerequisite_for",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Site Reliability Engineering",
+    "to_name": "DevOps",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Site Reliability Engineering",
+    "to_name": "Incident Response",
+    "relationship": "related_to",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Site Reliability Engineering",
+    "to_name": "Observability",
+    "relationship": "related_to",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Sketch",
+    "to_name": "Adobe XD",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Smart Contracts",
+    "to_name": "Blockchain",
+    "relationship": "prerequisite_for",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Snowflake",
+    "to_name": "Databricks",
+    "relationship": "related_to",
+    "weight": 0.6
+  },
+  {
+    "from_name": "Solidity",
+    "to_name": "Blockchain",
+    "relationship": "prerequisite_for",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Solidity",
+    "to_name": "Smart Contracts",
+    "relationship": "related_to",
+    "weight": 0.9
+  },
+  {
+    "from_name": "SolidJS",
+    "to_name": "React",
+    "relationship": "related_to",
+    "weight": 0.6
+  },
+  {
+    "from_name": "Splunk",
+    "to_name": "Datadog",
+    "relationship": "related_to",
+    "weight": 0.5
+  },
+  {
+    "from_name": "Spring Boot",
+    "to_name": "Java",
+    "relationship": "prerequisite_for",
+    "weight": 0.9
+  },
+  {
+    "from_name": "SQLAlchemy",
+    "to_name": "Python",
+    "relationship": "prerequisite_for",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Supabase",
+    "to_name": "Firebase",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Svelte",
+    "to_name": "JavaScript",
+    "relationship": "prerequisite_for",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Tailwind CSS",
+    "to_name": "CSS",
+    "relationship": "prerequisite_for",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Teamwork",
+    "to_name": "Conflict Resolution",
+    "relationship": "related_to",
+    "weight": 0.6
+  },
+  {
+    "from_name": "TensorFlow",
+    "to_name": "Hugging Face",
+    "relationship": "related_to",
+    "weight": 0.5
+  },
+  {
+    "from_name": "TensorFlow",
+    "to_name": "PyTorch",
+    "relationship": "related_to",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Terraform",
+    "to_name": "Ansible",
+    "relationship": "related_to",
+    "weight": 0.5
+  },
+  {
+    "from_name": "Terraform",
+    "to_name": "AWS CloudFormation",
+    "relationship": "related_to",
+    "weight": 0.6
+  },
+  {
+    "from_name": "Terraform",
+    "to_name": "Pulumi",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Testing Library",
+    "to_name": "React",
+    "relationship": "prerequisite_for",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Three.js",
+    "to_name": "JavaScript",
+    "relationship": "prerequisite_for",
+    "weight": 0.7
+  },
+  {
+    "from_name": "tRPC",
+    "to_name": "TypeScript",
+    "relationship": "prerequisite_for",
+    "weight": 0.9
+  },
+  {
+    "from_name": "Turborepo",
+    "to_name": "Nx",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "TypeORM",
+    "to_name": "TypeScript",
+    "relationship": "prerequisite_for",
+    "weight": 0.7
+  },
+  {
+    "from_name": "TypeScript",
+    "to_name": "JavaScript",
+    "relationship": "prerequisite_for",
+    "weight": 0.9
+  },
+  {
+    "from_name": "Unit Testing",
+    "to_name": "Integration Testing",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Unity",
+    "to_name": "C#",
+    "relationship": "prerequisite_for",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Unity",
+    "to_name": "Unreal Engine",
+    "relationship": "related_to",
+    "weight": 0.6
+  },
+  {
+    "from_name": "Unreal Engine",
+    "to_name": "C++",
+    "relationship": "prerequisite_for",
+    "weight": 0.7
+  },
+  {
+    "from_name": "User Research",
+    "to_name": "UX Design",
+    "relationship": "related_to",
+    "weight": 0.8
+  },
+  {
+    "from_name": "UX Design",
+    "to_name": "UI Design",
+    "relationship": "related_to",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Vercel",
+    "to_name": "Cloudflare",
+    "relationship": "related_to",
+    "weight": 0.5
+  },
+  {
+    "from_name": "Vue.js",
+    "to_name": "Angular",
+    "relationship": "related_to",
+    "weight": 0.5
+  },
+  {
+    "from_name": "Vue.js",
+    "to_name": "JavaScript",
+    "relationship": "prerequisite_for",
+    "weight": 0.8
+  },
+  {
+    "from_name": "Webpack",
+    "to_name": "Vite",
+    "relationship": "related_to",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Weights & Biases",
+    "to_name": "Machine Learning",
+    "relationship": "prerequisite_for",
+    "weight": 0.7
+  },
+  {
+    "from_name": "Zustand",
+    "to_name": "React",
+    "relationship": "prerequisite_for",
+    "weight": 0.7
+  }
+]

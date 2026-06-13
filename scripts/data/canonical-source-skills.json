@@ -1,0 +1,8084 @@
+[
+  {
+    "name": "A/B Testing",
+    "category": "domain",
+    "subcategory": "Product",
+    "onet_element_id": "T-ABTESTING",
+    "aliases": [
+      "Experimentation",
+      "Split Testing"
+    ]
+  },
+  {
+    "name": "Abuse Detection",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Academic Writing",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Access Control",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Accessibility",
+    "category": "domain",
+    "subcategory": "Design",
+    "onet_element_id": "T-A11Y",
+    "aliases": [
+      "a11y",
+      "ADA Compliance",
+      "WCAG"
+    ]
+  },
+  {
+    "name": "Account Management",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Account Planning",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Account Reconciliation",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Account Research",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Account-Based Marketing",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Accountability",
+    "category": "soft",
+    "subcategory": "Personal",
+    "onet_element_id": "T-ACCOUNTABILITY",
+    "aliases": [
+      "Ownership"
+    ]
+  },
+  {
+    "name": "Accounting",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Accounts Payable",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Accounts Receivable",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Active Learning",
+    "category": "soft",
+    "subcategory": "Process",
+    "onet_element_id": "2.A.2.b",
+    "aliases": []
+  },
+  {
+    "name": "Active Listening",
+    "category": "soft",
+    "subcategory": "Content",
+    "onet_element_id": "2.A.1.b",
+    "aliases": []
+  },
+  {
+    "name": "Actix",
+    "category": "tool",
+    "subcategory": "Backend Frameworks",
+    "onet_element_id": "T-ACTIX",
+    "aliases": [
+      "Actix Web"
+    ]
+  },
+  {
+    "name": "Adaptability",
+    "category": "soft",
+    "subcategory": "Personal",
+    "onet_element_id": "T-ADAPTABILITY",
+    "aliases": [
+      "Flexibility"
+    ]
+  },
+  {
+    "name": "Adobe Analytics",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Adobe Creative Suite",
+    "category": "tool",
+    "subcategory": "Design",
+    "onet_element_id": "T-ADOBECS",
+    "aliases": [
+      "Adobe CC",
+      "Illustrator",
+      "Photoshop"
+    ]
+  },
+  {
+    "name": "Adobe Target",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Adobe XD",
+    "category": "tool",
+    "subcategory": "Design",
+    "onet_element_id": "T-ADOBEXD",
+    "aliases": []
+  },
+  {
+    "name": "Adoption",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "AdTech",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Adversarial Machine Learning",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Adversarial Thinking",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Advocacy",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Agent Development",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Agile Methodology",
+    "category": "domain",
+    "subcategory": "Project Management",
+    "onet_element_id": "T-AGILE",
+    "aliases": [
+      "Agile",
+      "Kanban",
+      "Scrum"
+    ]
+  },
+  {
+    "name": "AI Ethics",
+    "category": "domain",
+    "subcategory": "AI/ML",
+    "onet_element_id": "T-AIETHICS",
+    "aliases": [
+      "AI Safety",
+      "Responsible AI"
+    ]
+  },
+  {
+    "name": "Airflow",
+    "category": "tool",
+    "subcategory": "Data Science",
+    "onet_element_id": "T-AIRFLOW",
+    "aliases": [
+      "Apache Airflow"
+    ]
+  },
+  {
+    "name": "Airtable",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Alerting",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Alertmanager",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Algorithms",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Alteryx",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Amazon Web Services",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-AWS",
+    "aliases": [
+      "AWS"
+    ]
+  },
+  {
+    "name": "Ambiguity Navigation",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "American Politics",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Analyst Relations",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Analytical Thinking",
+    "category": "soft",
+    "subcategory": "Problem Solving",
+    "onet_element_id": "T-ANALYTICAL",
+    "aliases": [
+      "Analytical Skills"
+    ]
+  },
+  {
+    "name": "Analytics",
+    "category": "domain",
+    "subcategory": "Product",
+    "onet_element_id": "T-ANALYTICS",
+    "aliases": [
+      "Product Analytics",
+      "Web Analytics"
+    ]
+  },
+  {
+    "name": "Analytics Engineering",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Anaplan",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Android Development",
+    "category": "technical",
+    "subcategory": "Mobile Development",
+    "onet_element_id": "T-ANDROID",
+    "aliases": [
+      "Android",
+      "Jetpack Compose"
+    ]
+  },
+  {
+    "name": "Android SDK",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Angular",
+    "category": "technical",
+    "subcategory": "Frontend Frameworks",
+    "onet_element_id": "T-ANGULAR",
+    "aliases": [
+      "Angular 2+",
+      "AngularJS"
+    ]
+  },
+  {
+    "name": "Animation",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Anomaly Detection",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Ansible",
+    "category": "tool",
+    "subcategory": "DevOps",
+    "onet_element_id": "T-ANSIBLE",
+    "aliases": []
+  },
+  {
+    "name": "Anthropic Claude API",
+    "category": "tool",
+    "subcategory": "AI/ML",
+    "onet_element_id": "T-CLAUDEAPI",
+    "aliases": [
+      "Claude API"
+    ]
+  },
+  {
+    "name": "Anti-Money Laundering",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Apache",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Apache Beam",
+    "category": "tool",
+    "subcategory": "Data Science",
+    "onet_element_id": "T-BEAM",
+    "aliases": [
+      "Beam"
+    ]
+  },
+  {
+    "name": "Apache Flink",
+    "category": "tool",
+    "subcategory": "Data Science",
+    "onet_element_id": "T-FLINK",
+    "aliases": [
+      "Flink"
+    ]
+  },
+  {
+    "name": "Apache Hive",
+    "category": "tool",
+    "subcategory": "Data Science",
+    "onet_element_id": "T-HIVE",
+    "aliases": [
+      "Hive"
+    ]
+  },
+  {
+    "name": "Apache Iceberg",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Apache Kafka",
+    "category": "tool",
+    "subcategory": "Data Science",
+    "onet_element_id": "T-KAFKA",
+    "aliases": [
+      "Kafka"
+    ]
+  },
+  {
+    "name": "Apache Pulsar",
+    "category": "tool",
+    "subcategory": "Messaging",
+    "onet_element_id": "T-PULSAR",
+    "aliases": [
+      "Pulsar"
+    ]
+  },
+  {
+    "name": "Apache Spark",
+    "category": "tool",
+    "subcategory": "Data Science",
+    "onet_element_id": "T-SPARK",
+    "aliases": [
+      "PySpark",
+      "Spark"
+    ]
+  },
+  {
+    "name": "Apex",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "API Design",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "API Gateway",
+    "category": "technical",
+    "subcategory": "Architecture",
+    "onet_element_id": "T-APIGWARCH",
+    "aliases": []
+  },
+  {
+    "name": "Application Security",
+    "category": "technical",
+    "subcategory": "Security",
+    "onet_element_id": "T-APPSEC",
+    "aliases": [
+      "AppSec",
+      "OWASP"
+    ]
+  },
+  {
+    "name": "Architecture",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Argo Workflows",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "ArgoCD",
+    "category": "tool",
+    "subcategory": "DevOps",
+    "onet_element_id": "T-ARGOCD",
+    "aliases": [
+      "Argo CD"
+    ]
+  },
+  {
+    "name": "Art Direction",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Artificial Intelligence",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Asana",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "ASC 606",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Ashby",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "ASP.NET",
+    "category": "technical",
+    "subcategory": "Backend Frameworks",
+    "onet_element_id": "T-ASPNET",
+    "aliases": [
+      ".NET",
+      "ASP.NET Core"
+    ]
+  },
+  {
+    "name": "Asset Management",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Astro",
+    "category": "tool",
+    "subcategory": "Frontend Frameworks",
+    "onet_element_id": "T-ASTRO",
+    "aliases": []
+  },
+  {
+    "name": "Asynchronous Programming",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Attention to Detail",
+    "category": "soft",
+    "subcategory": "Personal",
+    "onet_element_id": "T-DETAIL",
+    "aliases": []
+  },
+  {
+    "name": "Attribution",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Audio Processing",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Audit",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Auditing",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Auditoria",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Auth0",
+    "category": "tool",
+    "subcategory": "Security",
+    "onet_element_id": "T-AUTH0",
+    "aliases": []
+  },
+  {
+    "name": "Authentication",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Authorization",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "AutoCAD",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Automation",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Autonomous Execution",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Autonomy",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Autoscaling",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Avalara",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "AWS",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "AWS API Gateway",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-APIGW",
+    "aliases": [
+      "API Gateway"
+    ]
+  },
+  {
+    "name": "AWS CDK",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-CDK",
+    "aliases": [
+      "CDK"
+    ]
+  },
+  {
+    "name": "AWS CloudFormation",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-CLOUDFORMATION",
+    "aliases": [
+      "CFN",
+      "CloudFormation"
+    ]
+  },
+  {
+    "name": "AWS CloudFront",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-CLOUDFRONT",
+    "aliases": [
+      "CloudFront"
+    ]
+  },
+  {
+    "name": "AWS CloudWatch",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-CLOUDWATCH",
+    "aliases": [
+      "CloudWatch"
+    ]
+  },
+  {
+    "name": "AWS EC2",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-EC2",
+    "aliases": [
+      "EC2"
+    ]
+  },
+  {
+    "name": "AWS ECS",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-ECS",
+    "aliases": [
+      "ECS",
+      "Elastic Container Service"
+    ]
+  },
+  {
+    "name": "AWS EKS",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-EKS",
+    "aliases": [
+      "EKS",
+      "Elastic Kubernetes Service"
+    ]
+  },
+  {
+    "name": "AWS Glue",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "AWS IAM",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-IAM",
+    "aliases": [
+      "IAM"
+    ]
+  },
+  {
+    "name": "AWS Kinesis",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-KINESIS",
+    "aliases": [
+      "Kinesis"
+    ]
+  },
+  {
+    "name": "AWS Lambda",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-LAMBDA",
+    "aliases": [
+      "Lambda",
+      "Serverless"
+    ]
+  },
+  {
+    "name": "AWS RDS",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-RDS",
+    "aliases": [
+      "RDS"
+    ]
+  },
+  {
+    "name": "AWS S3",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-S3",
+    "aliases": [
+      "S3"
+    ]
+  },
+  {
+    "name": "AWS SNS",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-SNS",
+    "aliases": [
+      "Simple Notification Service",
+      "SNS"
+    ]
+  },
+  {
+    "name": "AWS SQS",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-SQS",
+    "aliases": [
+      "Simple Queue Service",
+      "SQS"
+    ]
+  },
+  {
+    "name": "AWS Step Functions",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-STEPFN",
+    "aliases": [
+      "Step Functions"
+    ]
+  },
+  {
+    "name": "Azure Active Directory",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-AAD",
+    "aliases": [
+      "AAD",
+      "Entra ID"
+    ]
+  },
+  {
+    "name": "Azure Blob Storage",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-AZUREBLOB",
+    "aliases": []
+  },
+  {
+    "name": "Azure Cosmos DB",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-COSMOSDB",
+    "aliases": [
+      "Cosmos DB"
+    ]
+  },
+  {
+    "name": "Azure Data Factory",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-ADF",
+    "aliases": [
+      "ADF"
+    ]
+  },
+  {
+    "name": "Azure DevOps",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-AZUREDEVOPS",
+    "aliases": [
+      "ADO"
+    ]
+  },
+  {
+    "name": "Azure Functions",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-AZUREFUNC",
+    "aliases": []
+  },
+  {
+    "name": "Azure Kubernetes Service",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-AKS",
+    "aliases": [
+      "AKS"
+    ]
+  },
+  {
+    "name": "B2B Marketing",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Backend Development",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Bazel",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Benchmarking",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Benefits Administration",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "BGP",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Bias for Action",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Billing Operations",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Biome",
+    "category": "tool",
+    "subcategory": "Build Tools",
+    "onet_element_id": "T-BIOME",
+    "aliases": []
+  },
+  {
+    "name": "Blockchain",
+    "category": "technical",
+    "subcategory": "Blockchain",
+    "onet_element_id": "T-BLOCKCHAIN",
+    "aliases": [
+      "DLT",
+      "Web3"
+    ]
+  },
+  {
+    "name": "Bootstrap",
+    "category": "tool",
+    "subcategory": "Frontend Frameworks",
+    "onet_element_id": "T-BOOTSTRAP",
+    "aliases": []
+  },
+  {
+    "name": "Brand Management",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Brex",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Budgeting",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Build Systems",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Builder mentality",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Buildkite",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Bun",
+    "category": "tool",
+    "subcategory": "Backend Frameworks",
+    "onet_element_id": "T-BUN",
+    "aliases": []
+  },
+  {
+    "name": "Burp Suite",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Business Acumen",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Business Analysis",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Business Continuity",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Business Development",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Business Intelligence",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Business Operations",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "C",
+    "category": "technical",
+    "subcategory": "Programming Languages",
+    "onet_element_id": "T-C",
+    "aliases": []
+  },
+  {
+    "name": "C#",
+    "category": "technical",
+    "subcategory": "Programming Languages",
+    "onet_element_id": "T-CSHARP",
+    "aliases": [
+      "C Sharp",
+      "CSharp"
+    ]
+  },
+  {
+    "name": "C++",
+    "category": "technical",
+    "subcategory": "Programming Languages",
+    "onet_element_id": "T-CPP",
+    "aliases": [
+      "CPP"
+    ]
+  },
+  {
+    "name": "Caching Strategies",
+    "category": "technical",
+    "subcategory": "Architecture",
+    "onet_element_id": "T-CACHING",
+    "aliases": [
+      "Cache Management"
+    ]
+  },
+  {
+    "name": "Calendar Management",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Campaign Management",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Candidate Experience",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Canva",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Capacitor",
+    "category": "tool",
+    "subcategory": "Mobile Development",
+    "onet_element_id": "T-CAPACITOR",
+    "aliases": []
+  },
+  {
+    "name": "Capacity Planning",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Career Development",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Case Study Development",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Cassandra",
+    "category": "tool",
+    "subcategory": "Databases",
+    "onet_element_id": "T-CASSANDRA",
+    "aliases": [
+      "Apache Cassandra"
+    ]
+  },
+  {
+    "name": "Causal Inference",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "CDN",
+    "category": "technical",
+    "subcategory": "Networking",
+    "onet_element_id": "T-CDN",
+    "aliases": [
+      "Content Delivery Network"
+    ]
+  },
+  {
+    "name": "Celery",
+    "category": "tool",
+    "subcategory": "Messaging",
+    "onet_element_id": "T-CELERY",
+    "aliases": []
+  },
+  {
+    "name": "Ceph",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Certification",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Chakra UI",
+    "category": "tool",
+    "subcategory": "Frontend Frameworks",
+    "onet_element_id": "T-CHAKRA",
+    "aliases": []
+  },
+  {
+    "name": "Change Management",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Channel Management",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Chaos Engineering",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Chemistry",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Child Safety",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Chromium",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "CI/CD",
+    "category": "technical",
+    "subcategory": "DevOps",
+    "onet_element_id": "T-CICD",
+    "aliases": [
+      "Continuous Delivery",
+      "Continuous Deployment",
+      "Continuous Integration"
+    ]
+  },
+  {
+    "name": "CircleCI",
+    "category": "tool",
+    "subcategory": "DevOps",
+    "onet_element_id": "T-CIRCLECI",
+    "aliases": []
+  },
+  {
+    "name": "Cisco IOS",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Civic Education",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "CLI",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "ClickHouse",
+    "category": "tool",
+    "subcategory": "Databases",
+    "onet_element_id": "T-CLICKHOUSE",
+    "aliases": []
+  },
+  {
+    "name": "Client Management",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Clojure",
+    "category": "technical",
+    "subcategory": "Programming Languages",
+    "onet_element_id": "T-CLOJURE",
+    "aliases": [
+      "ClojureScript"
+    ]
+  },
+  {
+    "name": "Cloud Architecture",
+    "category": "domain",
+    "subcategory": "Architecture",
+    "onet_element_id": "T-CLOUDARCH",
+    "aliases": []
+  },
+  {
+    "name": "Cloud Infrastructure",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Cloud Security",
+    "category": "technical",
+    "subcategory": "Security",
+    "onet_element_id": "T-CLOUDSEC",
+    "aliases": []
+  },
+  {
+    "name": "Cloudflare",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-CLOUDFLARE",
+    "aliases": [
+      "Cloudflare Pages",
+      "Cloudflare Workers"
+    ]
+  },
+  {
+    "name": "Coachability",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Coalition Building",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "CockroachDB",
+    "category": "tool",
+    "subcategory": "Databases",
+    "onet_element_id": "T-COCKROACHDB",
+    "aliases": []
+  },
+  {
+    "name": "Code Generation",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Code Quality",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Code Review",
+    "category": "soft",
+    "subcategory": "Collaboration",
+    "onet_element_id": "T-CODEREVIEW",
+    "aliases": [
+      "Peer Review"
+    ]
+  },
+  {
+    "name": "Cold Calling",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Collections",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Command Line",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Communication",
+    "category": "soft",
+    "subcategory": "Communication",
+    "onet_element_id": "T-COMMUNICATION",
+    "aliases": [
+      "Verbal Communication",
+      "Written Communication"
+    ]
+  },
+  {
+    "name": "Communications",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Community Building",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Compensation",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Competitive Analysis",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Compiler Design",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Complex Problem Solving",
+    "category": "soft",
+    "subcategory": "Problem Solving",
+    "onet_element_id": "2.B.2.i",
+    "aliases": []
+  },
+  {
+    "name": "Compliance",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Component Architecture",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Computer Architecture",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Computer Vision",
+    "category": "technical",
+    "subcategory": "Data Science",
+    "onet_element_id": "T-CV",
+    "aliases": [
+      "CV",
+      "Image Recognition"
+    ]
+  },
+  {
+    "name": "Concurrency",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Configuration Management",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Conflict Resolution",
+    "category": "soft",
+    "subcategory": "Social",
+    "onet_element_id": "T-CONFLICTRES",
+    "aliases": []
+  },
+  {
+    "name": "Confluence",
+    "category": "tool",
+    "subcategory": "Project Management",
+    "onet_element_id": "T-CONFLUENCE",
+    "aliases": []
+  },
+  {
+    "name": "Construction",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Consul",
+    "category": "tool",
+    "subcategory": "DevOps",
+    "onet_element_id": "T-CONSUL",
+    "aliases": [
+      "HashiCorp Consul"
+    ]
+  },
+  {
+    "name": "Consultative Selling",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Consulting",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Container Orchestration",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Containerization",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Content Classification",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Content Creation",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Content Marketing",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Content Moderation",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Content Strategy",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Context Engineering",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Continuous Improvement",
+    "category": "soft",
+    "subcategory": "Personal",
+    "onet_element_id": "T-CONTIMPROVE",
+    "aliases": [
+      "Growth Mindset",
+      "Kaizen"
+    ]
+  },
+  {
+    "name": "Continuous Learning",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Contract Management",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Contract Negotiation",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Control Systems",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Conversation Design",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Conversion Rate Optimization",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Coordination",
+    "category": "soft",
+    "subcategory": "Social",
+    "onet_element_id": "2.B.1.b",
+    "aliases": []
+  },
+  {
+    "name": "Copywriting",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Corporate Development",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Cost Optimization",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Couchbase",
+    "category": "tool",
+    "subcategory": "Databases",
+    "onet_element_id": "T-COUCHBASE",
+    "aliases": []
+  },
+  {
+    "name": "Coupa",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "CQRS",
+    "category": "technical",
+    "subcategory": "Architecture",
+    "onet_element_id": "T-CQRS",
+    "aliases": [
+      "Command Query Responsibility Segregation"
+    ]
+  },
+  {
+    "name": "Creative Direction",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Creativity",
+    "category": "soft",
+    "subcategory": "Personal",
+    "onet_element_id": "T-CREATIVITY",
+    "aliases": [
+      "Creative Thinking",
+      "Innovation"
+    ]
+  },
+  {
+    "name": "Crisis Management",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Critical Thinking",
+    "category": "soft",
+    "subcategory": "Process",
+    "onet_element_id": "2.A.2.a",
+    "aliases": []
+  },
+  {
+    "name": "CRM",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Cross-Functional Collaboration",
+    "category": "soft",
+    "subcategory": "Collaboration",
+    "onet_element_id": "T-CROSSFUNC",
+    "aliases": []
+  },
+  {
+    "name": "Cross-Platform Development",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Cryptography",
+    "category": "technical",
+    "subcategory": "Security",
+    "onet_element_id": "T-CRYPTO",
+    "aliases": []
+  },
+  {
+    "name": "CSS",
+    "category": "technical",
+    "subcategory": "Frontend Fundamentals",
+    "onet_element_id": "T-CSS",
+    "aliases": [
+      "CSS3"
+    ]
+  },
+  {
+    "name": "CUDA",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Curation",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Curiosity",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Curriculum Design",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Cursor",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Customer Focus",
+    "category": "soft",
+    "subcategory": "Communication",
+    "onet_element_id": "T-CUSTFOCUS",
+    "aliases": [
+      "Client Relations",
+      "Customer Service"
+    ]
+  },
+  {
+    "name": "Customer Marketing",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Customer Relationship Management",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Customer Success",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Customer Support",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Cybersecurity",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Cypress",
+    "category": "tool",
+    "subcategory": "Testing",
+    "onet_element_id": "T-CYPRESS",
+    "aliases": []
+  },
+  {
+    "name": "D3.js",
+    "category": "tool",
+    "subcategory": "Frontend Frameworks",
+    "onet_element_id": "T-D3",
+    "aliases": [
+      "D3"
+    ]
+  },
+  {
+    "name": "Dart",
+    "category": "technical",
+    "subcategory": "Programming Languages",
+    "onet_element_id": "T-DART",
+    "aliases": []
+  },
+  {
+    "name": "Dashboard Design",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Data Analysis",
+    "category": "technical",
+    "subcategory": "Data Science",
+    "onet_element_id": "T-DATAANALYSIS",
+    "aliases": [
+      "Data Analytics"
+    ]
+  },
+  {
+    "name": "Data and AI",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Data Architecture",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Data Center Operations",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Data Classification",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Data Collection",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Data Curation",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Data Engineering",
+    "category": "technical",
+    "subcategory": "Data Science",
+    "onet_element_id": "T-DATAENG",
+    "aliases": []
+  },
+  {
+    "name": "Data Enrichment",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Data Governance",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Data Infrastructure",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Data Integration",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Data Integrity",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Data Loss Prevention",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Data Management",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Data Migration",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Data Modeling",
+    "category": "technical",
+    "subcategory": "Data Science",
+    "onet_element_id": "T-DATAMODEL",
+    "aliases": []
+  },
+  {
+    "name": "Data Pipeline",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Data Processing",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Data Protection",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Data Quality",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Data Science",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Data Security",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Data Structures",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Data Validation",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Data Visualization",
+    "category": "technical",
+    "subcategory": "Data Science",
+    "onet_element_id": "T-DATAVIZ",
+    "aliases": []
+  },
+  {
+    "name": "Data Warehousing",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Data-Driven Decision Making",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Database Design",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Database Sharding",
+    "category": "technical",
+    "subcategory": "Architecture",
+    "onet_element_id": "T-SHARDING",
+    "aliases": [
+      "Sharding"
+    ]
+  },
+  {
+    "name": "Databricks",
+    "category": "tool",
+    "subcategory": "Data Science",
+    "onet_element_id": "T-DATABRICKS",
+    "aliases": []
+  },
+  {
+    "name": "Datadog",
+    "category": "tool",
+    "subcategory": "Observability",
+    "onet_element_id": "T-DATADOG",
+    "aliases": []
+  },
+  {
+    "name": "Datadog APM",
+    "category": "tool",
+    "subcategory": "Observability",
+    "onet_element_id": "T-DDAPM",
+    "aliases": []
+  },
+  {
+    "name": "dbt",
+    "category": "tool",
+    "subcategory": "Data Science",
+    "onet_element_id": "T-DBT",
+    "aliases": []
+  },
+  {
+    "name": "DDoS",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Deal Structuring",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Decision Making",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Deep Learning",
+    "category": "technical",
+    "subcategory": "Data Science",
+    "onet_element_id": "T-DL",
+    "aliases": [
+      "DL",
+      "Neural Networks"
+    ]
+  },
+  {
+    "name": "Demand Generation",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Deno",
+    "category": "tool",
+    "subcategory": "Backend Frameworks",
+    "onet_element_id": "T-DENO",
+    "aliases": []
+  },
+  {
+    "name": "Dependency Management",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Deployment",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Design Patterns",
+    "category": "technical",
+    "subcategory": "Architecture",
+    "onet_element_id": "T-PATTERNS",
+    "aliases": []
+  },
+  {
+    "name": "Design Systems",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Design Thinking",
+    "category": "domain",
+    "subcategory": "Project Management",
+    "onet_element_id": "T-DESIGNTHINKING",
+    "aliases": []
+  },
+  {
+    "name": "Desktop Application Development",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Detection Engineering",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Developer Experience",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Developer Relations",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Developer Tools",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "DevOps",
+    "category": "domain",
+    "subcategory": "Operations",
+    "onet_element_id": "T-DEVOPS",
+    "aliases": []
+  },
+  {
+    "name": "DevSecOps",
+    "category": "technical",
+    "subcategory": "Security",
+    "onet_element_id": "T-DEVSECOPS",
+    "aliases": []
+  },
+  {
+    "name": "DHCP",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Differential Privacy",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Digital Marketing",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Digital Transformation",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Disaster Recovery",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Discovery",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Discretion",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Dispute Resolution",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Distributed Systems",
+    "category": "technical",
+    "subcategory": "Architecture",
+    "onet_element_id": "T-DISTRIBUTED",
+    "aliases": []
+  },
+  {
+    "name": "Diversity",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Django",
+    "category": "technical",
+    "subcategory": "Backend Frameworks",
+    "onet_element_id": "T-DJANGO",
+    "aliases": []
+  },
+  {
+    "name": "DNS",
+    "category": "technical",
+    "subcategory": "Networking",
+    "onet_element_id": "T-DNS",
+    "aliases": []
+  },
+  {
+    "name": "Docker",
+    "category": "tool",
+    "subcategory": "DevOps",
+    "onet_element_id": "T-DOCKER",
+    "aliases": [
+      "Containers"
+    ]
+  },
+  {
+    "name": "Docker Compose",
+    "category": "tool",
+    "subcategory": "DevOps",
+    "onet_element_id": "T-COMPOSE",
+    "aliases": [
+      "Compose"
+    ]
+  },
+  {
+    "name": "Documentation",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Domain-Driven Design",
+    "category": "technical",
+    "subcategory": "Architecture",
+    "onet_element_id": "T-DDD",
+    "aliases": [
+      "DDD"
+    ]
+  },
+  {
+    "name": "Drizzle",
+    "category": "tool",
+    "subcategory": "Backend Frameworks",
+    "onet_element_id": "T-DRIZZLE",
+    "aliases": [
+      "Drizzle ORM"
+    ]
+  },
+  {
+    "name": "Due Diligence",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "DynamoDB",
+    "category": "tool",
+    "subcategory": "Databases",
+    "onet_element_id": "T-DYNAMODB",
+    "aliases": []
+  },
+  {
+    "name": "E-commerce",
+    "category": "domain",
+    "subcategory": "Industry",
+    "onet_element_id": "T-ECOMMERCE",
+    "aliases": [
+      "eCommerce"
+    ]
+  },
+  {
+    "name": "eBPF",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Econometrics",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Economics",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Edge Computing",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Editing",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "EDR",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "EdTech",
+    "category": "domain",
+    "subcategory": "Industry",
+    "onet_element_id": "T-EDTECH",
+    "aliases": [
+      "Educational Technology"
+    ]
+  },
+  {
+    "name": "Elasticsearch",
+    "category": "tool",
+    "subcategory": "Databases",
+    "onet_element_id": "T-ELASTIC",
+    "aliases": [
+      "ELK",
+      "ES"
+    ]
+  },
+  {
+    "name": "Elasticsearch/OpenSearch",
+    "category": "tool",
+    "subcategory": "Databases",
+    "onet_element_id": "T-OPENSEARCH",
+    "aliases": [
+      "OpenSearch"
+    ]
+  },
+  {
+    "name": "Electrical Engineering",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Electron",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Elixir",
+    "category": "technical",
+    "subcategory": "Programming Languages",
+    "onet_element_id": "T-ELIXIR",
+    "aliases": []
+  },
+  {
+    "name": "Email Marketing",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Email Outreach",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Embedded Systems",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Emergency Management",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Emotional Intelligence",
+    "category": "soft",
+    "subcategory": "Personal",
+    "onet_element_id": "T-EQ",
+    "aliases": [
+      "EQ"
+    ]
+  },
+  {
+    "name": "Empathy",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Employee Relations",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Employer Branding",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Enablement",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Encryption",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "End-to-End Testing",
+    "category": "technical",
+    "subcategory": "Testing",
+    "onet_element_id": "T-E2ETEST",
+    "aliases": [
+      "E2E Testing"
+    ]
+  },
+  {
+    "name": "Endpoint Detection and Response",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Endpoint management",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Endpoint Security",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Energy Procurement",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Engagement",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Engineering Management",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Enterprise Architecture",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Enterprise Sales",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Enterprise Security",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Enterprise Software",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Enterprise Systems",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Entrepreneurship",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Equipment Selection",
+    "category": "technical",
+    "subcategory": "Technical",
+    "onet_element_id": "2.B.3.c",
+    "aliases": []
+  },
+  {
+    "name": "Equity Administration",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "ERP",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Escalation Management",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "ESLint",
+    "category": "tool",
+    "subcategory": "Build Tools",
+    "onet_element_id": "T-ESLINT",
+    "aliases": []
+  },
+  {
+    "name": "ETL",
+    "category": "technical",
+    "subcategory": "Data Science",
+    "onet_element_id": "T-ETL",
+    "aliases": [
+      "Data Pipelines",
+      "ELT"
+    ]
+  },
+  {
+    "name": "Evaluation",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Event Management",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Event Marketing",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Event Sourcing",
+    "category": "technical",
+    "subcategory": "Architecture",
+    "onet_element_id": "T-EVENTSOURCE",
+    "aliases": []
+  },
+  {
+    "name": "Event-Driven Architecture",
+    "category": "technical",
+    "subcategory": "Architecture",
+    "onet_element_id": "T-EDA",
+    "aliases": [
+      "EDA"
+    ]
+  },
+  {
+    "name": "Excel",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Execution",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Executive Communications",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Executive Engagement",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Executive Presence",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Expansion",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Expense Management",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Experiment Tracking",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Experimental Design",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Experimentation Design",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Exploit Development",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Exploitation",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Expo",
+    "category": "tool",
+    "subcategory": "Mobile Development",
+    "onet_element_id": "T-EXPO",
+    "aliases": []
+  },
+  {
+    "name": "Express.js",
+    "category": "technical",
+    "subcategory": "Backend Frameworks",
+    "onet_element_id": "T-EXPRESS",
+    "aliases": [
+      "Express",
+      "ExpressJS"
+    ]
+  },
+  {
+    "name": "F#",
+    "category": "technical",
+    "subcategory": "Programming Languages",
+    "onet_element_id": "T-FSHARP",
+    "aliases": [
+      "FSharp"
+    ]
+  },
+  {
+    "name": "Facilitation",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "FastAPI",
+    "category": "technical",
+    "subcategory": "Backend Frameworks",
+    "onet_element_id": "T-FASTAPI",
+    "aliases": []
+  },
+  {
+    "name": "Fault Tolerance",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Feature Engineering",
+    "category": "technical",
+    "subcategory": "AI/ML",
+    "onet_element_id": "T-FEATENG",
+    "aliases": []
+  },
+  {
+    "name": "Feedback",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Fiber",
+    "category": "tool",
+    "subcategory": "Backend Frameworks",
+    "onet_element_id": "T-FIBER",
+    "aliases": []
+  },
+  {
+    "name": "Field Marketing",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Figma",
+    "category": "tool",
+    "subcategory": "Design",
+    "onet_element_id": "T-FIGMA",
+    "aliases": []
+  },
+  {
+    "name": "Financial Analysis",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Financial Modeling",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Financial Operations",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Financial Planning",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Financial Reporting",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Financial Risk Management",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Financial Services",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Financial Systems",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Fine-tuning",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "FinTech",
+    "category": "domain",
+    "subcategory": "Industry",
+    "onet_element_id": "T-FINTECH",
+    "aliases": [
+      "Financial Technology"
+    ]
+  },
+  {
+    "name": "Firebase",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-FIREBASE",
+    "aliases": []
+  },
+  {
+    "name": "Firmware Development",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Fivetran",
+    "category": "tool",
+    "subcategory": "Data Science",
+    "onet_element_id": "T-FIVETRAN",
+    "aliases": []
+  },
+  {
+    "name": "Fixed Assets",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Flask",
+    "category": "technical",
+    "subcategory": "Backend Frameworks",
+    "onet_element_id": "T-FLASK",
+    "aliases": []
+  },
+  {
+    "name": "FloQast",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Flutter",
+    "category": "technical",
+    "subcategory": "Mobile Development",
+    "onet_element_id": "T-FLUTTER",
+    "aliases": []
+  },
+  {
+    "name": "Forecasting",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Forensics",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Framer Motion",
+    "category": "tool",
+    "subcategory": "Frontend Frameworks",
+    "onet_element_id": "T-FRAMER",
+    "aliases": [
+      "Motion"
+    ]
+  },
+  {
+    "name": "Fraud Detection",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Frontend Development",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Full-Cycle Recruiting",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Full-Stack Development",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Fund Administration",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Funnel Analysis",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Gatsby",
+    "category": "tool",
+    "subcategory": "Frontend Frameworks",
+    "onet_element_id": "T-GATSBY",
+    "aliases": [
+      "GatsbyJS"
+    ]
+  },
+  {
+    "name": "GDPR",
+    "category": "domain",
+    "subcategory": "Security",
+    "onet_element_id": "T-GDPR",
+    "aliases": [
+      "Data Privacy",
+      "Privacy Compliance"
+    ]
+  },
+  {
+    "name": "Gem",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "General Ledger",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Generative AI",
+    "category": "technical",
+    "subcategory": "AI/ML",
+    "onet_element_id": "T-GENAI",
+    "aliases": [
+      "GenAI"
+    ]
+  },
+  {
+    "name": "Gin",
+    "category": "tool",
+    "subcategory": "Backend Frameworks",
+    "onet_element_id": "T-GIN",
+    "aliases": []
+  },
+  {
+    "name": "Git",
+    "category": "tool",
+    "subcategory": "Version Control",
+    "onet_element_id": "T-GIT",
+    "aliases": [
+      "Bitbucket",
+      "GitHub",
+      "GitLab"
+    ]
+  },
+  {
+    "name": "GitHub Actions",
+    "category": "tool",
+    "subcategory": "DevOps",
+    "onet_element_id": "T-GHA",
+    "aliases": []
+  },
+  {
+    "name": "GitLab CI",
+    "category": "tool",
+    "subcategory": "DevOps",
+    "onet_element_id": "T-GITLABCI",
+    "aliases": []
+  },
+  {
+    "name": "Global Mobility",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Go",
+    "category": "technical",
+    "subcategory": "Programming Languages",
+    "onet_element_id": "T-GO",
+    "aliases": [
+      "Golang"
+    ]
+  },
+  {
+    "name": "Go-to-Market Strategy",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Goal Achievement",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Gong",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Google Analytics",
+    "category": "tool",
+    "subcategory": "Product",
+    "onet_element_id": "T-GA",
+    "aliases": [
+      "GA",
+      "GA4"
+    ]
+  },
+  {
+    "name": "Google BigQuery",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-BIGQUERY",
+    "aliases": [
+      "BigQuery",
+      "BQ"
+    ]
+  },
+  {
+    "name": "Google Calendar",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Google Cloud Functions",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-GCFUNC",
+    "aliases": []
+  },
+  {
+    "name": "Google Cloud Platform",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-GCP",
+    "aliases": [
+      "GCP",
+      "Google Cloud"
+    ]
+  },
+  {
+    "name": "Google Cloud Run",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-CLOUDRUN",
+    "aliases": [
+      "Cloud Run"
+    ]
+  },
+  {
+    "name": "Google Cloud Storage",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-GCS",
+    "aliases": [
+      "GCS"
+    ]
+  },
+  {
+    "name": "Google Kubernetes Engine",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-GKE",
+    "aliases": [
+      "GKE"
+    ]
+  },
+  {
+    "name": "Google Pub/Sub",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-PUBSUB",
+    "aliases": [
+      "Pub/Sub"
+    ]
+  },
+  {
+    "name": "Google Sheets",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Google Slides",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Google Vertex AI",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-VERTEXAI",
+    "aliases": [
+      "Vertex AI"
+    ]
+  },
+  {
+    "name": "Google Workspace",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Governance",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Government Relations",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "GPU/Accelerator Programming",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Grafana",
+    "category": "tool",
+    "subcategory": "Observability",
+    "onet_element_id": "T-GRAFANA",
+    "aliases": []
+  },
+  {
+    "name": "Graph Neural Networks",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "GraphQL",
+    "category": "technical",
+    "subcategory": "APIs",
+    "onet_element_id": "T-GRAPHQL",
+    "aliases": []
+  },
+  {
+    "name": "GRE",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Greenhouse",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Groovy",
+    "category": "technical",
+    "subcategory": "Programming Languages",
+    "onet_element_id": "T-GROOVY",
+    "aliases": []
+  },
+  {
+    "name": "Growth Marketing",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "gRPC",
+    "category": "technical",
+    "subcategory": "APIs",
+    "onet_element_id": "T-GRPC",
+    "aliases": []
+  },
+  {
+    "name": "Hadoop",
+    "category": "tool",
+    "subcategory": "Data Science",
+    "onet_element_id": "T-HADOOP",
+    "aliases": [
+      "Apache Hadoop",
+      "HDFS",
+      "MapReduce"
+    ]
+  },
+  {
+    "name": "Hardware Design",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Hardware Security",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "HashiCorp Vault",
+    "category": "tool",
+    "subcategory": "DevOps",
+    "onet_element_id": "T-VAULT",
+    "aliases": [
+      "Vault"
+    ]
+  },
+  {
+    "name": "Haskell",
+    "category": "technical",
+    "subcategory": "Programming Languages",
+    "onet_element_id": "T-HASKELL",
+    "aliases": []
+  },
+  {
+    "name": "Healthcare",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "HealthTech",
+    "category": "domain",
+    "subcategory": "Industry",
+    "onet_element_id": "T-HEALTHTECH",
+    "aliases": [
+      "Digital Health",
+      "Health IT"
+    ]
+  },
+  {
+    "name": "Helm",
+    "category": "tool",
+    "subcategory": "DevOps",
+    "onet_element_id": "T-HELM",
+    "aliases": [
+      "Helm Charts"
+    ]
+  },
+  {
+    "name": "Heroku",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-HEROKU",
+    "aliases": []
+  },
+  {
+    "name": "Hex",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "High Availability",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "High Performance Computing",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "HIPAA",
+    "category": "domain",
+    "subcategory": "Security",
+    "onet_element_id": "T-HIPAA",
+    "aliases": []
+  },
+  {
+    "name": "Hiring",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Hono",
+    "category": "tool",
+    "subcategory": "Backend Frameworks",
+    "onet_element_id": "T-HONO",
+    "aliases": []
+  },
+  {
+    "name": "HR Operations",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "HTML",
+    "category": "technical",
+    "subcategory": "Frontend Fundamentals",
+    "onet_element_id": "T-HTML",
+    "aliases": [
+      "HTML5"
+    ]
+  },
+  {
+    "name": "htmx",
+    "category": "tool",
+    "subcategory": "Frontend Frameworks",
+    "onet_element_id": "T-HTMX",
+    "aliases": []
+  },
+  {
+    "name": "HTTP/HTTPS",
+    "category": "technical",
+    "subcategory": "Networking",
+    "onet_element_id": "T-HTTP",
+    "aliases": [
+      "HTTP",
+      "HTTP/2",
+      "HTTP/3",
+      "HTTPS"
+    ]
+  },
+  {
+    "name": "HubSpot",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Hugging Face",
+    "category": "tool",
+    "subcategory": "AI/ML",
+    "onet_element_id": "T-HUGGINGFACE",
+    "aliases": [
+      "HF",
+      "Transformers"
+    ]
+  },
+  {
+    "name": "Human-in-the-Loop Systems",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Humility",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Identity and Access Management",
+    "category": "technical",
+    "subcategory": "Security",
+    "onet_element_id": "T-IAMSEC",
+    "aliases": [
+      "IAM Security"
+    ]
+  },
+  {
+    "name": "IFRS",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Implementation",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Incident Response",
+    "category": "technical",
+    "subcategory": "Operations",
+    "onet_element_id": "T-INCIDENT",
+    "aliases": [
+      "Incident Management",
+      "On-Call"
+    ]
+  },
+  {
+    "name": "Inference Optimization",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "InfiniBand",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Influence",
+    "category": "soft",
+    "subcategory": "Leadership",
+    "onet_element_id": "T-INFLUENCE",
+    "aliases": []
+  },
+  {
+    "name": "Influencer Marketing",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "InfluxDB",
+    "category": "tool",
+    "subcategory": "Databases",
+    "onet_element_id": "T-INFLUXDB",
+    "aliases": []
+  },
+  {
+    "name": "Information Architecture",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Information Retrieval",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Infrastructure",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Infrastructure as Code",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Infrastructure Engineering",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Infrastructure Security",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Installation",
+    "category": "technical",
+    "subcategory": "Technical",
+    "onet_element_id": "2.B.3.d",
+    "aliases": []
+  },
+  {
+    "name": "Instructing",
+    "category": "soft",
+    "subcategory": "Social",
+    "onet_element_id": "2.B.1.e",
+    "aliases": [
+      "Teaching",
+      "Training"
+    ]
+  },
+  {
+    "name": "Instructional Design",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Integration Testing",
+    "category": "technical",
+    "subcategory": "Testing",
+    "onet_element_id": "T-INTTEST",
+    "aliases": []
+  },
+  {
+    "name": "Integrity",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Intellectual Curiosity",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Intellectual Property",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Intelligence Analysis",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Interaction Design",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Intercom",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Internal Audit",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Internal Controls",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "International Tax",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Internationalization",
+    "category": "technical",
+    "subcategory": "Frontend Fundamentals",
+    "onet_element_id": "T-I18N",
+    "aliases": [
+      "i18n",
+      "l10n",
+      "Localization"
+    ]
+  },
+  {
+    "name": "Internet Technologies",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Interpersonal Skills",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Interpretability",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Interview Coordination",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Intune",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Inventory Management",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Investigation",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Investment Banking",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Investor Relations",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "iOS Development",
+    "category": "technical",
+    "subcategory": "Mobile Development",
+    "onet_element_id": "T-IOS",
+    "aliases": [
+      "iOS",
+      "SwiftUI",
+      "UIKit"
+    ]
+  },
+  {
+    "name": "IPsec",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "ISO 27001",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Istio",
+    "category": "tool",
+    "subcategory": "DevOps",
+    "onet_element_id": "T-ISTIO",
+    "aliases": []
+  },
+  {
+    "name": "IT Operations",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "IT Risk Governance",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Iteration",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Iterative Development",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Jaeger",
+    "category": "tool",
+    "subcategory": "Observability",
+    "onet_element_id": "T-JAEGER",
+    "aliases": []
+  },
+  {
+    "name": "Jamf",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Java",
+    "category": "technical",
+    "subcategory": "Programming Languages",
+    "onet_element_id": "T-JAVA",
+    "aliases": []
+  },
+  {
+    "name": "JavaScript",
+    "category": "technical",
+    "subcategory": "Programming Languages",
+    "onet_element_id": "T-JS",
+    "aliases": [
+      "ECMAScript",
+      "ES2015+",
+      "ES6",
+      "JS"
+    ]
+  },
+  {
+    "name": "JAX",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Jenkins",
+    "category": "tool",
+    "subcategory": "DevOps",
+    "onet_element_id": "T-JENKINS",
+    "aliases": []
+  },
+  {
+    "name": "Jest",
+    "category": "tool",
+    "subcategory": "Testing",
+    "onet_element_id": "T-JEST",
+    "aliases": []
+  },
+  {
+    "name": "Jira",
+    "category": "tool",
+    "subcategory": "Project Management",
+    "onet_element_id": "T-JIRA",
+    "aliases": []
+  },
+  {
+    "name": "Job Architecture",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "JSON",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Judgment and Decision Making",
+    "category": "soft",
+    "subcategory": "Systems",
+    "onet_element_id": "2.B.4.e",
+    "aliases": []
+  },
+  {
+    "name": "Julia",
+    "category": "technical",
+    "subcategory": "Programming Languages",
+    "onet_element_id": "T-JULIA",
+    "aliases": []
+  },
+  {
+    "name": "Juniper JunOS",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "JUnit",
+    "category": "tool",
+    "subcategory": "Testing",
+    "onet_element_id": "T-JUNIT",
+    "aliases": []
+  },
+  {
+    "name": "Jupyter",
+    "category": "tool",
+    "subcategory": "Data Science",
+    "onet_element_id": "T-JUPYTER",
+    "aliases": [
+      "Jupyter Notebook",
+      "JupyterLab"
+    ]
+  },
+  {
+    "name": "Kernel Development",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Key Management",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Kibana",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Knowledge Sharing",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Kotlin",
+    "category": "technical",
+    "subcategory": "Programming Languages",
+    "onet_element_id": "T-KOTLIN",
+    "aliases": []
+  },
+  {
+    "name": "Kubeflow",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Kubernetes",
+    "category": "tool",
+    "subcategory": "DevOps",
+    "onet_element_id": "T-K8S",
+    "aliases": [
+      "K8s"
+    ]
+  },
+  {
+    "name": "Labor Economics",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "LangChain",
+    "category": "tool",
+    "subcategory": "AI/ML",
+    "onet_element_id": "T-LANGCHAIN",
+    "aliases": []
+  },
+  {
+    "name": "Laravel",
+    "category": "technical",
+    "subcategory": "Backend Frameworks",
+    "onet_element_id": "T-LARAVEL",
+    "aliases": []
+  },
+  {
+    "name": "Large Language Models",
+    "category": "technical",
+    "subcategory": "AI/ML",
+    "onet_element_id": "T-LLM",
+    "aliases": [
+      "Foundation Models",
+      "LLMs"
+    ]
+  },
+  {
+    "name": "Launch Management",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "LaunchDarkly",
+    "category": "tool",
+    "subcategory": "DevOps",
+    "onet_element_id": "T-LAUNCHDARKLY",
+    "aliases": [
+      "Feature Flags"
+    ]
+  },
+  {
+    "name": "Lead Generation",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Leadership",
+    "category": "soft",
+    "subcategory": "Leadership",
+    "onet_element_id": "T-LEADERSHIP",
+    "aliases": []
+  },
+  {
+    "name": "Lean Methodology",
+    "category": "domain",
+    "subcategory": "Project Management",
+    "onet_element_id": "T-LEAN",
+    "aliases": [
+      "Lean",
+      "Lean Startup"
+    ]
+  },
+  {
+    "name": "Learning Strategies",
+    "category": "soft",
+    "subcategory": "Process",
+    "onet_element_id": "2.A.2.c",
+    "aliases": []
+  },
+  {
+    "name": "Lease Accounting",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Legal Operations",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Legal Writing",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Lifecycle Marketing",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Linear",
+    "category": "tool",
+    "subcategory": "Project Management",
+    "onet_element_id": "T-LINEAR",
+    "aliases": []
+  },
+  {
+    "name": "LinkedIn Sales Navigator",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Linux",
+    "category": "technical",
+    "subcategory": "Operating Systems",
+    "onet_element_id": "T-LINUX",
+    "aliases": [
+      "Linux Administration",
+      "Unix"
+    ]
+  },
+  {
+    "name": "Litigation",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Load Balancing",
+    "category": "technical",
+    "subcategory": "Architecture",
+    "onet_element_id": "T-LOADBALANCE",
+    "aliases": []
+  },
+  {
+    "name": "Logistics",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Looker",
+    "category": "tool",
+    "subcategory": "Data Science",
+    "onet_element_id": "T-LOOKER",
+    "aliases": []
+  },
+  {
+    "name": "Lua",
+    "category": "technical",
+    "subcategory": "Programming Languages",
+    "onet_element_id": "T-LUA",
+    "aliases": []
+  },
+  {
+    "name": "Machine Learning",
+    "category": "technical",
+    "subcategory": "Data Science",
+    "onet_element_id": "T-ML",
+    "aliases": [
+      "ML"
+    ]
+  },
+  {
+    "name": "macOS",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Macroeconomic Modeling",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Malware Analysis",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Management of Financial Resources",
+    "category": "soft",
+    "subcategory": "Resource Management",
+    "onet_element_id": "2.B.5.b",
+    "aliases": [
+      "Budget Management",
+      "Financial Management"
+    ]
+  },
+  {
+    "name": "Management of Material Resources",
+    "category": "soft",
+    "subcategory": "Resource Management",
+    "onet_element_id": "2.B.5.c",
+    "aliases": []
+  },
+  {
+    "name": "Management of Personnel Resources",
+    "category": "soft",
+    "subcategory": "Resource Management",
+    "onet_element_id": "2.B.5.d",
+    "aliases": [
+      "People Management",
+      "Team Management"
+    ]
+  },
+  {
+    "name": "Manufacturing",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "MariaDB",
+    "category": "tool",
+    "subcategory": "Databases",
+    "onet_element_id": "T-MARIADB",
+    "aliases": []
+  },
+  {
+    "name": "Market Research",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Marketing",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Marketing Operations",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Marketo",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Material UI",
+    "category": "tool",
+    "subcategory": "Frontend Frameworks",
+    "onet_element_id": "T-MUI",
+    "aliases": [
+      "Material Design",
+      "MUI"
+    ]
+  },
+  {
+    "name": "Materials Management",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Mathematics",
+    "category": "technical",
+    "subcategory": "Content",
+    "onet_element_id": "2.A.1.e",
+    "aliases": []
+  },
+  {
+    "name": "MATLAB",
+    "category": "technical",
+    "subcategory": "Programming Languages",
+    "onet_element_id": "T-MATLAB",
+    "aliases": []
+  },
+  {
+    "name": "Matplotlib",
+    "category": "tool",
+    "subcategory": "Data Science",
+    "onet_element_id": "T-MATPLOTLIB",
+    "aliases": []
+  },
+  {
+    "name": "Measurement",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Mechanical Engineering",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Media Relations",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Memcached",
+    "category": "tool",
+    "subcategory": "Databases",
+    "onet_element_id": "T-MEMCACHED",
+    "aliases": []
+  },
+  {
+    "name": "Memory Management",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Mentoring",
+    "category": "soft",
+    "subcategory": "Leadership",
+    "onet_element_id": "T-MENTORING",
+    "aliases": [
+      "Coaching"
+    ]
+  },
+  {
+    "name": "Mergers and Acquisitions",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Message Queue Architecture",
+    "category": "technical",
+    "subcategory": "Architecture",
+    "onet_element_id": "T-MQARCH",
+    "aliases": [
+      "Message-Driven Architecture"
+    ]
+  },
+  {
+    "name": "Messaging",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Metabase",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Metadata Management",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Metasploit",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Metrics Design",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Microarchitecture",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Microservices Architecture",
+    "category": "technical",
+    "subcategory": "Architecture",
+    "onet_element_id": "T-MICROSERVICES",
+    "aliases": [
+      "Microservices"
+    ]
+  },
+  {
+    "name": "Microsoft Azure",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-AZURE",
+    "aliases": [
+      "Azure"
+    ]
+  },
+  {
+    "name": "Microsoft Excel",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Microsoft Office",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Miro",
+    "category": "tool",
+    "subcategory": "Design",
+    "onet_element_id": "T-MIRO",
+    "aliases": []
+  },
+  {
+    "name": "MLflow",
+    "category": "tool",
+    "subcategory": "AI/ML",
+    "onet_element_id": "T-MLFLOW",
+    "aliases": []
+  },
+  {
+    "name": "MLOps",
+    "category": "technical",
+    "subcategory": "AI/ML",
+    "onet_element_id": "T-MLOPS",
+    "aliases": [
+      "ML Engineering"
+    ]
+  },
+  {
+    "name": "Mobile Development",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Mobile Device Management",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Mocha",
+    "category": "tool",
+    "subcategory": "Testing",
+    "onet_element_id": "T-MOCHA",
+    "aliases": [
+      "Chai"
+    ]
+  },
+  {
+    "name": "Model Training",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Monetization",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "MongoDB",
+    "category": "tool",
+    "subcategory": "Databases",
+    "onet_element_id": "T-MONGODB",
+    "aliases": [
+      "Mongo"
+    ]
+  },
+  {
+    "name": "Mongoose",
+    "category": "tool",
+    "subcategory": "Backend Frameworks",
+    "onet_element_id": "T-MONGOOSE",
+    "aliases": []
+  },
+  {
+    "name": "Monitoring",
+    "category": "soft",
+    "subcategory": "Process",
+    "onet_element_id": "2.A.2.d",
+    "aliases": []
+  },
+  {
+    "name": "Month-End Close",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Motion Graphics",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Multi-cloud Architecture",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Multimodal AI",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Multitasking",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Music Industry Knowledge",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Music Information Retrieval",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "MySQL",
+    "category": "tool",
+    "subcategory": "Databases",
+    "onet_element_id": "T-MYSQL",
+    "aliases": []
+  },
+  {
+    "name": "National Security",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "NATS",
+    "category": "tool",
+    "subcategory": "Messaging",
+    "onet_element_id": "T-NATS",
+    "aliases": [
+      "NATS.io"
+    ]
+  },
+  {
+    "name": "Natural Language Processing",
+    "category": "technical",
+    "subcategory": "Data Science",
+    "onet_element_id": "T-NLP",
+    "aliases": [
+      "NLP"
+    ]
+  },
+  {
+    "name": "Navan",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "NCCL",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Negotiation",
+    "category": "soft",
+    "subcategory": "Social",
+    "onet_element_id": "2.B.1.d",
+    "aliases": []
+  },
+  {
+    "name": "Neo4j",
+    "category": "tool",
+    "subcategory": "Databases",
+    "onet_element_id": "T-NEO4J",
+    "aliases": []
+  },
+  {
+    "name": "NestJS",
+    "category": "technical",
+    "subcategory": "Backend Frameworks",
+    "onet_element_id": "T-NESTJS",
+    "aliases": []
+  },
+  {
+    "name": "NetSuite",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Network Engineering",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Network Performance",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Network Security",
+    "category": "technical",
+    "subcategory": "Security",
+    "onet_element_id": "T-NETSEC",
+    "aliases": []
+  },
+  {
+    "name": "Networking",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "New Business Acquisition",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "New Relic",
+    "category": "tool",
+    "subcategory": "Observability",
+    "onet_element_id": "T-NEWRELIC",
+    "aliases": []
+  },
+  {
+    "name": "Next.js",
+    "category": "technical",
+    "subcategory": "Frontend Frameworks",
+    "onet_element_id": "T-NEXTJS",
+    "aliases": [
+      "Next",
+      "NextJS"
+    ]
+  },
+  {
+    "name": "NFS",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Nginx",
+    "category": "tool",
+    "subcategory": "DevOps",
+    "onet_element_id": "T-NGINX",
+    "aliases": []
+  },
+  {
+    "name": "Nix",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Node.js",
+    "category": "technical",
+    "subcategory": "Backend Frameworks",
+    "onet_element_id": "T-NODE",
+    "aliases": [
+      "Node",
+      "NodeJS"
+    ]
+  },
+  {
+    "name": "Nomad",
+    "category": "tool",
+    "subcategory": "DevOps",
+    "onet_element_id": "T-NOMAD",
+    "aliases": [
+      "HashiCorp Nomad"
+    ]
+  },
+  {
+    "name": "Notion",
+    "category": "tool",
+    "subcategory": "Project Management",
+    "onet_element_id": "T-NOTION",
+    "aliases": []
+  },
+  {
+    "name": "npm",
+    "category": "tool",
+    "subcategory": "Build Tools",
+    "onet_element_id": "T-NPM",
+    "aliases": [
+      "pnpm",
+      "yarn"
+    ]
+  },
+  {
+    "name": "NumPy",
+    "category": "tool",
+    "subcategory": "Data Science",
+    "onet_element_id": "T-NUMPY",
+    "aliases": []
+  },
+  {
+    "name": "Nuxt.js",
+    "category": "tool",
+    "subcategory": "Frontend Frameworks",
+    "onet_element_id": "T-NUXT",
+    "aliases": [
+      "Nuxt",
+      "NuxtJS"
+    ]
+  },
+  {
+    "name": "NVIDIA GPUs",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Nx",
+    "category": "tool",
+    "subcategory": "Build Tools",
+    "onet_element_id": "T-NX",
+    "aliases": []
+  },
+  {
+    "name": "OAuth",
+    "category": "technical",
+    "subcategory": "APIs",
+    "onet_element_id": "T-OAUTH",
+    "aliases": [
+      "OAuth 2.0",
+      "OIDC",
+      "OpenID Connect"
+    ]
+  },
+  {
+    "name": "Object Storage",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Objection Handling",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Objective-C",
+    "category": "technical",
+    "subcategory": "Programming Languages",
+    "onet_element_id": "T-OBJC",
+    "aliases": [
+      "ObjC"
+    ]
+  },
+  {
+    "name": "Observability",
+    "category": "technical",
+    "subcategory": "Operations",
+    "onet_element_id": "T-OBSERVABILITY",
+    "aliases": [
+      "Logging",
+      "Monitoring",
+      "Tracing"
+    ]
+  },
+  {
+    "name": "Offensive Security",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "OKRs",
+    "category": "domain",
+    "subcategory": "Project Management",
+    "onet_element_id": "T-OKRS",
+    "aliases": [
+      "Objectives and Key Results"
+    ]
+  },
+  {
+    "name": "Okta",
+    "category": "tool",
+    "subcategory": "Security",
+    "onet_element_id": "T-OKTA",
+    "aliases": []
+  },
+  {
+    "name": "Onboarding",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Open Source",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "OpenAI API",
+    "category": "tool",
+    "subcategory": "AI/ML",
+    "onet_element_id": "T-OPENAIAPI",
+    "aliases": [
+      "ChatGPT API",
+      "GPT API"
+    ]
+  },
+  {
+    "name": "OpenTelemetry",
+    "category": "tool",
+    "subcategory": "Observability",
+    "onet_element_id": "T-OTEL",
+    "aliases": [
+      "OTel"
+    ]
+  },
+  {
+    "name": "Operating Systems",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Operational Excellence",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Operations Analysis",
+    "category": "technical",
+    "subcategory": "Technical",
+    "onet_element_id": "2.B.3.a",
+    "aliases": []
+  },
+  {
+    "name": "Operations Management",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Operations Monitoring",
+    "category": "technical",
+    "subcategory": "Technical",
+    "onet_element_id": "2.B.3.h",
+    "aliases": []
+  },
+  {
+    "name": "Optimization",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Oracle",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Order Management",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Organization",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Organizational Development",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Organizational Skills",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "OSPF",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Outreach",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Packer",
+    "category": "tool",
+    "subcategory": "DevOps",
+    "onet_element_id": "T-PACKER",
+    "aliases": [
+      "HashiCorp Packer"
+    ]
+  },
+  {
+    "name": "PagerDuty",
+    "category": "tool",
+    "subcategory": "Observability",
+    "onet_element_id": "T-PAGERDUTY",
+    "aliases": []
+  },
+  {
+    "name": "Paid Media",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Pair Programming",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Pandas",
+    "category": "tool",
+    "subcategory": "Data Science",
+    "onet_element_id": "T-PANDAS",
+    "aliases": []
+  },
+  {
+    "name": "Partner Management",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Partner Marketing",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Partnership Management",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Pattern Recognition",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Payments",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Payroll",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "PCB Design",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "PCI DSS",
+    "category": "domain",
+    "subcategory": "Security",
+    "onet_element_id": "T-PCI",
+    "aliases": [
+      "PCI Compliance"
+    ]
+  },
+  {
+    "name": "PCI DSS Compliance",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Penetration Testing",
+    "category": "technical",
+    "subcategory": "Security",
+    "onet_element_id": "T-PENTEST",
+    "aliases": [
+      "Ethical Hacking",
+      "Pentesting"
+    ]
+  },
+  {
+    "name": "Performance Management",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Performance Marketing",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Performance Optimization",
+    "category": "technical",
+    "subcategory": "Architecture",
+    "onet_element_id": "T-PERF",
+    "aliases": [
+      "Performance Tuning"
+    ]
+  },
+  {
+    "name": "Perl",
+    "category": "technical",
+    "subcategory": "Programming Languages",
+    "onet_element_id": "T-PERL",
+    "aliases": []
+  },
+  {
+    "name": "Personalization",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Persuasion",
+    "category": "soft",
+    "subcategory": "Social",
+    "onet_element_id": "2.B.1.c",
+    "aliases": []
+  },
+  {
+    "name": "PHP",
+    "category": "technical",
+    "subcategory": "Programming Languages",
+    "onet_element_id": "T-PHP",
+    "aliases": []
+  },
+  {
+    "name": "Physical Security",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Physics",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Pigment",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Pipeline Management",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Platform Engineering",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Playwright",
+    "category": "tool",
+    "subcategory": "Testing",
+    "onet_element_id": "T-PLAYWRIGHT",
+    "aliases": []
+  },
+  {
+    "name": "Plotly",
+    "category": "tool",
+    "subcategory": "Data Science",
+    "onet_element_id": "T-PLOTLY",
+    "aliases": [
+      "Dash"
+    ]
+  },
+  {
+    "name": "Podman",
+    "category": "tool",
+    "subcategory": "DevOps",
+    "onet_element_id": "T-PODMAN",
+    "aliases": []
+  },
+  {
+    "name": "Policy Development",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Policy Enforcement",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Political Theory",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Portfolio Management",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Positioning",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Post-training",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "PostgreSQL",
+    "category": "tool",
+    "subcategory": "Databases",
+    "onet_element_id": "T-POSTGRES",
+    "aliases": [
+      "PG",
+      "Postgres"
+    ]
+  },
+  {
+    "name": "Postman",
+    "category": "tool",
+    "subcategory": "APIs",
+    "onet_element_id": "T-POSTMAN",
+    "aliases": []
+  },
+  {
+    "name": "Power BI",
+    "category": "tool",
+    "subcategory": "Data Science",
+    "onet_element_id": "T-POWERBI",
+    "aliases": [
+      "PowerBI"
+    ]
+  },
+  {
+    "name": "PowerPoint",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "PowerShell",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Pragmatism",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Presentation Skills",
+    "category": "soft",
+    "subcategory": "Communication",
+    "onet_element_id": "T-PRESENTATION",
+    "aliases": [
+      "Public Speaking"
+    ]
+  },
+  {
+    "name": "Presto",
+    "category": "tool",
+    "subcategory": "Data Science",
+    "onet_element_id": "T-PRESTO",
+    "aliases": [
+      "PrestoDB",
+      "Trino"
+    ]
+  },
+  {
+    "name": "Prettier",
+    "category": "tool",
+    "subcategory": "Build Tools",
+    "onet_element_id": "T-PRETTIER",
+    "aliases": []
+  },
+  {
+    "name": "Pricing Strategy",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Primavera P6",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Prioritization",
+    "category": "soft",
+    "subcategory": "Personal",
+    "onet_element_id": "T-PRIORITIZATION",
+    "aliases": []
+  },
+  {
+    "name": "Prisma",
+    "category": "tool",
+    "subcategory": "Backend Frameworks",
+    "onet_element_id": "T-PRISMA",
+    "aliases": []
+  },
+  {
+    "name": "Privacy",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Private Credit",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Private Equity",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Privileged Access Management",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Proactive",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Probabilistic Modeling",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Problem Solving",
+    "category": "soft",
+    "subcategory": "Problem Solving",
+    "onet_element_id": "T-PROBLEMSOLVING",
+    "aliases": []
+  },
+  {
+    "name": "Process Improvement",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Procurement",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Product Demonstrations",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Product Design",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Product Development",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Product Engineering",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Product Feedback",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Product Intuition",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Product Knowledge",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Product Management",
+    "category": "domain",
+    "subcategory": "Project Management",
+    "onet_element_id": "T-PM",
+    "aliases": []
+  },
+  {
+    "name": "Product Marketing",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Product Operations",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Product Positioning",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Product Roadmap",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Product Scoping",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Product Sense",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Product Strategy",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Product Thinking",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Product-Focused Approach",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Product-Led Growth",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Production Management",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Production Ownership",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Production Systems",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Professional Services",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Profiling",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Program Management",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Programming",
+    "category": "technical",
+    "subcategory": "Technical",
+    "onet_element_id": "2.B.3.e",
+    "aliases": [
+      "Coding",
+      "Software Development"
+    ]
+  },
+  {
+    "name": "Progressive Web Apps",
+    "category": "technical",
+    "subcategory": "Mobile Development",
+    "onet_element_id": "T-PWA",
+    "aliases": [
+      "PWA",
+      "PWAs"
+    ]
+  },
+  {
+    "name": "Project Finance",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Project Management",
+    "category": "domain",
+    "subcategory": "Project Management",
+    "onet_element_id": "T-PROJMGMT",
+    "aliases": [
+      "PMP"
+    ]
+  },
+  {
+    "name": "Prometheus",
+    "category": "tool",
+    "subcategory": "Observability",
+    "onet_element_id": "T-PROMETHEUS",
+    "aliases": []
+  },
+  {
+    "name": "Prompt Engineering",
+    "category": "technical",
+    "subcategory": "AI/ML",
+    "onet_element_id": "T-PROMPTENG",
+    "aliases": []
+  },
+  {
+    "name": "Proof of Concept Development",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Prospecting",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Prototyping",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Psychological Safety",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Public Policy",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Public Relations",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Pulumi",
+    "category": "tool",
+    "subcategory": "DevOps",
+    "onet_element_id": "T-PULUMI",
+    "aliases": []
+  },
+  {
+    "name": "pytest",
+    "category": "tool",
+    "subcategory": "Testing",
+    "onet_element_id": "T-PYTEST",
+    "aliases": []
+  },
+  {
+    "name": "Python",
+    "category": "technical",
+    "subcategory": "Programming Languages",
+    "onet_element_id": "T-PY",
+    "aliases": []
+  },
+  {
+    "name": "PyTorch",
+    "category": "tool",
+    "subcategory": "Data Science",
+    "onet_element_id": "T-PYTORCH",
+    "aliases": []
+  },
+  {
+    "name": "Qualification",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Quality Control Analysis",
+    "category": "technical",
+    "subcategory": "Technical",
+    "onet_element_id": "2.B.3.g",
+    "aliases": [
+      "QA",
+      "Quality Assurance"
+    ]
+  },
+  {
+    "name": "Quantitative Analysis",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Quarterly Business Reviews",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Query Optimization",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Quota Achievement",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "R",
+    "category": "technical",
+    "subcategory": "Programming Languages",
+    "onet_element_id": "T-R",
+    "aliases": []
+  },
+  {
+    "name": "RabbitMQ",
+    "category": "tool",
+    "subcategory": "Messaging",
+    "onet_element_id": "T-RABBITMQ",
+    "aliases": []
+  },
+  {
+    "name": "Ranking Systems",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Rapid Prototyping",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Rate Limiting",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Ray",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "React",
+    "category": "technical",
+    "subcategory": "Frontend Frameworks",
+    "onet_element_id": "T-REACT",
+    "aliases": [
+      "React.js",
+      "ReactJS"
+    ]
+  },
+  {
+    "name": "React Native",
+    "category": "technical",
+    "subcategory": "Mobile Development",
+    "onet_element_id": "T-RN",
+    "aliases": [
+      "RN"
+    ]
+  },
+  {
+    "name": "React Query",
+    "category": "tool",
+    "subcategory": "Frontend Frameworks",
+    "onet_element_id": "T-REACTQUERY",
+    "aliases": [
+      "TanStack Query"
+    ]
+  },
+  {
+    "name": "Reading Comprehension",
+    "category": "soft",
+    "subcategory": "Content",
+    "onet_element_id": "2.A.1.a",
+    "aliases": []
+  },
+  {
+    "name": "Real Estate",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Real-time Systems",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Recommendation Systems",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Reconciliation",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Recruitment",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Red Teaming",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Redis",
+    "category": "tool",
+    "subcategory": "Databases",
+    "onet_element_id": "T-REDIS",
+    "aliases": []
+  },
+  {
+    "name": "Redshift",
+    "category": "tool",
+    "subcategory": "Data Science",
+    "onet_element_id": "T-REDSHIFT",
+    "aliases": [
+      "Amazon Redshift",
+      "AWS Redshift"
+    ]
+  },
+  {
+    "name": "Redux",
+    "category": "tool",
+    "subcategory": "Frontend Frameworks",
+    "onet_element_id": "T-REDUX",
+    "aliases": [
+      "Redux Toolkit",
+      "RTK"
+    ]
+  },
+  {
+    "name": "Regulatory Compliance",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Reinforcement Learning",
+    "category": "technical",
+    "subcategory": "AI/ML",
+    "onet_element_id": "T-RL",
+    "aliases": [
+      "RL"
+    ]
+  },
+  {
+    "name": "Relationship Building",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Reliability",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Reliability Engineering",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Remix",
+    "category": "technical",
+    "subcategory": "Frontend Frameworks",
+    "onet_element_id": "T-REMIX",
+    "aliases": []
+  },
+  {
+    "name": "Remote Collaboration",
+    "category": "soft",
+    "subcategory": "Collaboration",
+    "onet_element_id": "T-REMOTE",
+    "aliases": []
+  },
+  {
+    "name": "Renewal Management",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Replication",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Reporting",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Request Routing",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Requirements Gathering",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Research",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Resilience",
+    "category": "soft",
+    "subcategory": "Personal",
+    "onet_element_id": "T-RESILIENCE",
+    "aliases": [
+      "Grit"
+    ]
+  },
+  {
+    "name": "Resource Management",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Resourcefulness",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Responsive Design",
+    "category": "technical",
+    "subcategory": "Frontend Fundamentals",
+    "onet_element_id": "T-RESPONSIVE",
+    "aliases": [
+      "Mobile-First Design"
+    ]
+  },
+  {
+    "name": "Responsiveness",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "REST API Design",
+    "category": "technical",
+    "subcategory": "APIs",
+    "onet_element_id": "T-REST",
+    "aliases": [
+      "REST",
+      "REST APIs",
+      "RESTful"
+    ]
+  },
+  {
+    "name": "Retail",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Retention",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Retool",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Retrieval-Augmented Generation",
+    "category": "technical",
+    "subcategory": "AI/ML",
+    "onet_element_id": "T-RAG",
+    "aliases": [
+      "RAG"
+    ]
+  },
+  {
+    "name": "Revenue Operations",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Revenue Recognition",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Reverse Engineering",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Revit",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Reward Modeling",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Risk Management",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Roadmap Planning",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Robotics",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Robustness",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "ROI Analysis",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Role-Based Access Control",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Root Cause Analysis",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "RTL Design",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Ruby",
+    "category": "technical",
+    "subcategory": "Programming Languages",
+    "onet_element_id": "T-RUBY",
+    "aliases": []
+  },
+  {
+    "name": "Ruby on Rails",
+    "category": "technical",
+    "subcategory": "Backend Frameworks",
+    "onet_element_id": "T-RAILS",
+    "aliases": [
+      "Rails",
+      "RoR"
+    ]
+  },
+  {
+    "name": "Rust",
+    "category": "technical",
+    "subcategory": "Programming Languages",
+    "onet_element_id": "T-RUST",
+    "aliases": []
+  },
+  {
+    "name": "SaaS",
+    "category": "domain",
+    "subcategory": "Industry",
+    "onet_element_id": "T-SAAS",
+    "aliases": [
+      "Software as a Service"
+    ]
+  },
+  {
+    "name": "Safety",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Sales",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Sales Development",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Sales Enablement",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Sales Engineering",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Sales Leadership",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Sales Management",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Sales Operations",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Sales Strategy",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Sales Support",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Salesforce",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Salesloft",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "SAML",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "SAP",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "SASS/SCSS",
+    "category": "technical",
+    "subcategory": "Frontend Frameworks",
+    "onet_element_id": "T-SASS",
+    "aliases": [
+      "SASS",
+      "SCSS"
+    ]
+  },
+  {
+    "name": "Scala",
+    "category": "technical",
+    "subcategory": "Programming Languages",
+    "onet_element_id": "T-SCALA",
+    "aliases": []
+  },
+  {
+    "name": "Scalability",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Scenario Planning",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Scheduling",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Science",
+    "category": "technical",
+    "subcategory": "Content",
+    "onet_element_id": "2.A.1.f",
+    "aliases": []
+  },
+  {
+    "name": "Scientific Research",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Scikit-learn",
+    "category": "tool",
+    "subcategory": "Data Science",
+    "onet_element_id": "T-SKLEARN",
+    "aliases": [
+      "sklearn"
+    ]
+  },
+  {
+    "name": "SciPy",
+    "category": "tool",
+    "subcategory": "Data Science",
+    "onet_element_id": "T-SCIPY",
+    "aliases": []
+  },
+  {
+    "name": "Scope Management",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Scripting",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "SDK Development",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Seaborn",
+    "category": "tool",
+    "subcategory": "Data Science",
+    "onet_element_id": "T-SEABORN",
+    "aliases": []
+  },
+  {
+    "name": "SEC Reporting",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Secrets Management",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Secure Boot",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Secure Coding",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Secure Design",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Security",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Security Architecture",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Security Engineering",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Security Operations",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Segment",
+    "category": "tool",
+    "subcategory": "Product",
+    "onet_element_id": "T-SEGMENT",
+    "aliases": []
+  },
+  {
+    "name": "Segment Marketing",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Segmentation",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Selenium",
+    "category": "tool",
+    "subcategory": "Testing",
+    "onet_element_id": "T-SELENIUM",
+    "aliases": [
+      "Selenium WebDriver"
+    ]
+  },
+  {
+    "name": "Self-Motivation",
+    "category": "soft",
+    "subcategory": "Personal",
+    "onet_element_id": "T-SELFMOTIVATION",
+    "aliases": [
+      "Initiative",
+      "Self-Starter"
+    ]
+  },
+  {
+    "name": "SendGrid",
+    "category": "tool",
+    "subcategory": "APIs",
+    "onet_element_id": "T-SENDGRID",
+    "aliases": []
+  },
+  {
+    "name": "Sentiment Analysis",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Sentry",
+    "category": "tool",
+    "subcategory": "Observability",
+    "onet_element_id": "T-SENTRY",
+    "aliases": []
+  },
+  {
+    "name": "SEO",
+    "category": "domain",
+    "subcategory": "Product",
+    "onet_element_id": "T-SEO",
+    "aliases": [
+      "Search Engine Optimization"
+    ]
+  },
+  {
+    "name": "Sequelize",
+    "category": "tool",
+    "subcategory": "Backend Frameworks",
+    "onet_element_id": "T-SEQUELIZE",
+    "aliases": []
+  },
+  {
+    "name": "Server-Side Rendering",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Serverless Architecture",
+    "category": "technical",
+    "subcategory": "Architecture",
+    "onet_element_id": "T-SERVERLESS",
+    "aliases": [
+      "FaaS",
+      "Function as a Service"
+    ]
+  },
+  {
+    "name": "Service Orientation",
+    "category": "soft",
+    "subcategory": "Social",
+    "onet_element_id": "2.B.1.f",
+    "aliases": []
+  },
+  {
+    "name": "Service-Oriented Architecture",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "ServiceNow",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "shadcn/ui",
+    "category": "tool",
+    "subcategory": "Frontend Frameworks",
+    "onet_element_id": "T-SHADCN",
+    "aliases": [
+      "shadcn"
+    ]
+  },
+  {
+    "name": "Shell Scripting",
+    "category": "technical",
+    "subcategory": "Programming Languages",
+    "onet_element_id": "T-SHELL",
+    "aliases": [
+      "Bash",
+      "Bash Scripting",
+      "Shell",
+      "Zsh"
+    ]
+  },
+  {
+    "name": "SIEM",
+    "category": "technical",
+    "subcategory": "Security",
+    "onet_element_id": "T-SIEM",
+    "aliases": []
+  },
+  {
+    "name": "Signal Processing",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Simulation",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Site Reliability Engineering",
+    "category": "domain",
+    "subcategory": "Operations",
+    "onet_element_id": "T-SRE",
+    "aliases": [
+      "SRE"
+    ]
+  },
+  {
+    "name": "Six Sigma",
+    "category": "domain",
+    "subcategory": "Project Management",
+    "onet_element_id": "T-SIXSIGMA",
+    "aliases": []
+  },
+  {
+    "name": "Sketch",
+    "category": "tool",
+    "subcategory": "Design",
+    "onet_element_id": "T-SKETCH",
+    "aliases": []
+  },
+  {
+    "name": "Slack",
+    "category": "tool",
+    "subcategory": "Communication",
+    "onet_element_id": "T-SLACK",
+    "aliases": []
+  },
+  {
+    "name": "Slurm",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Smart Contracts",
+    "category": "technical",
+    "subcategory": "Blockchain",
+    "onet_element_id": "T-SMARTCONTRACT",
+    "aliases": []
+  },
+  {
+    "name": "Snowflake",
+    "category": "tool",
+    "subcategory": "Data Science",
+    "onet_element_id": "T-SNOWFLAKE",
+    "aliases": []
+  },
+  {
+    "name": "SOC 2 Compliance",
+    "category": "domain",
+    "subcategory": "Security",
+    "onet_element_id": "T-SOC2",
+    "aliases": [
+      "SOC 2",
+      "SOC2"
+    ]
+  },
+  {
+    "name": "Social Media Marketing",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Social Perceptiveness",
+    "category": "soft",
+    "subcategory": "Social",
+    "onet_element_id": "2.B.1.a",
+    "aliases": []
+  },
+  {
+    "name": "Social Selling",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Software Engineering",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Solidity",
+    "category": "technical",
+    "subcategory": "Blockchain",
+    "onet_element_id": "T-SOLIDITY",
+    "aliases": []
+  },
+  {
+    "name": "SolidJS",
+    "category": "tool",
+    "subcategory": "Frontend Frameworks",
+    "onet_element_id": "T-SOLID",
+    "aliases": [
+      "Solid",
+      "Solid.js"
+    ]
+  },
+  {
+    "name": "Solution Architecture",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Solutions Architecture",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "SOQL",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Sourcing",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "SOX 2 Compliance",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Speaking",
+    "category": "soft",
+    "subcategory": "Content",
+    "onet_element_id": "2.A.1.d",
+    "aliases": []
+  },
+  {
+    "name": "Splunk",
+    "category": "tool",
+    "subcategory": "Observability",
+    "onet_element_id": "T-SPLUNK",
+    "aliases": []
+  },
+  {
+    "name": "Sponsorship Management",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Spring Boot",
+    "category": "technical",
+    "subcategory": "Backend Frameworks",
+    "onet_element_id": "T-SPRING",
+    "aliases": [
+      "Spring",
+      "Spring Framework"
+    ]
+  },
+  {
+    "name": "SQL",
+    "category": "technical",
+    "subcategory": "Programming Languages",
+    "onet_element_id": "T-SQL",
+    "aliases": [
+      "Structured Query Language"
+    ]
+  },
+  {
+    "name": "SQLAlchemy",
+    "category": "tool",
+    "subcategory": "Backend Frameworks",
+    "onet_element_id": "T-SQLALCHEMY",
+    "aliases": []
+  },
+  {
+    "name": "SQLite",
+    "category": "tool",
+    "subcategory": "Databases",
+    "onet_element_id": "T-SQLITE",
+    "aliases": []
+  },
+  {
+    "name": "Stakeholder Communication",
+    "category": "soft",
+    "subcategory": "Communication",
+    "onet_element_id": "T-STAKEHOLDER",
+    "aliases": []
+  },
+  {
+    "name": "Stakeholder Management",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Startup Experience",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "State Management",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Statistical Analysis",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Storage Systems",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Storybook",
+    "category": "tool",
+    "subcategory": "Frontend Frameworks",
+    "onet_element_id": "T-STORYBOOK",
+    "aliases": []
+  },
+  {
+    "name": "Storytelling",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Strategic Planning",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Strategic Sourcing",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Strategic Thinking",
+    "category": "soft",
+    "subcategory": "Leadership",
+    "onet_element_id": "T-STRATEGIC",
+    "aliases": []
+  },
+  {
+    "name": "Stream Processing",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Streamlit",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Stripe",
+    "category": "tool",
+    "subcategory": "APIs",
+    "onet_element_id": "T-STRIPE",
+    "aliases": []
+  },
+  {
+    "name": "Subject Matter Expertise",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Supabase",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-SUPABASE",
+    "aliases": []
+  },
+  {
+    "name": "Supabase Edge Functions",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-SUPEDGE",
+    "aliases": []
+  },
+  {
+    "name": "Supabase Realtime",
+    "category": "tool",
+    "subcategory": "Databases",
+    "onet_element_id": "T-SUPAREALTIME",
+    "aliases": []
+  },
+  {
+    "name": "Supplier Management",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Supply Chain Management",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Supply Chain Security",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Sustainability",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Svelte",
+    "category": "technical",
+    "subcategory": "Frontend Frameworks",
+    "onet_element_id": "T-SVELTE",
+    "aliases": [
+      "SvelteKit"
+    ]
+  },
+  {
+    "name": "Swagger",
+    "category": "tool",
+    "subcategory": "APIs",
+    "onet_element_id": "T-SWAGGER",
+    "aliases": [
+      "OpenAPI",
+      "OpenAPI Specification"
+    ]
+  },
+  {
+    "name": "Swift",
+    "category": "technical",
+    "subcategory": "Programming Languages",
+    "onet_element_id": "T-SWIFT",
+    "aliases": []
+  },
+  {
+    "name": "Synthesis",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Synthetic data generation",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "System Administration",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "System Configuration",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "System Design",
+    "category": "technical",
+    "subcategory": "Architecture",
+    "onet_element_id": "T-SYSDESIGN",
+    "aliases": []
+  },
+  {
+    "name": "Systems Analysis",
+    "category": "technical",
+    "subcategory": "Systems",
+    "onet_element_id": "2.B.4.g",
+    "aliases": []
+  },
+  {
+    "name": "Systems Architecture",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Systems Design",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Systems Engineering",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Systems Evaluation",
+    "category": "technical",
+    "subcategory": "Systems",
+    "onet_element_id": "2.B.4.h",
+    "aliases": []
+  },
+  {
+    "name": "Systems Integration",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Systems Programming",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Systems Security",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Systems Thinking",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "SystemVerilog",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Tableau",
+    "category": "tool",
+    "subcategory": "Data Science",
+    "onet_element_id": "T-TABLEAU",
+    "aliases": []
+  },
+  {
+    "name": "Tailwind CSS",
+    "category": "technical",
+    "subcategory": "Frontend Frameworks",
+    "onet_element_id": "T-TAILWIND",
+    "aliases": [
+      "Tailwind",
+      "TailwindCSS"
+    ]
+  },
+  {
+    "name": "Talent Acquisition",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Talent Development",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Talent Management",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Talent Strategy",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Tax Management",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "TCP/IP",
+    "category": "technical",
+    "subcategory": "Networking",
+    "onet_element_id": "T-TCPIP",
+    "aliases": [
+      "Networking Fundamentals"
+    ]
+  },
+  {
+    "name": "Team Building",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Teamwork",
+    "category": "soft",
+    "subcategory": "Collaboration",
+    "onet_element_id": "T-TEAMWORK",
+    "aliases": [
+      "Collaboration",
+      "Team Player"
+    ]
+  },
+  {
+    "name": "Technical Account Management",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Technical Accounting",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Technical Acumen",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Technical Communication",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Technical Consulting",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Technical Content Creation",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Technical Documentation",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Technical Fluency",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Technical Leadership",
+    "category": "soft",
+    "subcategory": "Leadership",
+    "onet_element_id": "T-TECHLEAD",
+    "aliases": [
+      "Engineering Leadership",
+      "Tech Lead"
+    ]
+  },
+  {
+    "name": "Technical Marketing",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Technical Presentations",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Technical Program Management",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Technical Sales",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Technical Support",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Technical Writing",
+    "category": "domain",
+    "subcategory": "Communication",
+    "onet_element_id": "T-TECHWRITING",
+    "aliases": []
+  },
+  {
+    "name": "Technology Design",
+    "category": "technical",
+    "subcategory": "Technical",
+    "onet_element_id": "2.B.3.b",
+    "aliases": []
+  },
+  {
+    "name": "Telemetry",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Temporal",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "TensorFlow",
+    "category": "tool",
+    "subcategory": "Data Science",
+    "onet_element_id": "T-TENSORFLOW",
+    "aliases": [
+      "TF"
+    ]
+  },
+  {
+    "name": "TensorRT",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Terraform",
+    "category": "tool",
+    "subcategory": "DevOps",
+    "onet_element_id": "T-TERRAFORM",
+    "aliases": [
+      "IaC"
+    ]
+  },
+  {
+    "name": "Terraform Cloud",
+    "category": "tool",
+    "subcategory": "DevOps",
+    "onet_element_id": "T-TFCLOUD",
+    "aliases": []
+  },
+  {
+    "name": "Territory Management",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Test-Driven Development",
+    "category": "technical",
+    "subcategory": "Testing",
+    "onet_element_id": "T-TDD",
+    "aliases": [
+      "TDD"
+    ]
+  },
+  {
+    "name": "Testing",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Testing Library",
+    "category": "tool",
+    "subcategory": "Testing",
+    "onet_element_id": "T-TESTINGLIB",
+    "aliases": [
+      "React Testing Library",
+      "RTL"
+    ]
+  },
+  {
+    "name": "Thermal Management",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Thought Leadership",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Threat Detection",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Threat Hunting",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Threat Intelligence",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Threat Modeling",
+    "category": "technical",
+    "subcategory": "Security",
+    "onet_element_id": "T-THREATMODEL",
+    "aliases": []
+  },
+  {
+    "name": "Three.js",
+    "category": "tool",
+    "subcategory": "Frontend Frameworks",
+    "onet_element_id": "T-THREEJS",
+    "aliases": []
+  },
+  {
+    "name": "Time Management",
+    "category": "soft",
+    "subcategory": "Resource Management",
+    "onet_element_id": "2.B.5.a",
+    "aliases": []
+  },
+  {
+    "name": "Time Series Forecasting",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "TLS",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Total Rewards",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Training and Development",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Transfer Pricing",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Transparency",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Treasury",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Trend Analysis",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Triage",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Triton",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Troubleshooting",
+    "category": "technical",
+    "subcategory": "Technical",
+    "onet_element_id": "2.B.3.k",
+    "aliases": [
+      "Debugging"
+    ]
+  },
+  {
+    "name": "tRPC",
+    "category": "tool",
+    "subcategory": "Backend Frameworks",
+    "onet_element_id": "T-TRPC",
+    "aliases": []
+  },
+  {
+    "name": "Trust and Safety",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Trusted Advisor",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Turbopack",
+    "category": "tool",
+    "subcategory": "Build Tools",
+    "onet_element_id": "T-TURBOPACK",
+    "aliases": []
+  },
+  {
+    "name": "Turborepo",
+    "category": "tool",
+    "subcategory": "Build Tools",
+    "onet_element_id": "T-TURBOREPO",
+    "aliases": []
+  },
+  {
+    "name": "Twilio",
+    "category": "tool",
+    "subcategory": "APIs",
+    "onet_element_id": "T-TWILIO",
+    "aliases": []
+  },
+  {
+    "name": "TypeORM",
+    "category": "tool",
+    "subcategory": "Backend Frameworks",
+    "onet_element_id": "T-TYPEORM",
+    "aliases": []
+  },
+  {
+    "name": "TypeScript",
+    "category": "technical",
+    "subcategory": "Programming Languages",
+    "onet_element_id": "T-TS",
+    "aliases": [
+      "TS"
+    ]
+  },
+  {
+    "name": "Typography",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "UDP",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "UI Design",
+    "category": "domain",
+    "subcategory": "Design",
+    "onet_element_id": "T-UI",
+    "aliases": [
+      "User Interface Design"
+    ]
+  },
+  {
+    "name": "Unit Testing",
+    "category": "technical",
+    "subcategory": "Testing",
+    "onet_element_id": "T-UNITTEST",
+    "aliases": []
+  },
+  {
+    "name": "Unity",
+    "category": "tool",
+    "subcategory": "Game Development",
+    "onet_element_id": "T-UNITY",
+    "aliases": []
+  },
+  {
+    "name": "Unreal Engine",
+    "category": "tool",
+    "subcategory": "Game Development",
+    "onet_element_id": "T-UNREAL",
+    "aliases": [
+      "UE5",
+      "Unreal"
+    ]
+  },
+  {
+    "name": "Upselling",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Urgency",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "US GAAP",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "User Empathy",
+    "category": "soft",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "User Experience Design",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "User Research",
+    "category": "domain",
+    "subcategory": "Design",
+    "onet_element_id": "T-USERRESEARCH",
+    "aliases": [
+      "UX Research"
+    ]
+  },
+  {
+    "name": "Utility Management",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "UX Design",
+    "category": "domain",
+    "subcategory": "Design",
+    "onet_element_id": "T-UX",
+    "aliases": [
+      "User Experience",
+      "UX",
+      "UX/UI"
+    ]
+  },
+  {
+    "name": "Vagrant",
+    "category": "tool",
+    "subcategory": "DevOps",
+    "onet_element_id": "T-VAGRANT",
+    "aliases": []
+  },
+  {
+    "name": "Valuation",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Variance Analysis",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Vendor Management",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Venture Capital",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Vercel",
+    "category": "tool",
+    "subcategory": "Cloud Platforms",
+    "onet_element_id": "T-VERCEL",
+    "aliases": []
+  },
+  {
+    "name": "Video Production",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Virtualization",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Visual Design",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Vite",
+    "category": "tool",
+    "subcategory": "Build Tools",
+    "onet_element_id": "T-VITE",
+    "aliases": []
+  },
+  {
+    "name": "Vitest",
+    "category": "tool",
+    "subcategory": "Testing",
+    "onet_element_id": "T-VITEST",
+    "aliases": []
+  },
+  {
+    "name": "vLLM",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "VPN",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Vue.js",
+    "category": "technical",
+    "subcategory": "Frontend Frameworks",
+    "onet_element_id": "T-VUE",
+    "aliases": [
+      "Vue",
+      "VueJS"
+    ]
+  },
+  {
+    "name": "Vulnerability Assessment",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Vulnerability Management",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Vulnerability Research",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Web Application Firewall",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Web Development",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Web Performance",
+    "category": "technical",
+    "subcategory": "Frontend Fundamentals",
+    "onet_element_id": "T-WEBPERF",
+    "aliases": [
+      "Core Web Vitals",
+      "Page Speed"
+    ]
+  },
+  {
+    "name": "WebAssembly",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Webpack",
+    "category": "tool",
+    "subcategory": "Build Tools",
+    "onet_element_id": "T-WEBPACK",
+    "aliases": []
+  },
+  {
+    "name": "WebRTC",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "WebSockets",
+    "category": "technical",
+    "subcategory": "APIs",
+    "onet_element_id": "T-WS",
+    "aliases": []
+  },
+  {
+    "name": "Weights & Biases",
+    "category": "tool",
+    "subcategory": "AI/ML",
+    "onet_element_id": "T-WANDB",
+    "aliases": [
+      "W&B",
+      "WandB"
+    ]
+  },
+  {
+    "name": "Windows",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Wireshark",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Wiz",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Workato",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Workday",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Workflow Optimization",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Workforce Planning",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Workiva",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Workload Optimization",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Writing",
+    "category": "soft",
+    "subcategory": "Content",
+    "onet_element_id": "2.A.1.c",
+    "aliases": []
+  },
+  {
+    "name": "Xamarin",
+    "category": "tool",
+    "subcategory": "Mobile Development",
+    "onet_element_id": "T-XAMARIN",
+    "aliases": [
+      ".NET MAUI"
+    ]
+  },
+  {
+    "name": "XML",
+    "category": "technical",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Zapier",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Zendesk",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Zero Trust Architecture",
+    "category": "technical",
+    "subcategory": "Security",
+    "onet_element_id": "T-ZEROTRUST",
+    "aliases": [
+      "Zero Trust"
+    ]
+  },
+  {
+    "name": "Zoom",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "ZoomInfo",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Zuora",
+    "category": "tool",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Zustand",
+    "category": "tool",
+    "subcategory": "Frontend Frameworks",
+    "onet_element_id": "T-ZUSTAND",
+    "aliases": []
+  }
+]

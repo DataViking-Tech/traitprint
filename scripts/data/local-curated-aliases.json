@@ -1,0 +1,136 @@
+{
+  "Python": [
+    "python3",
+    "cpython",
+    "py",
+    "backend",
+    "server-side"
+  ],
+  "JavaScript": [
+    "js",
+    "ecmascript",
+    "frontend",
+    "front-end",
+    "front end",
+    "web development",
+    "web dev"
+  ],
+  "TypeScript": [
+    "ts"
+  ],
+  "SQL": [
+    "structured query language",
+    "database",
+    "databases",
+    "rdbms",
+    "queries"
+  ],
+  "Go": [
+    "golang",
+    "backend",
+    "server-side"
+  ],
+  "Rust": [
+    "rustlang"
+  ],
+  "React": [
+    "reactjs",
+    "react.js",
+    "frontend",
+    "jsx"
+  ],
+  "Node.js": [
+    "node",
+    "nodejs"
+  ],
+  "Amazon Web Services": [
+    "amazon web services"
+  ],
+  "Docker": [
+    "containerization",
+    "container",
+    "containers"
+  ],
+  "Leadership": [
+    "team leadership",
+    "people management"
+  ],
+  "Communication": [
+    "written communication",
+    "verbal communication"
+  ],
+  "Problem Solving": [
+    "analytical thinking",
+    "critical thinking"
+  ],
+  "Teamwork": [
+    "collaboration",
+    "cross-functional"
+  ],
+  "Mentoring": [
+    "coaching",
+    "mentorship"
+  ],
+  "Data Engineering": [
+    "data pipelines",
+    "data pipeline",
+    "ETL",
+    "ELT",
+    "big data"
+  ],
+  "Machine Learning": [
+    "ML",
+    "deep learning",
+    "AI",
+    "data science",
+    "ds",
+    "ai/ml",
+    "neural networks",
+    "neural network",
+    "nlp",
+    "natural language processing",
+    "llm",
+    "large language models"
+  ],
+  "Product Management": [
+    "product owner",
+    "PM"
+  ],
+  "DevOps": [
+    "site reliability",
+    "SRE",
+    "platform engineering"
+  ],
+  "Git": [
+    "version control",
+    "github",
+    "gitlab"
+  ],
+  "PostgreSQL": [
+    "postgres",
+    "psql",
+    "relational database"
+  ],
+  "Kubernetes": [
+    "k8s",
+    "kube",
+    "container orchestration"
+  ],
+  "Vue.js": [
+    "vuejs",
+    "vue.js",
+    "vue3"
+  ],
+  "Angular": [
+    "angularjs",
+    "angular2"
+  ],
+  "MySQL": [
+    "mariadb",
+    "my-sql"
+  ],
+  "SQLite": [
+    "sqlite3",
+    "embedded database"
+  ]
+}

@@ -412,7 +412,7 @@ class TestSearchSkills:
         )
         taxonomy = load_taxonomy()
         react_tax = next(e for e in taxonomy if e.name == "React")
-        vue_tax = next(e for e in taxonomy if e.name == "Vue")
+        vue_tax = next(e for e in taxonomy if e.name == "Vue.js")
         vault.skills = [
             SkillSchema(
                 name="React",
@@ -421,7 +421,7 @@ class TestSearchSkills:
                 taxonomy_id=react_tax.id,
             ),
             SkillSchema(
-                name="Vue",
+                name="Vue.js",
                 category="technical",
                 proficiency=4,
                 taxonomy_id=vue_tax.id,
@@ -433,9 +433,9 @@ class TestSearchSkills:
         names = [m["name"] for m in out["matches"]]
         # React comes first (direct, distance 0); Vue is still present via graph.
         assert names[0] == "React"
-        assert "Vue" in names
+        assert "Vue.js" in names
         react_match = next(m for m in out["matches"] if m["name"] == "React")
-        vue_match = next(m for m in out["matches"] if m["name"] == "Vue")
+        vue_match = next(m for m in out["matches"] if m["name"] == "Vue.js")
         assert react_match["match_distance"] == 0.0
         assert vue_match["match_distance"] > 0.0
         assert out["query_interpretation"]["used_distance_graph"] is True
