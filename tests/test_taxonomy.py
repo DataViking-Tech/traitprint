@@ -12,6 +12,7 @@ from traitprint.taxonomy import (
     load_taxonomy,
     load_taxonomy_lineage,
     load_taxonomy_version,
+    taxonomy_update_advisory,
 )
 
 
@@ -21,6 +22,35 @@ def test_packaged_taxonomy_is_canonical_v2() -> None:
     assert len(entries) > 500
     assert load_taxonomy_version() == 2
     assert load_taxonomy_lineage() == "canonical"
+
+
+def test_no_alias_shadows_or_collisions() -> None:
+    # Alias hygiene: every alias resolves to exactly one skill and never
+    # shadows a real skill's canonical name (the union previously imported
+    # collisions like "Data Science"/"ETL" as aliases of other skills).
+    tax = load_taxonomy()
+    names_lower = {e.name.lower() for e in tax}
+    assigned: dict[str, set[str]] = {}
+    for e in tax:
+        for a in e.aliases:
+            assigned.setdefault(a.lower(), set()).add(e.name)
+    shadows = [a for a in assigned if a in names_lower]
+    multi = {a: s for a, s in assigned.items() if len(s) > 1}
+    assert shadows == [], f"shadowing aliases: {shadows[:5]}"
+    assert multi == {}, f"multi-mapped aliases: {dict(list(multi.items())[:5])}"
+
+
+def test_update_advisory() -> None:
+    local_v = load_taxonomy_version()
+    local_lin = load_taxonomy_lineage()
+    # Same lineage, server ahead → advisory.
+    assert taxonomy_update_advisory(local_v + 1, local_lin) is not None
+    # Same lineage, current/behind → no advisory.
+    assert taxonomy_update_advisory(local_v, local_lin) is None
+    assert taxonomy_update_advisory(local_v - 1, local_lin) is None
+    # Different lineage → "different taxonomy" note regardless of version.
+    msg = taxonomy_update_advisory(local_v + 5, "cloud-onet")
+    assert msg is not None and "different" in msg.lower()
 
 
 def test_packaged_taxonomy_neighbors_resolve() -> None:

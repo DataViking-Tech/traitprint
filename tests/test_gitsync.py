@@ -755,11 +755,14 @@ class TestSyncCli:
             "ingest_status",
             "quarantine_summary",
             "relation",
+            "taxonomy",
         }
         assert data["local_head"] == data["server_head"] == patched_http.head()
         assert data["ingest_status"] == "clean"
         assert data["quarantine_summary"] == {"count": 0, "items": []}
         assert data["relation"] == "in-sync"
+        assert data["taxonomy"]["server_version"] is None
+        assert data["taxonomy"]["advisory"] is None
 
     def test_status_renders_quarantined_entities(
         self, runner: CliRunner, vault: Path, patched_http: FakeGitServer

@@ -305,9 +305,6 @@
       "category": "tool",
       "subcategory": "Cloud Platforms",
       "onet_element_id": "T-AWS",
-      "aliases": [
-        "AWS"
-      ],
       "neighbors": {
         "AWS API Gateway": 0.0,
         "AWS CDK": 0.0,
@@ -803,9 +800,6 @@
       "category": "tool",
       "subcategory": "Cloud Platforms",
       "onet_element_id": "T-APIGW",
-      "aliases": [
-        "API Gateway"
-      ],
       "neighbors": {
         "Amazon Web Services": 0.0
       }
@@ -2456,10 +2450,6 @@
       "subcategory": "Data Science",
       "onet_element_id": "T-DATAENG",
       "aliases": [
-        "data pipelines",
-        "data pipeline",
-        "ETL",
-        "ELT",
         "big data"
       ]
     },
@@ -2684,8 +2674,7 @@
       "subcategory": "Data Science",
       "onet_element_id": "T-DL",
       "aliases": [
-        "DL",
-        "Neural Networks"
+        "DL"
       ],
       "neighbors": {
         "Computer Vision": 0.3,
@@ -2781,9 +2770,7 @@
       "subcategory": "Operations",
       "onet_element_id": "T-DEVOPS",
       "aliases": [
-        "site reliability",
-        "SRE",
-        "platform engineering"
+        "site reliability"
       ],
       "neighbors": {
         "CI/CD": 0.0,
@@ -2903,7 +2890,6 @@
       "onet_element_id": "T-DOCKER",
       "aliases": [
         "Containers",
-        "containerization",
         "container"
       ],
       "neighbors": {
@@ -3282,11 +3268,7 @@
       "name": "ETL",
       "category": "technical",
       "subcategory": "Data Science",
-      "onet_element_id": "T-ETL",
-      "aliases": [
-        "Data Pipelines",
-        "ELT"
-      ]
+      "onet_element_id": "T-ETL"
     },
     {
       "id": "bcc7140d-d0ac-55fe-9746-436adbfb4ada",
@@ -3828,9 +3810,7 @@
       "subcategory": "Programming Languages",
       "onet_element_id": "T-GO",
       "aliases": [
-        "Golang",
-        "backend",
-        "server-side"
+        "Golang"
       ],
       "neighbors": {
         "Algorithms": 0.2,
@@ -4702,10 +4682,8 @@
         "ES2015+",
         "ES6",
         "JS",
-        "frontend",
         "front-end",
         "front end",
-        "web development",
         "web dev"
       ],
       "neighbors": {
@@ -4869,8 +4847,7 @@
       "onet_element_id": "T-K8S",
       "aliases": [
         "K8s",
-        "kube",
-        "container orchestration"
+        "kube"
       ],
       "neighbors": {
         "ArgoCD": 0.2,
@@ -4959,8 +4936,7 @@
       "subcategory": "Leadership",
       "onet_element_id": "T-LEADERSHIP",
       "aliases": [
-        "team leadership",
-        "people management"
+        "team leadership"
       ],
       "neighbors": {
         "Influence": 0.3,
@@ -5091,17 +5067,11 @@
       "onet_element_id": "T-ML",
       "aliases": [
         "ML",
-        "deep learning",
         "AI",
-        "data science",
         "ds",
         "ai/ml",
-        "neural networks",
         "neural network",
-        "nlp",
-        "natural language processing",
-        "llm",
-        "large language models"
+        "llm"
       ],
       "neighbors": {
         "Deep Learning": 0.1,
@@ -5161,7 +5131,6 @@
       "subcategory": "Resource Management",
       "onet_element_id": "2.B.5.d",
       "aliases": [
-        "People Management",
         "Team Management"
       ]
     },
@@ -5576,7 +5545,6 @@
       "subcategory": "Databases",
       "onet_element_id": "T-MYSQL",
       "aliases": [
-        "mariadb",
         "my-sql"
       ],
       "neighbors": {
@@ -5611,9 +5579,6 @@
       "category": "technical",
       "subcategory": "Data Science",
       "onet_element_id": "T-NLP",
-      "aliases": [
-        "NLP"
-      ],
       "neighbors": {
         "Large Language Models": 0.2,
         "Machine Learning": 0.3
@@ -5870,7 +5835,6 @@
       "onet_element_id": "T-OBSERVABILITY",
       "aliases": [
         "Logging",
-        "Monitoring",
         "Tracing"
       ],
       "neighbors": {
@@ -6507,10 +6471,6 @@
       "category": "soft",
       "subcategory": "Problem Solving",
       "onet_element_id": "T-PROBLEMSOLVING",
-      "aliases": [
-        "analytical thinking",
-        "critical thinking"
-      ],
       "neighbors": {
         "Analytical Thinking": 0.2,
         "Critical Thinking": 0.2
@@ -6854,9 +6814,7 @@
       "aliases": [
         "python3",
         "cpython",
-        "py",
-        "backend",
-        "server-side"
+        "py"
       ],
       "neighbors": {
         "Celery": 0.2,
@@ -7085,7 +7043,6 @@
       "aliases": [
         "React.js",
         "ReactJS",
-        "frontend",
         "jsx"
       ],
       "neighbors": {
@@ -8032,9 +7989,6 @@
       "category": "domain",
       "subcategory": "Operations",
       "onet_element_id": "T-SRE",
-      "aliases": [
-        "SRE"
-      ],
       "neighbors": {
         "DevOps": 0.3,
         "Incident Response": 0.2,

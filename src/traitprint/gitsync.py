@@ -136,11 +136,20 @@ class IngestReport:
 
 
 @dataclass(frozen=True)
+class ServerTaxonomy:
+    """The optional ``taxonomy`` handshake block of the info response."""
+
+    version: int
+    lineage: str
+
+
+@dataclass(frozen=True)
 class ServerInfo:
     """``GET /vault-git/info`` response."""
 
     head: str | None
     ingest: IngestReport
+    taxonomy: ServerTaxonomy | None = None
 
 
 @dataclass(frozen=True)
@@ -202,6 +211,7 @@ class StatusOutcome:
     server_head: str | None
     relation: str  # empty|first-push-pending|in-sync|ahead|behind|diverged|unknown
     ingest: IngestReport
+    server_taxonomy: ServerTaxonomy | None = None
 
 
 # ------------------------------------------------------------------
@@ -221,6 +231,17 @@ def _parse_ingest(raw: Any) -> IngestReport:
         last_ingested_sha=raw.get("last_ingested_sha") or None,
         quarantined=quarantined,
     )
+
+
+def _parse_taxonomy(raw: Any) -> ServerTaxonomy | None:
+    # Optional handshake block; absent on older servers → None (no advisory).
+    if not isinstance(raw, dict):
+        return None
+    version = raw.get("version")
+    lineage = raw.get("lineage")
+    if not isinstance(version, int) or not isinstance(lineage, str):
+        return None
+    return ServerTaxonomy(version=version, lineage=lineage)
 
 
 def _parse_error(data: Any) -> tuple[str, str, str]:
@@ -541,6 +562,9 @@ class GitSyncClient:
         return ServerInfo(
             head=str(head) if head else None,
             ingest=_parse_ingest(data.get("ingest") if isinstance(data, dict) else {}),
+            taxonomy=_parse_taxonomy(
+                data.get("taxonomy") if isinstance(data, dict) else None
+            ),
         )
 
     def fetch(self, since: str | None) -> FetchResponse:
@@ -786,6 +810,7 @@ def sync_status(vault: Path, client: GitSyncClient) -> StatusOutcome:
         server_head=server,
         relation=relation,
         ingest=info.ingest,
+        server_taxonomy=info.taxonomy,
     )
 
 
@@ -801,6 +826,7 @@ __all__ = [
     "PushResponse",
     "SchemaViolationError",
     "ServerInfo",
+    "ServerTaxonomy",
     "StatusOutcome",
     "SyncAuthError",
     "Violation",

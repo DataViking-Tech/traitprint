@@ -109,6 +109,29 @@ def load_taxonomy_lineage() -> str:
     return _lineage_from_raw(_load_raw())
 
 
+def taxonomy_update_advisory(server_version: int, server_lineage: str) -> str | None:
+    """Advisory string when the server's taxonomy is ahead of the bundled one.
+
+    The handshake compares the (lineage, version) pair: an advisory is returned
+    only when the lineages MATCH and the server's version is strictly greater —
+    a different lineage is not "newer", just different, and says so. Returns
+    None when the bundle is current (or ahead, or on a different lineage).
+    """
+    local_version = load_taxonomy_version()
+    local_lineage = load_taxonomy_lineage()
+    if server_lineage != local_lineage:
+        return (
+            f"Server taxonomy lineage is {server_lineage!r}, but this build "
+            f"bundles {local_lineage!r} — different taxonomies, not version-comparable."
+        )
+    if server_version > local_version:
+        return (
+            f"Bundled taxonomy is {local_lineage} v{local_version}; the server has "
+            f"v{server_version}. Upgrade traitprint to refresh the skill taxonomy."
+        )
+    return None
+
+
 def search(
     query: str,
     taxonomy: list[TaxonomyEntry] | None = None,
