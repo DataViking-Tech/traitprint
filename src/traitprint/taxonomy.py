@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from importlib.resources import files
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -61,13 +62,13 @@ def build_neighbor_index(
 TAXONOMY_LINEAGE = "local-curated"
 
 
-def _load_raw() -> list | dict:
+def _load_raw() -> Any:
     """Read the packaged taxonomy.json (array or versioned envelope)."""
     resource = files("traitprint.data").joinpath("taxonomy.json")
     return json.loads(resource.read_text(encoding="utf-8"))
 
 
-def _entries_from_raw(raw: list | dict) -> list[TaxonomyEntry]:
+def _entries_from_raw(raw: Any) -> list[TaxonomyEntry]:
     # Accept both the legacy bare-array layout and the versioned envelope
     # {"version": int, "lineage": str, "skills": [...]} — additive, so a
     # pre-envelope file (or an older reader) still works.
@@ -75,7 +76,7 @@ def _entries_from_raw(raw: list | dict) -> list[TaxonomyEntry]:
     return [TaxonomyEntry.model_validate(e) for e in entries]
 
 
-def _version_from_raw(raw: list | dict) -> int:
+def _version_from_raw(raw: Any) -> int:
     # Legacy bare-array files carry no version → 0 (unversioned).
     return int(raw["version"]) if isinstance(raw, dict) else 0
 
