@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from importlib.resources import files
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -51,12 +52,49 @@ def build_neighbor_index(
     return index
 
 
+# Lineage identifies WHICH taxonomy this artifact is, independent of its
+# version number. Until the canonical shared artifact is adopted (see
+# docs/taxonomy-artifact.md), Local ships its own curated lineage while Cloud
+# ships "cloud-onet"; both happen to start at version 1 but are NOT the same
+# content. The handshake compares (lineage, version) so a client never
+# mistakes two different lineages that share a version number for being
+# aligned. Post-unification both lineages converge to "canonical".
+TAXONOMY_LINEAGE = "local-curated"
+
+
+def _load_raw() -> Any:
+    """Read the packaged taxonomy.json (array or versioned envelope)."""
+    resource = files("traitprint.data").joinpath("taxonomy.json")
+    return json.loads(resource.read_text(encoding="utf-8"))
+
+
+def _entries_from_raw(raw: Any) -> list[TaxonomyEntry]:
+    # Accept both the legacy bare-array layout and the versioned envelope
+    # {"version": int, "lineage": str, "skills": [...]} — additive, so a
+    # pre-envelope file (or an older reader) still works.
+    entries = raw["skills"] if isinstance(raw, dict) else raw
+    return [TaxonomyEntry.model_validate(e) for e in entries]
+
+
+def _version_from_raw(raw: Any) -> int:
+    # Legacy bare-array files carry no version → 0 (unversioned).
+    return int(raw["version"]) if isinstance(raw, dict) else 0
+
+
 def load_taxonomy() -> list[TaxonomyEntry]:
     """Load the embedded taxonomy packaged with traitprint."""
-    resource = files("traitprint.data").joinpath("taxonomy.json")
-    raw = resource.read_text(encoding="utf-8")
-    entries = json.loads(raw)
-    return [TaxonomyEntry.model_validate(e) for e in entries]
+    return _entries_from_raw(_load_raw())
+
+
+def load_taxonomy_version() -> int:
+    """Monotonic version of the embedded taxonomy artifact.
+
+    Bumped whenever the bundled ``taxonomy.json`` content changes, so a client
+    can compare it against a server's reported version (the MCP handshake —
+    see ``docs/taxonomy-artifact.md``) and refresh when behind. Legacy
+    bare-array files report ``0``.
+    """
+    return _version_from_raw(_load_raw())
 
 
 def search(
