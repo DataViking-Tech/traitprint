@@ -79,7 +79,12 @@ def taxonomy_cache_path() -> Path:
     override = os.environ.get(_CACHE_ENV)
     if override:
         return Path(override)
-    return Path.home() / ".traitprint" / "taxonomy.json"
+    # A user CACHE dir, deliberately NOT under the (git-versioned) vault — a vault
+    # write / `sync push` does `git add -A`, which would otherwise stage this
+    # reference artifact into the user's vault history. Honors XDG_CACHE_HOME.
+    cache_home = os.environ.get("XDG_CACHE_HOME")
+    base = Path(cache_home) if cache_home else Path.home() / ".cache"
+    return base / "traitprint" / "taxonomy.json"
 
 
 def _load_bundled_raw() -> Any:
@@ -89,14 +94,30 @@ def _load_bundled_raw() -> Any:
 
 
 def _read_cache_raw() -> Any | None:
-    """Read the downloaded cache, or None if absent/unreadable/corrupt."""
+    """Read the downloaded cache, or None if absent/unreadable/not a real envelope.
+
+    A cache is usable ONLY if it is a versioned ``{version:int, lineage:str,
+    skills:list}`` envelope. Anything else — unreadable, malformed JSON, ``{}``,
+    a bare array, or a non-int ``version`` — is treated as a cache MISS, so the
+    downstream version compare can never raise and loading always falls back
+    cleanly to the bundled artifact.
+    """
     path = taxonomy_cache_path()
     try:
         if not path.is_file():
             return None
-        return json.loads(path.read_text(encoding="utf-8"))
+        raw = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return None
+    if (
+        isinstance(raw, dict)
+        and isinstance(raw.get("version"), int)
+        and not isinstance(raw.get("version"), bool)
+        and isinstance(raw.get("lineage"), str)
+        and isinstance(raw.get("skills"), list)
+    ):
+        return raw
+    return None
 
 
 def _cache_supersedes(cache: Any, bundled: Any) -> bool:

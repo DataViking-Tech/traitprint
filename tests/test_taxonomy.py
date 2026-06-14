@@ -96,6 +96,36 @@ def test_corrupt_cache_falls_back_to_bundle(
     assert len(load_taxonomy()) > 500
 
 
+@pytest.mark.parametrize(
+    "body",
+    [
+        "{}",  # valid JSON, but not an envelope (no version/skills)
+        '{"version": "two", "lineage": "canonical", "skills": []}',  # non-int version
+        '[{"id": "x", "name": "Y", "category": "technical"}]',  # bare array
+        '{"version": 999, "lineage": "canonical"}',  # missing skills
+    ],
+)
+def test_malformed_envelope_cache_is_a_miss_not_a_crash(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, body: str
+) -> None:
+    # A valid-JSON-but-not-an-envelope cache must NOT crash the version compare;
+    # it is treated as a cache miss and loading falls back to the bundle.
+    bundled_version = load_taxonomy_version()
+    cache = tmp_path / "tax.json"
+    monkeypatch.setenv("TRAITPRINT_TAXONOMY_CACHE", str(cache))
+    cache.write_text(body, encoding="utf-8")
+    assert load_taxonomy_version() == bundled_version
+    assert len(load_taxonomy()) > 500
+
+
+def test_cache_path_is_under_a_cache_dir(monkeypatch: pytest.MonkeyPatch) -> None:
+    # No override → the cache lives under an OS cache dir, never the vault.
+    monkeypatch.delenv("TRAITPRINT_TAXONOMY_CACHE", raising=False)
+    monkeypatch.setenv("XDG_CACHE_HOME", "/tmp/xdg-cache-home")
+    path = taxonomy_cache_path()
+    assert path == Path("/tmp/xdg-cache-home/traitprint/taxonomy.json")
+
+
 def test_write_taxonomy_cache_validates_and_activates(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
