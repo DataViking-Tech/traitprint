@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
+import pytest
+
 from traitprint.taxonomy import (
     DEFAULT_LINEAGE,
     _entries_from_raw,
@@ -12,8 +17,110 @@ from traitprint.taxonomy import (
     load_taxonomy,
     load_taxonomy_lineage,
     load_taxonomy_version,
+    taxonomy_cache_path,
     taxonomy_update_advisory,
+    write_taxonomy_cache,
 )
+
+
+def _envelope(version: int, lineage: str, skill_name: str = "OnlyInCache") -> dict:
+    """A minimal valid taxonomy envelope for cache tests."""
+    return {
+        "version": version,
+        "lineage": lineage,
+        "skills": [
+            {
+                "id": "a1b2c3d4-0001-4000-8000-000000000001",
+                "name": skill_name,
+                "category": "technical",
+            }
+        ],
+    }
+
+
+def test_cache_supersedes_bundle_when_newer_same_lineage(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    bundled_version = load_taxonomy_version()
+    bundled_lineage = load_taxonomy_lineage()
+    cache = tmp_path / "tax.json"
+    monkeypatch.setenv("TRAITPRINT_TAXONOMY_CACHE", str(cache))
+    cache.write_text(
+        json.dumps(_envelope(bundled_version + 1, bundled_lineage)), encoding="utf-8"
+    )
+    # The newer same-lineage cache wins.
+    assert load_taxonomy_version() == bundled_version + 1
+    assert find_exact("OnlyInCache") is not None
+
+
+def test_cache_ignored_when_not_newer(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    bundled_version = load_taxonomy_version()
+    bundled_lineage = load_taxonomy_lineage()
+    cache = tmp_path / "tax.json"
+    monkeypatch.setenv("TRAITPRINT_TAXONOMY_CACHE", str(cache))
+    # Same version → no benefit → bundle stays authoritative.
+    cache.write_text(
+        json.dumps(_envelope(bundled_version, bundled_lineage)), encoding="utf-8"
+    )
+    assert load_taxonomy_version() == bundled_version
+    assert find_exact("OnlyInCache") is None
+
+
+def test_cache_ignored_when_different_lineage(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    bundled_version = load_taxonomy_version()
+    cache = tmp_path / "tax.json"
+    monkeypatch.setenv("TRAITPRINT_TAXONOMY_CACHE", str(cache))
+    # A far-newer but DIFFERENT lineage is not adopted automatically.
+    cache.write_text(
+        json.dumps(_envelope(bundled_version + 99, "some-other-lineage")),
+        encoding="utf-8",
+    )
+    assert load_taxonomy_version() == bundled_version
+    assert load_taxonomy_lineage() == load_taxonomy_lineage()
+    assert find_exact("OnlyInCache") is None
+
+
+def test_corrupt_cache_falls_back_to_bundle(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    bundled_version = load_taxonomy_version()
+    cache = tmp_path / "tax.json"
+    monkeypatch.setenv("TRAITPRINT_TAXONOMY_CACHE", str(cache))
+    cache.write_text("{ not valid json", encoding="utf-8")
+    # Unreadable cache never breaks loading — silently falls back to the bundle.
+    assert load_taxonomy_version() == bundled_version
+    assert len(load_taxonomy()) > 500
+
+
+def test_write_taxonomy_cache_validates_and_activates(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    bundled_version = load_taxonomy_version()
+    bundled_lineage = load_taxonomy_lineage()
+    cache = tmp_path / "tax.json"
+    monkeypatch.setenv("TRAITPRINT_TAXONOMY_CACHE", str(cache))
+
+    written = write_taxonomy_cache(_envelope(bundled_version + 1, bundled_lineage))
+    assert written == taxonomy_cache_path() == cache
+    # Once written, the loader picks it up.
+    assert load_taxonomy_version() == bundled_version + 1
+    assert find_exact("OnlyInCache") is not None
+
+
+def test_write_taxonomy_cache_rejects_non_envelope_without_writing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    cache = tmp_path / "tax.json"
+    monkeypatch.setenv("TRAITPRINT_TAXONOMY_CACHE", str(cache))
+    # A bare array (legacy/no envelope) is not an acceptable downloaded artifact.
+    with pytest.raises(ValueError):
+        write_taxonomy_cache([{"id": "x", "name": "Y", "category": "technical"}])
+    # Validation happens BEFORE the write, so nothing was persisted.
+    assert not cache.exists()
 
 
 def test_packaged_taxonomy_is_canonical_v2() -> None:
