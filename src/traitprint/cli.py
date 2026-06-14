@@ -3358,3 +3358,86 @@ def sync_status_cmd(ctx: click.Context, as_json: bool) -> None:
     _echo_ingest(outcome.ingest)
     if advisory:
         click.echo(f"⚠ {advisory}")
+
+
+@sync_group.command(name="taxonomy")
+@click.option(
+    "--json",
+    "as_json",
+    is_flag=True,
+    default=False,
+    help="Emit {refreshed, local_version, server_version, ...} as JSON.",
+)
+@click.pass_context
+def sync_taxonomy_cmd(ctx: click.Context, as_json: bool) -> None:
+    """Refresh the local skill taxonomy from the server (GET /vault-git/taxonomy).
+
+    Downloads the server's canonical taxonomy artifact when it is a newer version
+    of the SAME lineage and caches it locally, so the skill taxonomy refreshes
+    without a pip upgrade. A no-op when already current; a server on a DIFFERENT
+    lineage is reported but not adopted automatically.
+    """
+    from traitprint.gitsync import GitSyncError, SyncAuthError
+    from traitprint.taxonomy import (
+        load_taxonomy_lineage,
+        load_taxonomy_version,
+        write_taxonomy_cache,
+    )
+
+    store, client = _sync_client(ctx)
+    local_version = load_taxonomy_version()
+    local_lineage = load_taxonomy_lineage()
+    with client:
+        try:
+            raw = client.download_taxonomy(local_version, local_lineage)
+        except SyncAuthError as exc:
+            raise click.ClickException(str(exc)) from exc
+        except GitSyncError as exc:
+            message = str(exc) + (f" {exc.hint}" if exc.hint else "")
+            raise click.ClickException(message) from exc
+
+    refreshed = False
+    note: str | None = None
+    server_version: int | None = None
+    server_lineage: str | None = None
+    if raw is None:
+        note = "already up to date"
+    else:
+        server_version = int(raw.get("version", 0))
+        server_lineage = str(raw.get("lineage", ""))
+        if server_lineage != local_lineage:
+            note = (
+                f"server taxonomy lineage is {server_lineage!r}, local is "
+                f"{local_lineage!r} — different taxonomies; not adopting automatically"
+            )
+        else:
+            try:
+                write_taxonomy_cache(raw)
+            except ValueError as exc:
+                raise click.ClickException(
+                    f"Server returned an invalid taxonomy artifact: {exc}"
+                ) from exc
+            refreshed = True
+
+    if as_json:
+        click.echo(
+            json.dumps(
+                {
+                    "refreshed": refreshed,
+                    "local_version": local_version,
+                    "local_lineage": local_lineage,
+                    "server_version": server_version,
+                    "server_lineage": server_lineage,
+                    "note": note,
+                },
+                indent=2,
+            )
+        )
+        return
+
+    if refreshed:
+        click.echo(f"✓ Taxonomy refreshed: v{local_version} → v{server_version}")
+    elif raw is None:
+        click.echo(f"Taxonomy already up to date ({local_lineage} v{local_version}).")
+    else:
+        click.echo(f"⚠ {note}")

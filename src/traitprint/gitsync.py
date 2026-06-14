@@ -56,6 +56,7 @@ from traitprint.git_ops import head_sha
 VAULT_GIT_INFO = "/functions/v1/vault-git/info"
 VAULT_GIT_PUSH = "/functions/v1/vault-git/push"
 VAULT_GIT_FETCH = "/functions/v1/vault-git/fetch"
+VAULT_GIT_TAXONOMY = "/functions/v1/vault-git/taxonomy"
 
 #: Relative to the vault's git dir (``.git/traitprint/server-head``).
 SERVER_HEAD_FILE = Path("traitprint") / "server-head"
@@ -566,6 +567,40 @@ class GitSyncClient:
                 data.get("taxonomy") if isinstance(data, dict) else None
             ),
         )
+
+    def download_taxonomy(
+        self, since_version: int, since_lineage: str
+    ) -> dict[str, Any] | None:
+        """``GET /vault-git/taxonomy`` — the full canonical taxonomy artifact.
+
+        Sends the local ``(version, lineage)`` so the server can answer ``204``
+        when the client is already current for that lineage. Returns the parsed
+        ``{version, lineage, skills}`` envelope on ``200``, or ``None`` on ``204``
+        (nothing newer to adopt).
+        """
+        url = f"{self.api_url}{VAULT_GIT_TAXONOMY}"
+        params = {"since": str(since_version), "lineage": since_lineage}
+        try:
+            response = self._client.get(
+                url, params=params, headers=self._auth_headers()
+            )
+        except httpx.HTTPError as exc:
+            raise GitSyncError(f"Taxonomy request failed: {exc}") from exc
+        if response.status_code == 401:
+            raise self._auth_failed()
+        if response.status_code == 204:
+            return None
+        if response.status_code >= 400:
+            raise GitSyncError(
+                f"Taxonomy download failed: HTTP {response.status_code} "
+                f"{response.text[:200]}"
+            )
+        data = _json_or_empty(response)
+        if not isinstance(data, dict) or "skills" not in data:
+            raise GitSyncError(
+                "Taxonomy response was not a valid {version, lineage, skills} envelope."
+            )
+        return data
 
     def fetch(self, since: str | None) -> FetchResponse:
         """``GET /vault-git/fetch[?since=<sha>]`` — bundle of missing commits."""

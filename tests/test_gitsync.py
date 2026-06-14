@@ -14,7 +14,7 @@ import json
 import shutil
 import subprocess
 import tempfile
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from pathlib import Path
 
 import httpx
@@ -800,3 +800,64 @@ class TestSyncCli:
         assert "traitprint sync push" in result.output
         legacy_pull = runner.invoke(cli, ["pull", "--help"])
         assert "traitprint sync pull" in legacy_pull.output
+
+
+# ------------------------------------------------------------------
+# download_taxonomy (GET /vault-git/taxonomy)
+# ------------------------------------------------------------------
+
+
+def _taxonomy_client(
+    handler: Callable[[httpx.Request], httpx.Response],
+) -> GitSyncClient:
+    transport = httpx.MockTransport(handler)
+    http = httpx.Client(transport=transport, base_url="http://test")
+    return GitSyncClient("http://test", token=TOKEN, client=http)
+
+
+def test_download_taxonomy_returns_envelope() -> None:
+    artifact = {
+        "version": 3,
+        "lineage": "canonical",
+        "skills": [
+            {
+                "id": "a1b2c3d4-0001-4000-8000-000000000001",
+                "name": "Python",
+                "category": "technical",
+            }
+        ],
+    }
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/functions/v1/vault-git/taxonomy"
+        # The local (version, lineage) are sent so the server can 204 when current.
+        assert request.url.params.get("since") == "2"
+        assert request.url.params.get("lineage") == "canonical"
+        return httpx.Response(200, json=artifact)
+
+    with _taxonomy_client(handler) as client:
+        assert client.download_taxonomy(2, "canonical") == artifact
+
+
+def test_download_taxonomy_204_returns_none() -> None:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(204)
+
+    with _taxonomy_client(handler) as client:
+        assert client.download_taxonomy(2, "canonical") is None
+
+
+def test_download_taxonomy_401_raises_auth_error() -> None:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(401, json={"error": {"code": "auth_expired"}})
+
+    with _taxonomy_client(handler) as client, pytest.raises(SyncAuthError):
+        client.download_taxonomy(2, "canonical")
+
+
+def test_download_taxonomy_rejects_non_envelope() -> None:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"nope": True})
+
+    with _taxonomy_client(handler) as client, pytest.raises(GitSyncError):
+        client.download_taxonomy(2, "canonical")
