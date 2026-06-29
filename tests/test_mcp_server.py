@@ -892,6 +892,24 @@ class TestDisputes:
         flag = disputes[a.id]["flags"][0]
         assert flag["detail"]["ranges"][0] == ["2021-01", "present"]
 
+    def test_month_name_dates_parse(self) -> None:
+        # "Dec 2021" must parse as December, not default to January, so a real
+        # overlap with a numeric-dated role is still flagged (and normalized).
+        a = ExperienceSchema(
+            title="Data Engineer", company="A",
+            start_date="2020-01", end_date="Dec 2021",
+        )
+        b = ExperienceSchema(
+            title="Principal Engineer", company="B",
+            start_date="2021-06", end_date="2023-01",
+        )
+        vault = VaultSchema(experiences=[a, b])
+        disputes = _compute_disputes(vault)
+        assert set(disputes) == {a.id, b.id}
+        # "Dec 2021" normalizes to 2021-12 in the range label.
+        ranges = disputes[a.id]["flags"][0]["detail"]["ranges"]
+        assert ranges[0] == ["2020-01", "2021-12"]
+
     def test_profile_summary_rollup(self) -> None:
         vault, exp_id = self._disputed_vault()
         out = _handle_get_profile_summary(vault, "detailed")

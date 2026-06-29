@@ -406,35 +406,58 @@ def _dangling_flags(
     ]
 
 
-def _month_index(date_str: str) -> int | None:
-    """Parse ``YYYY`` / ``YYYY-MM`` / ``YYYY-MM-DD`` to a month ordinal.
+_MONTHS = {
+    "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
+    "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
+}
 
-    Returns ``year * 12 + (month - 1)`` (a bare year is treated as January, a
-    day component is ignored), or ``None`` when unparseable.
+
+def _parse_year_month(date_str: str) -> tuple[int, int] | None:
+    """Parse a free-text vault date to ``(year, month)``.
+
+    Supports the formats the vault column allows (the MCP reader's
+    ``experienceStartKey``): ``YYYY``, ``YYYY-MM``, ``YYYY-MM-DD``, ``YYYY/M``,
+    and month-name forms (``Jan 2020`` / ``January 2020``). ``None`` for
+    empty/``present``; a bare year (or any other year-bearing string) defaults
+    to January.
     """
     if not date_str:
         return None
-    m = re.match(r"\s*(\d{4})(?:-(\d{1,2}))?", date_str)
-    if not m:
+    s = date_str.strip()
+    if not s or s.lower() == "present":
         return None
-    year = int(m.group(1))
-    month = int(m.group(2)) if m.group(2) else 1
-    if not 1 <= month <= 12:
-        month = 1
-    return year * 12 + (month - 1)
+    m = re.match(r"(\d{4})[-/](\d{1,2})\b", s)
+    if m:
+        month = int(m.group(2))
+        if not 1 <= month <= 12:
+            month = 1
+        return int(m.group(1)), month
+    m = re.match(r"([A-Za-z]{3,})\.?\s+(\d{4})$", s)
+    if m:
+        named = _MONTHS.get(m.group(1)[:3].lower())
+        if named:
+            return int(m.group(2)), named
+    m = re.search(r"(\d{4})", s)
+    if m:
+        return int(m.group(1)), 1
+    return None
+
+
+def _month_index(date_str: str) -> int | None:
+    """Month ordinal (``year * 12 + (month - 1)``), or ``None`` when
+    unparseable / open-ended (``present``)."""
+    ym = _parse_year_month(date_str)
+    return ym[0] * 12 + (ym[1] - 1) if ym else None
 
 
 def _range_label(date_str: str) -> str:
     """Normalize a date to ``YYYY-MM`` (or ``present`` for an open/empty end)."""
-    if not date_str:
+    if not date_str or date_str.strip().lower() == "present":
         return "present"
-    m = re.match(r"\s*(\d{4})(?:-(\d{1,2}))?", date_str)
-    if not m:
+    ym = _parse_year_month(date_str)
+    if ym is None:
         return date_str.strip() or "present"
-    month = int(m.group(2)) if m.group(2) else 1
-    if not 1 <= month <= 12:
-        month = 1
-    return f"{m.group(1)}-{month:02d}"
+    return f"{ym[0]}-{ym[1]:02d}"
 
 
 def _current_month_index() -> int:
