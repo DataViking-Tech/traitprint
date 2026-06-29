@@ -47,6 +47,13 @@ from traitprint.vault import VaultStore
 SERVER_NAME = "traitprint-local"
 SERVER_VERSION = __version__
 
+# MCP response-contract version reported as ``meta.server_version``. This is the
+# shape-of-the-response version, NOT the package version (``SERVER_VERSION``,
+# still reported as ``serverInfo.version``): both servers report the SAME
+# contract version so a consumer cannot distinguish them by it. Bumped to 1.1.0
+# with the canonical ``flags[]`` dispute schema (docs/schema/dispute-v1/).
+RESPONSE_CONTRACT_VERSION = "1.1.0"
+
 # Five-label proficiency vocabulary, one label per 1-5 level (the vault
 # contract: 1 familiar, 2 working, 3 proficient, 4 expert, 5 authority).
 # NOTE: this intentionally diverges from the cloud MCP server's current
@@ -132,7 +139,7 @@ def _now_iso() -> str:
 
 def _make_meta() -> dict[str, Any]:
     return {
-        "server_version": SERVER_VERSION,
+        "server_version": RESPONSE_CONTRACT_VERSION,
         "trust_layer_status": "active",
         "generated_at": _now_iso(),
     }
@@ -346,89 +353,262 @@ def _story_evidence_by_skill(
     return evidence
 
 
-# ── Disputes (referential integrity) ────────────────────────────────
+# ── Disputes (canonical schema, see docs/schema/dispute-v1/) ─────────
+#
+# Both MCP servers emit the same ``dispute`` shape:
+#
+#   {flags: [{type, reason, detail}], sources: [...], reason, since[, file]}
+#
+# Local produces two flag types: ``dangling_reference`` (Decision D10 /
+# Layer-1 referential integrity, mirroring :mod:`traitprint.audit`) and
+# ``contradiction`` of kind ``date_overlap`` (overlapping full-time roles).
+# Cloud produces the same shape from its trust layer; ``sources`` is the only
+# intended distinguisher. See the schema doc for the full registry.
+
+# Part-time / non-overlapping role markers: a pair is only a date_overlap
+# contradiction when NEITHER role looks part-time. Mirrors the cloud scanner.
+_PART_TIME_RE = re.compile(
+    r"\b(intern|part[\s-]?time|freelance|contract|consulting|volunteer|advisor)\b",
+    re.IGNORECASE,
+)
 
 
-def _dangling_ref(field: str, ref: UUID, index: int | None) -> dict[str, Any]:
-    """Describe a single unresolved cross-reference.
+def _dangling_flag(
+    field: str, ref: UUID, index: int | None, target: str
+) -> dict[str, Any]:
+    """Build a ``dangling_reference`` flag for one unresolved cross-reference.
 
-    ``path`` is the cloud-style locator: ``skill_ids[2]`` for an array
-    element, the bare field name for a scalar (``experience_id``).
+    ``index`` is the array position (``None`` for a scalar field such as
+    ``experience_id``); ``target`` is the kind the field points at.
     """
     path = field if index is None else f"{field}[{index}]"
-    return {"path": path, "field": field, "ref_id": str(ref)}
+    return {
+        "type": "dangling_reference",
+        "reason": f"dangling reference: {path} does not resolve",
+        "detail": {
+            "field": field,
+            "index": index,
+            "id": str(ref),
+            "target": target,
+        },
+    }
 
 
-def _dangling_in(
-    refs: list[UUID], valid: set[UUID], field: str
+def _dangling_flags(
+    refs: list[UUID], valid: set[UUID], field: str, target: str
 ) -> list[dict[str, Any]]:
-    """Return descriptors for every entry of ``refs`` missing from ``valid``."""
+    """Return a ``dangling_reference`` flag for every entry of ``refs`` missing
+    from ``valid``."""
     return [
-        _dangling_ref(field, ref, i)
+        _dangling_flag(field, ref, i, target)
         for i, ref in enumerate(refs)
         if ref not in valid
     ]
 
 
-def _dispute_reason(paths: list[str]) -> str:
-    """Render the cloud's dangling-reference phrasing for ``paths``.
+_MONTHS = {
+    "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
+    "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
+}
 
-    One ref → ``"dangling reference: skill_ids[2] does not resolve"``;
-    several → the paths joined, ``"… do not resolve"``.
+
+def _parse_year_month(date_str: str) -> tuple[int, int] | None:
+    """Parse a free-text vault date to ``(year, month)``.
+
+    Supports the formats the vault column allows (the MCP reader's
+    ``experienceStartKey``): ``YYYY``, ``YYYY-MM``, ``YYYY-MM-DD``, ``YYYY/M``,
+    and month-name forms (``Jan 2020`` / ``January 2020``). ``None`` for
+    empty/``present``; a bare year (or any other year-bearing string) defaults
+    to January.
     """
-    joined = ", ".join(paths)
-    verb = "does not resolve" if len(paths) == 1 else "do not resolve"
-    return f"dangling reference: {joined} {verb}"
+    if not date_str:
+        return None
+    s = date_str.strip()
+    if not s or s.lower() == "present":
+        return None
+    m = re.match(r"(\d{4})[-/](\d{1,2})\b", s)
+    if m:
+        month = int(m.group(2))
+        if not 1 <= month <= 12:
+            month = 1
+        return int(m.group(1)), month
+    m = re.match(r"([A-Za-z]{3,})\.?\s+(\d{4})$", s)
+    if m:
+        named = _MONTHS.get(m.group(1)[:3].lower())
+        if named:
+            return int(m.group(2)), named
+    m = re.search(r"(\d{4})", s)
+    if m:
+        return int(m.group(1)), 1
+    return None
 
 
-def _dispute(refs: list[dict[str, Any]], since: datetime) -> dict[str, Any]:
-    """Build the structured ``dispute`` object for a disputed record."""
+def _month_index(date_str: str) -> int | None:
+    """Month ordinal (``year * 12 + (month - 1)``), or ``None`` when
+    unparseable / open-ended (``present``)."""
+    ym = _parse_year_month(date_str)
+    return ym[0] * 12 + (ym[1] - 1) if ym else None
+
+
+def _range_label(date_str: str) -> str:
+    """Normalize a date to ``YYYY-MM`` (or ``present`` for an open/empty end)."""
+    if not date_str or date_str.strip().lower() == "present":
+        return "present"
+    ym = _parse_year_month(date_str)
+    if ym is None:
+        return date_str.strip() or "present"
+    return f"{ym[0]}-{ym[1]:02d}"
+
+
+def _current_month_index() -> int:
+    now = datetime.now(timezone.utc)
+    return now.year * 12 + (now.month - 1)
+
+
+def _is_part_time(exp: Any) -> bool:
+    # Title + description only (per docs/schema/dispute-v1/): role metadata, not
+    # accomplishments — a full-time role must not be suppressed by an
+    # accomplishment that merely mentions "contract"/"consulting" work.
+    return bool(_PART_TIME_RE.search(f"{exp.title or ''} {exp.description or ''}"))
+
+
+def _overlap_flag(
+    other_id: UUID,
+    self_range: tuple[str, str],
+    other_range: tuple[str, str],
+    self_id: UUID,
+) -> dict[str, Any]:
+    """Build a ``contradiction``/``date_overlap`` flag for the *self* record.
+
+    ``entities``/``ranges`` list the self record first so each side of an
+    overlapping pair carries its own perspective (symmetric flagging).
+    """
     return {
-        "reason": _dispute_reason([str(r["path"]) for r in refs]),
-        "source": DISPUTE_SOURCE,
-        "dangling_refs": refs,
-        "since": _iso(since),
+        "type": "contradiction",
+        "reason": (
+            "These two roles overlap in time "
+            f"({self_range[0]} to {self_range[1]} and "
+            f"{other_range[0]} to {other_range[1]}). "
+            "An interviewer might notice if both were full-time positions."
+        ),
+        "detail": {
+            "kind": "date_overlap",
+            "entities": [str(self_id), str(other_id)],
+            "ranges": [list(self_range), list(other_range)],
+        },
+    }
+
+
+def _date_overlap_flags(experiences: list[Any]) -> dict[UUID, list[dict[str, Any]]]:
+    """Symmetric ``date_overlap`` flags for full-time experiences that overlap.
+
+    Ranges are compared at month granularity with a STRICT ``<`` boundary, so a
+    shared transition month (one role's end == the next's start) is adjacency,
+    not overlap. Every overlapping pair flags BOTH roles (order-independent).
+    """
+    # An open end date ("present") extends strictly PAST the current month, so a
+    # role started this very month still has positive width and two ongoing
+    # roles overlap under the strict-< comparison.
+    present_idx = _current_month_index() + 1
+    parsed: list[tuple[Any, int, int, tuple[str, str], bool] | None] = []
+    for exp in experiences:
+        start = _month_index(exp.start_date)
+        if start is None:
+            parsed.append(None)
+            continue
+        end = _month_index(exp.end_date) if exp.end_date else present_idx
+        if end is None:
+            end = present_idx
+        label = (_range_label(exp.start_date), _range_label(exp.end_date))
+        parsed.append((exp, start, end, label, _is_part_time(exp)))
+
+    flags: dict[UUID, list[dict[str, Any]]] = {}
+    for i in range(len(parsed)):
+        for j in range(i + 1, len(parsed)):
+            a, b = parsed[i], parsed[j]
+            if a is None or b is None:
+                continue
+            exp_a, start_a, end_a, range_a, pt_a = a
+            exp_b, start_b, end_b, range_b, pt_b = b
+            if pt_a or pt_b:
+                continue
+            if start_a < end_b and start_b < end_a:  # strict overlap
+                flags.setdefault(exp_a.id, []).append(
+                    _overlap_flag(exp_b.id, range_a, range_b, exp_a.id)
+                )
+                flags.setdefault(exp_b.id, []).append(
+                    _overlap_flag(exp_a.id, range_b, range_a, exp_b.id)
+                )
+    return flags
+
+
+def _entity_updated_at(vault: VaultSchema) -> dict[UUID, datetime]:
+    updated: dict[UUID, datetime] = {}
+    for group in (vault.skills, vault.experiences, vault.stories, vault.philosophies):
+        for item in group:
+            updated[item.id] = item.updated_at
+    return updated
+
+
+def _dispute(flags: list[dict[str, Any]], since: datetime | None) -> dict[str, Any]:
+    """Build the canonical ``dispute`` object from a record's flags."""
+    return {
+        "flags": flags,
+        "sources": [DISPUTE_SOURCE],
+        "reason": "; ".join(str(f["reason"]) for f in flags),
+        "since": _iso(since) if since is not None else None,
     }
 
 
 def _compute_disputes(vault: VaultSchema) -> dict[UUID, dict[str, Any]]:
-    """Recompute per-entity disputes from referential integrity.
+    """Recompute per-entity disputes (canonical ``dispute`` objects).
 
-    A dispute is one or more dangling UUID cross-references (Decision D10 /
-    Layer-1). This mirrors the dangling-reference checks in
-    :mod:`traitprint.audit`, so the MCP layer reports the same state
-    ``traitprint vault audit`` does without a cloud round-trip. The result is
-    keyed by entity id; only entities that hold at least one unresolved
-    reference appear. Skills carry no outgoing vault references and so are
-    never disputed.
+    Produces ``dangling_reference`` flags (mirroring
+    :mod:`traitprint.audit`'s dangling-ref checks) and ``contradiction`` /
+    ``date_overlap`` flags, so the MCP layer reports the same state without a
+    cloud round-trip. Keyed by entity id; only flagged entities appear. Skills
+    carry no outgoing references and have no dates, so they are never disputed.
     """
     skill_ids = {s.id for s in vault.skills}
     experience_ids = {e.id for e in vault.experiences}
     story_ids = {s.id for s in vault.stories}
 
-    disputes: dict[UUID, dict[str, Any]] = {}
+    flags_by_entity: dict[UUID, list[dict[str, Any]]] = {}
+
+    def add(entity_id: UUID, flags: list[dict[str, Any]]) -> None:
+        if flags:
+            flags_by_entity.setdefault(entity_id, []).extend(flags)
 
     for story in vault.stories:
-        refs = _dangling_in(story.skill_ids, skill_ids, "skill_ids")
+        flags = _dangling_flags(story.skill_ids, skill_ids, "skill_ids", "skill")
         if (
             story.experience_id is not None
             and story.experience_id not in experience_ids
         ):
-            refs.append(_dangling_ref("experience_id", story.experience_id, None))
-        if refs:
-            disputes[story.id] = _dispute(refs, story.updated_at)
+            flags.append(
+                _dangling_flag("experience_id", story.experience_id, None, "experience")
+            )
+        add(story.id, flags)
 
     for exp in vault.experiences:
-        refs = _dangling_in(exp.skill_ids, skill_ids, "skill_ids")
-        if refs:
-            disputes[exp.id] = _dispute(refs, exp.updated_at)
+        add(exp.id, _dangling_flags(exp.skill_ids, skill_ids, "skill_ids", "skill"))
 
     for phil in vault.philosophies:
-        refs = _dangling_in(phil.evidence_story_ids, story_ids, "evidence_story_ids")
-        if refs:
-            disputes[phil.id] = _dispute(refs, phil.updated_at)
+        add(
+            phil.id,
+            _dangling_flags(
+                phil.evidence_story_ids, story_ids, "evidence_story_ids", "story"
+            ),
+        )
 
-    return disputes
+    for entity_id, overlap_flags in _date_overlap_flags(vault.experiences).items():
+        add(entity_id, overlap_flags)
+
+    updated = _entity_updated_at(vault)
+    return {
+        entity_id: _dispute(flags, updated.get(entity_id))
+        for entity_id, flags in flags_by_entity.items()
+    }
 
 
 def _entity_labels(vault: VaultSchema) -> dict[UUID, tuple[str, str]]:
@@ -451,24 +631,29 @@ def _disputes_rollup(
     """Inventory every disputed entity vault-wide for ``get_profile_summary``.
 
     Mirrors the inventory style of the rest of the summary: a count, the
-    shared ``source``, and one entry per disputed entity carrying its id,
-    kind, human label, and reason. Entries sort by ``(kind, label, id)`` for
-    deterministic output.
+    de-duped ``sources``, and one entry per disputed entity carrying its id,
+    kind, human label, flag types, and reason. Entries sort by
+    ``(kind, label, id)`` for deterministic output.
     """
     labels = _entity_labels(vault)
-    entities = [
-        {
-            "entity_id": str(entity_id),
-            "kind": labels.get(entity_id, ("unknown", ""))[0],
-            "label": labels.get(entity_id, ("unknown", ""))[1],
-            "reason": dispute["reason"],
-        }
-        for entity_id, dispute in disputes.items()
-    ]
+    sources: set[str] = set()
+    entities: list[dict[str, Any]] = []
+    for entity_id, dispute in disputes.items():
+        kind, label = labels.get(entity_id, ("unknown", ""))
+        sources.update(dispute["sources"])
+        entities.append(
+            {
+                "entity_id": str(entity_id),
+                "kind": kind,
+                "label": label,
+                "flag_types": sorted({str(f["type"]) for f in dispute["flags"]}),
+                "reason": dispute["reason"],
+            }
+        )
     entities.sort(key=lambda e: (e["kind"], e["label"], e["entity_id"]))
     return {
         "count": len(entities),
-        "source": DISPUTE_SOURCE,
+        "sources": sorted(sources),
         "entities": entities,
     }
 
