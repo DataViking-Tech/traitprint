@@ -21,6 +21,7 @@ Schema-unification notes (v1):
 from __future__ import annotations
 
 import enum
+import re
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
@@ -192,6 +193,60 @@ class EducationSchema(BaseModel):
     description: str = ""
 
 
+class SalienceLevel(str, enum.Enum):
+    """Per-skill emphasis within a lens (decision A: a 3-level enum for v1).
+
+    ``core`` foregrounds a skill (top of the list, boosted in scoring);
+    ``supporting`` is the default (normal order/weight); ``suppressed`` hides
+    the skill from the rendered profile and drops it from the lensed skill set.
+    """
+
+    CORE = "core"
+    SUPPORTING = "supporting"
+    SUPPRESSED = "suppressed"
+
+
+_SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+
+
+class LensSchema(BaseModel):
+    """A named, non-destructive projection over the one vault (a *lens*).
+
+    A lens only **selects, orders, and re-weights** existing vault content, plus
+    optional ``headline``/``bio`` overrides — it never asserts a fact absent from
+    the vault (the trust layer enforces this; see ``docs/schema/lens-v1/``).
+    Omitting a lens everywhere preserves the canonical (un-lensed) rendering.
+    """
+
+    id: UUID = Field(default_factory=uuid4)
+    slug: str
+    name: str
+    target_archetypes: list[str] = Field(default_factory=list)
+    headline_override: str = ""
+    bio_override: str = ""
+    signature_experience_ids: list[UUID] = Field(default_factory=list)
+    signature_story_ids: list[UUID] = Field(default_factory=list)
+    # skill_id -> salience; unspecified skills are SUPPORTING (see salience_for).
+    skill_salience: dict[UUID, SalienceLevel] = Field(default_factory=dict)
+    # Exactly one lens may be default; the bare (un-lensed) profile renders it.
+    is_default: bool = False
+    created_at: datetime = Field(default_factory=_now)
+    updated_at: datetime = Field(default_factory=_now)
+
+    @field_validator("slug")
+    @classmethod
+    def _validate_slug(cls, value: str) -> str:
+        if not _SLUG_RE.match(value):
+            raise ValueError(
+                f"slug must be lowercase kebab-case ([a-z0-9-]), got {value!r}"
+            )
+        return value
+
+    def salience_for(self, skill_id: UUID) -> SalienceLevel:
+        """Salience of ``skill_id`` under this lens (default SUPPORTING)."""
+        return self.skill_salience.get(skill_id, SalienceLevel.SUPPORTING)
+
+
 class VaultSchema(BaseModel):
     """Top-level vault model (schema v1).
 
@@ -209,3 +264,6 @@ class VaultSchema(BaseModel):
     stories: list[StorySchema] = Field(default_factory=list)
     philosophies: list[PhilosophySchema] = Field(default_factory=list)
     education: list[EducationSchema] = Field(default_factory=list)
+    # Positioning lenses (emphasis-only projections; see LensSchema). Empty by
+    # default, so an un-lensed vault renders exactly as before.
+    lenses: list[LensSchema] = Field(default_factory=list)

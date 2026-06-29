@@ -39,7 +39,13 @@ from uuid import UUID
 from mcp.server.fastmcp import FastMCP
 
 from traitprint import __version__
-from traitprint.schema import PhilosophySchema, StorySchema, VaultSchema
+from traitprint.schema import (
+    LensSchema,
+    PhilosophySchema,
+    SalienceLevel,
+    StorySchema,
+    VaultSchema,
+)
 from traitprint.skills import skill_body
 from traitprint.taxonomy import TaxonomyEntry, build_neighbor_index, load_taxonomy
 from traitprint.vault import VaultStore
@@ -691,11 +697,40 @@ def _disputes_rollup(
 # ── Tool handlers ───────────────────────────────────────────────────
 
 
-def _handle_get_profile_summary(vault: VaultSchema, depth: str) -> dict[str, Any]:
-    result: dict[str, Any] = {
-        "headline": vault.profile.headline or vault.profile.display_name or "",
-        "bio": vault.profile.summary or "",
-    }
+# Salience ordering rank: core skills lead, then supporting. Suppressed skills
+# are filtered out before sorting, so they never reach this key.
+_SALIENCE_RANK = {SalienceLevel.CORE: 0, SalienceLevel.SUPPORTING: 1}
+
+
+def _resolve_lens(vault: VaultSchema, lens_arg: str | None) -> LensSchema | None:
+    """Resolve a lens by slug or id; absent an explicit arg, the default lens.
+
+    Returns ``None`` when no lens is requested and none is default, so the
+    canonical (un-lensed) rendering is byte-identical to pre-lens output.
+    """
+    if lens_arg:
+        for lens in vault.lenses:
+            if lens.slug == lens_arg or str(lens.id) == lens_arg:
+                return lens
+        raise ValueError(f"lens not found: {lens_arg}")
+    for lens in vault.lenses:
+        if lens.is_default:
+            return lens
+    return None
+
+
+def _handle_get_profile_summary(
+    vault: VaultSchema, depth: str, lens: LensSchema | None = None
+) -> dict[str, Any]:
+    headline = vault.profile.headline or vault.profile.display_name or ""
+    bio = vault.profile.summary or ""
+    if lens is not None:
+        # Overrides only when set; a lens never blanks the canonical text.
+        headline = lens.headline_override or headline
+        bio = lens.bio_override or bio
+    result: dict[str, Any] = {"headline": headline, "bio": bio}
+    if lens is not None:
+        result["lens"] = lens.slug
     if depth == "brief":
         return result
 
@@ -703,10 +738,21 @@ def _handle_get_profile_summary(vault: VaultSchema, depth: str) -> dict[str, Any
     result["disputes"] = _disputes_rollup(vault, disputes)
 
     skill_limit = 10 if depth == "detailed" else 5
-    skills = sorted(
-        vault.skills,
-        key=lambda s: (-s.proficiency, -s.created_at.timestamp()),
-    )[:skill_limit]
+    # Suppressed skills are hidden from the rendered profile (decision C); the
+    # remaining skills sort by salience (core first) then proficiency. With no
+    # lens every skill is SUPPORTING, so the rank is a constant and the order
+    # reduces to the canonical (-proficiency, -created_at) sort.
+    visible_skills = [
+        s
+        for s in vault.skills
+        if lens is None or lens.salience_for(s.id) != SalienceLevel.SUPPRESSED
+    ]
+
+    def _skill_key(s: Any) -> tuple[int, int, float]:
+        rank = _SALIENCE_RANK[lens.salience_for(s.id)] if lens is not None else 1
+        return (rank, -s.proficiency, -s.created_at.timestamp())
+
+    skills = sorted(visible_skills, key=_skill_key)[:skill_limit]
     result["top_skills"] = [
         {
             "name": s.name,
@@ -720,7 +766,17 @@ def _handle_get_profile_summary(vault: VaultSchema, depth: str) -> dict[str, Any
     if depth != "detailed":
         return result
 
-    experiences = sorted(vault.experiences, key=lambda e: -e.created_at.timestamp())[:3]
+    # A lens with a signature set selects + orders those experiences; otherwise
+    # the most-recent three (canonical behavior).
+    if lens is not None and lens.signature_experience_ids:
+        order = {eid: i for i, eid in enumerate(lens.signature_experience_ids)}
+        experiences = sorted(
+            (e for e in vault.experiences if e.id in order), key=lambda e: order[e.id]
+        )[:3]
+    else:
+        experiences = sorted(
+            vault.experiences, key=lambda e: -e.created_at.timestamp()
+        )[:3]
     # related_skills mirrors find_story's related_skills (names, dangling
     # refs skipped). Contract revision 1.1; the cloud MCP server catches
     # up separately — until then this server is deliberately ahead.
@@ -734,6 +790,7 @@ def _handle_get_profile_summary(vault: VaultSchema, depth: str) -> dict[str, Any
                 skill_name_by_id[sid]
                 for sid in e.skill_ids
                 if sid in skill_name_by_id
+                and (lens is None or lens.salience_for(sid) != SalienceLevel.SUPPRESSED)
             ],
             "evidence": None,
             "disputed": e.id in disputes,
@@ -755,6 +812,62 @@ def _handle_get_profile_summary(vault: VaultSchema, depth: str) -> dict[str, Any
         for p in philosophies
     ]
     return result
+
+
+def _handle_vault_lens_list(vault: VaultSchema) -> dict[str, Any]:
+    """Inventory of the vault's positioning lenses (names + emphasis counts)."""
+    return {
+        "lenses": [
+            {
+                "slug": lens.slug,
+                "name": lens.name,
+                "is_default": lens.is_default,
+                "target_archetypes": lens.target_archetypes,
+                "signature_experiences": len(lens.signature_experience_ids),
+                "signature_stories": len(lens.signature_story_ids),
+                "core_skills": sum(
+                    1 for v in lens.skill_salience.values() if v == SalienceLevel.CORE
+                ),
+                "suppressed_skills": sum(
+                    1
+                    for v in lens.skill_salience.values()
+                    if v == SalienceLevel.SUPPRESSED
+                ),
+            }
+            for lens in vault.lenses
+        ],
+        "total": len(vault.lenses),
+    }
+
+
+def _handle_vault_lens_get(vault: VaultSchema, slug_or_id: str) -> dict[str, Any]:
+    """A single lens with its references resolved to human-readable labels."""
+    lens = _resolve_lens(vault, slug_or_id)
+    if lens is None:  # _resolve_lens raises for a bad arg; guards the empty arg
+        raise ValueError("lens not found")
+    exp_title = {e.id: e.title for e in vault.experiences}
+    story_title = {s.id: s.title for s in vault.stories}
+    skill_name = {s.id: s.name for s in vault.skills}
+    return {
+        "slug": lens.slug,
+        "name": lens.name,
+        "is_default": lens.is_default,
+        "target_archetypes": lens.target_archetypes,
+        "headline_override": lens.headline_override,
+        "bio_override": lens.bio_override,
+        "signature_experiences": [
+            {"id": str(eid), "title": exp_title.get(eid)}
+            for eid in lens.signature_experience_ids
+        ],
+        "signature_stories": [
+            {"id": str(sid), "title": story_title.get(sid)}
+            for sid in lens.signature_story_ids
+        ],
+        "skill_salience": [
+            {"skill_id": str(sid), "name": skill_name.get(sid), "salience": level.value}
+            for sid, level in lens.skill_salience.items()
+        ],
+    }
 
 
 def _graph_expansion(
@@ -1106,14 +1219,45 @@ def create_server(store: VaultStore) -> FastMCP:
             "and optionally signature experiences and core philosophies. "
             "depth: 'brief' = headline + bio only; 'standard' (default) = "
             "+ top 5 skills; 'detailed' = + top 10 skills, signature "
-            "experiences, and core philosophies."
+            "experiences, and core philosophies. "
+            "lens: optional positioning lens (slug or id) to project the "
+            "profile through — applies headline/bio overrides, the lens's "
+            "signature experiences, and skill salience (core skills lead, "
+            "suppressed skills hidden). Omit to render the default lens if "
+            "one exists, else the canonical profile. See vault_lens_list."
         )
     )
     def get_profile_summary(
         depth: Literal["brief", "standard", "detailed"] = "standard",
+        lens: str | None = None,
     ) -> dict[str, Any]:
         vault = store.load()
-        return _envelope(_handle_get_profile_summary(vault, depth))
+        resolved = _resolve_lens(vault, lens)
+        return _envelope(_handle_get_profile_summary(vault, depth, resolved))
+
+    @mcp.tool(
+        description=(
+            "List the vault's positioning lenses — named, non-destructive "
+            "projections over the one vault. Returns each lens's slug, name, "
+            "default flag, target archetypes, and emphasis counts. Pass a "
+            "slug to get_profile_summary(lens=...) to render through it."
+        )
+    )
+    def vault_lens_list() -> dict[str, Any]:
+        return _envelope(_handle_vault_lens_list(store.load()))
+
+    @mcp.tool(
+        description=(
+            "Get one positioning lens by slug or id, with its signature "
+            "experiences/stories and per-skill salience resolved to names. "
+            "A lens only selects, orders, and re-weights existing vault "
+            "content — it never adds a fact absent from the vault."
+        )
+    )
+    def vault_lens_get(lens: str) -> dict[str, Any]:
+        if not lens.strip():
+            raise ValueError("lens (slug or id) must be non-empty")
+        return _envelope(_handle_vault_lens_get(store.load(), lens))
 
     @mcp.tool(
         description=(
