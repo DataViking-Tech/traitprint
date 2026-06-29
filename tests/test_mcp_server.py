@@ -862,6 +862,36 @@ class TestDisputes:
         )
         assert _compute_disputes(vault) == {}
 
+    def test_part_time_match_ignores_accomplishments(self) -> None:
+        # "contract" appears only in an accomplishment, not the title/description.
+        # The role is full-time, so the overlap must still be flagged.
+        a = ExperienceSchema(
+            title="Staff Engineer",
+            company="A",
+            start_date="2021-01",
+            end_date="2022-06",
+            accomplishments=["Built contract-renewal automation"],
+        )
+        b = ExperienceSchema(
+            title="Principal Engineer",
+            company="B",
+            start_date="2021-09",
+            end_date="2023-01",
+        )
+        vault = VaultSchema(experiences=[a, b])
+        assert set(_compute_disputes(vault)) == {a.id, b.id}
+
+    def test_ongoing_present_roles_overlap(self) -> None:
+        # Two open-ended ("present") full-time roles overlap — the open end must
+        # extend past the current month under the strict-< comparison.
+        a = ExperienceSchema(title="Role A", company="A", start_date="2021-01")
+        b = ExperienceSchema(title="Role B", company="B", start_date="2022-01")
+        vault = VaultSchema(experiences=[a, b])
+        disputes = _compute_disputes(vault)
+        assert set(disputes) == {a.id, b.id}
+        flag = disputes[a.id]["flags"][0]
+        assert flag["detail"]["ranges"][0] == ["2021-01", "present"]
+
     def test_profile_summary_rollup(self) -> None:
         vault, exp_id = self._disputed_vault()
         out = _handle_get_profile_summary(vault, "detailed")

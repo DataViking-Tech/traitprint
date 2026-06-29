@@ -101,8 +101,10 @@ experiences.
 
 **Overlap rule (date_overlap):** dates are compared at **month granularity**
 (`YYYY-MM`; a bare `YYYY` is treated as January, a day component is ignored). An
-open end date (`""`/null) is treated as `present`. Two ranges `[aStart, aEnd]`
-and `[bStart, bEnd]` overlap iff:
+open end date (`""`/null) is treated as `present` — a boundary **strictly after
+the current month** (current month + 1), so two ongoing roles still overlap and a
+role started in the current month keeps positive width under the strict
+comparison. Two ranges `[aStart, aEnd]` and `[bStart, bEnd]` overlap iff:
 
 ```
 aStart < bEnd  AND  bStart < aEnd      // strict

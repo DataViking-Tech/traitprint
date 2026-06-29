@@ -443,10 +443,10 @@ def _current_month_index() -> int:
 
 
 def _is_part_time(exp: Any) -> bool:
-    text = " ".join(
-        [exp.title or "", exp.description or "", *(exp.accomplishments or [])]
-    )
-    return bool(_PART_TIME_RE.search(text))
+    # Title + description only (per docs/schema/dispute-v1/): role metadata, not
+    # accomplishments — a full-time role must not be suppressed by an
+    # accomplishment that merely mentions "contract"/"consulting" work.
+    return bool(_PART_TIME_RE.search(f"{exp.title or ''} {exp.description or ''}"))
 
 
 def _overlap_flag(
@@ -483,16 +483,19 @@ def _date_overlap_flags(experiences: list[Any]) -> dict[UUID, list[dict[str, Any
     shared transition month (one role's end == the next's start) is adjacency,
     not overlap. Every overlapping pair flags BOTH roles (order-independent).
     """
-    now_idx = _current_month_index()
+    # An open end date ("present") extends strictly PAST the current month, so a
+    # role started this very month still has positive width and two ongoing
+    # roles overlap under the strict-< comparison.
+    present_idx = _current_month_index() + 1
     parsed: list[tuple[Any, int, int, tuple[str, str], bool] | None] = []
     for exp in experiences:
         start = _month_index(exp.start_date)
         if start is None:
             parsed.append(None)
             continue
-        end = _month_index(exp.end_date) if exp.end_date else now_idx
+        end = _month_index(exp.end_date) if exp.end_date else present_idx
         if end is None:
-            end = now_idx
+            end = present_idx
         label = (_range_label(exp.start_date), _range_label(exp.end_date))
         parsed.append((exp, start, end, label, _is_part_time(exp)))
 
