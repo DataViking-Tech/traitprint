@@ -560,6 +560,36 @@ def _dispute(flags: list[dict[str, Any]], since: datetime | None) -> dict[str, A
     }
 
 
+# Canonical dangling-field rank, shared verbatim with the hosted server
+# (traitprint-cloud mcp-server DANGLING_FIELD_RANK).
+_DANGLING_FIELD_RANK = {"skill_ids": 0, "experience_id": 1, "evidence_story_ids": 2}
+
+
+def _flag_order_key(flag: dict[str, Any]) -> tuple[int, int, int, str]:
+    """Canonical per-entity flag order, shared verbatim with the hosted server
+    (``flagOrderKey``), so a record's ``flags[]`` and the derived ``reason`` are
+    byte-identical across both servers regardless of discovery order.
+
+    Order: ``dangling_reference`` first (by field rank, then array index), then
+    contradictions (``date_overlap`` before other; ``date_overlap`` ordered by
+    the PARTNER entity id — a key both servers reproduce from shared data,
+    independent of vault list position), then any other type (by reason).
+    """
+    detail = flag["detail"]
+    if flag["type"] == "dangling_reference":
+        field = str(detail.get("field", ""))
+        index = detail.get("index")
+        idx = index if isinstance(index, int) and not isinstance(index, bool) else -1
+        return (0, _DANGLING_FIELD_RANK.get(field, 9), idx, "")
+    if flag["type"] == "contradiction":
+        if detail.get("kind") == "date_overlap":
+            entities = detail.get("entities") or []
+            partner = str(entities[1]) if len(entities) > 1 else ""
+            return (1, 0, 0, partner)
+        return (1, 1, 0, str(flag["reason"]))
+    return (2, 0, 0, str(flag["reason"]))
+
+
 def _compute_disputes(vault: VaultSchema) -> dict[UUID, dict[str, Any]]:
     """Recompute per-entity disputes (canonical ``dispute`` objects).
 
@@ -606,7 +636,7 @@ def _compute_disputes(vault: VaultSchema) -> dict[UUID, dict[str, Any]]:
 
     updated = _entity_updated_at(vault)
     return {
-        entity_id: _dispute(flags, updated.get(entity_id))
+        entity_id: _dispute(sorted(flags, key=_flag_order_key), updated.get(entity_id))
         for entity_id, flags in flags_by_entity.items()
     }
 

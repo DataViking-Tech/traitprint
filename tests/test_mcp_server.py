@@ -16,6 +16,7 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 from uuid import UUID, uuid4
 
 import pytest
@@ -31,6 +32,7 @@ from traitprint.mcp_server import (
     _coerce_min_proficiency,
     _compute_disputes,
     _envelope,
+    _flag_order_key,
     _handle_find_story,
     _handle_get_philosophy,
     _handle_get_profile_summary,
@@ -909,6 +911,72 @@ class TestDisputes:
         # "Dec 2021" normalizes to 2021-12 in the range label.
         ranges = disputes[a.id]["flags"][0]["detail"]["ranges"]
         assert ranges[0] == ["2020-01", "2021-12"]
+
+    def test_flag_order_key_sorts_canonically(self) -> None:
+        # The comparator is shared verbatim with the hosted server (flagOrderKey)
+        # so a record's flags[] (and the derived reason) are byte-identical
+        # across servers regardless of discovery order: dangling_reference first
+        # (by field rank skill_ids<experience_id<evidence_story_ids, then array
+        # index), then date_overlap (by partner id), then any other contradiction.
+        def dangling(field: str, index: int | None) -> dict[str, Any]:
+            return {
+                "type": "dangling_reference",
+                "reason": field,
+                "detail": {"field": field, "index": index},
+            }
+
+        def overlap(partner: str) -> dict[str, Any]:
+            return {
+                "type": "contradiction",
+                "reason": "overlap",
+                "detail": {"kind": "date_overlap", "entities": ["self", partner]},
+            }
+
+        other = {
+            "type": "contradiction",
+            "reason": "z-other",
+            "detail": {"kind": "other"},
+        }
+
+        scrambled = [
+            overlap("zzz"),
+            other,
+            dangling("experience_id", None),
+            overlap("aaa"),
+            dangling("skill_ids", 1),
+            dangling("skill_ids", 0),
+            dangling("evidence_story_ids", 0),
+        ]
+        assert sorted(scrambled, key=_flag_order_key) == [
+            dangling("skill_ids", 0),
+            dangling("skill_ids", 1),
+            dangling("experience_id", None),
+            dangling("evidence_story_ids", 0),
+            overlap("aaa"),
+            overlap("zzz"),
+            other,
+        ]
+
+    def test_compute_disputes_orders_dangling_before_overlap(self) -> None:
+        # One role carries BOTH a dangling skill ref and a date overlap; the
+        # canonical sort must place dangling_reference before the contradiction
+        # in the emitted flags[] (and thus the derived reason).
+        a = ExperienceSchema(
+            title="Role A",
+            company="A",
+            start_date="2021-01",
+            end_date="2022-06",
+            skill_ids=[uuid4()],  # dangles
+        )
+        b = ExperienceSchema(
+            title="Role B", company="B", start_date="2021-09", end_date="2023-01"
+        )
+        vault = VaultSchema(experiences=[a, b])
+        flags = _compute_disputes(vault)[a.id]["flags"]
+        assert [f["type"] for f in flags] == ["dangling_reference", "contradiction"]
+        assert flags[1]["detail"]["kind"] == "date_overlap"
+        # The derived reason concatenates in the same canonical order.
+        assert flags[0]["reason"] in _compute_disputes(vault)[a.id]["reason"]
 
     def test_profile_summary_rollup(self) -> None:
         vault, exp_id = self._disputed_vault()
