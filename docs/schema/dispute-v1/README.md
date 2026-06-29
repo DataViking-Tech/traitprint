@@ -8,9 +8,12 @@ MCP servers:
 
 The design goal: a consumer **must not be able to tell which server produced a
 record except by the `sources` field**. Both servers emit the same `dispute`
-shape; they differ only in (a) which `sources` contributed, (b) the optional
-cloud-only `file` field, and (c) `since` (one server persists flags, the other
-recomputes — see [§ since](#since)).
+shape; they differ only in (a) which `sources` contributed, (b) `since` (one
+server persists flags, the other recomputes — see [§ since](#since)), (c) the
+dangling `detail.id` (the hosted server quarantines the unresolved id at ingest
+and emits `null`), and (d) the optional `file` field (reserved; currently
+emitted by neither server). The full tolerated set is enumerated in
+[§ Cross-server differences](#since).
 
 Introduced at response contract `server_version` **1.1.0**. This replaces the
 day-old flat keys (`reasons[]`, `flag_types[]`, `dangling_refs[]`) — they are
@@ -19,7 +22,8 @@ day-old flat keys (`reasons[]`, `flag_types[]`, `dangling_refs[]`) — they are
 ## The `dispute` object
 
 Every record a tool emits carries a `dispute` field (and a back-compat
-`disputed` boolean where `disputed == (dispute !== null)`):
+`disputed` boolean where `disputed == (dispute !== null)`, with one hosted-server
+scope exception noted [below](#disputed-scope)):
 
 ```jsonc
 "dispute": null | {
@@ -33,11 +37,17 @@ Every record a tool emits carries a `dispute` field (and a back-compat
   "sources": ["local-referential-integrity" | "trust-layer"],  // de-duped origins that contributed flags
   "reason": "flags[].reason joined with '; '",                  // derived convenience string
   "since": "2026-06-28T07:26:12Z",                              // ISO-8601, earliest contributing flag
-  "file": "experiences/903392e5.json"                           // OPTIONAL, cloud-only; omitted when unknown
+  "file": "experiences/903392e5.json"                           // OPTIONAL, reserved; currently omitted by both servers
 }
 ```
 
 - `flags` — one entry per detected condition, never empty when `dispute !== null`.
+  Emitted in a **canonical order** both servers reproduce from shared data
+  (independent of discovery / DB-row order): `dangling_reference` first (by field
+  — `skill_ids` < `experience_id` < `evidence_story_ids` — then array index),
+  then `contradiction` (`date_overlap` before any other subtype, ordered by the
+  partner entity id). This keeps `flags[]` and the derived `reason`
+  byte-identical across servers.
 - `sources` — the origin engines that produced the flags, de-duplicated and
   sorted. Local always emits `["local-referential-integrity"]`; cloud always
   emits `["trust-layer"]`. The array (rather than a scalar) lets a future server
@@ -45,12 +55,21 @@ Every record a tool emits carries a `dispute` field (and a back-compat
 - `reason` — `flags[].reason` joined with `"; "`. Kept so string-only consumers
   of the pre-1.1.0 top-level `reason` keep working.
 - `since` — the earliest timestamp among the contributing flags.
-- `file` — vault file the record was ingested from. Cloud-only (the local
-  server reads an in-memory vault and has no per-record file); **omitted**, not
-  null, when unknown.
+- `file` — vault file the record was ingested from. **Optional and reserved.**
+  The local server reads an in-memory vault and has no per-record file; the
+  hosted server's MCP reshape layer does not have it either (the originating
+  file is not carried into the trust-layer flag rows). So **both servers
+  currently omit it** — it is **omitted**, not null, when unknown. Reserved so a
+  future server that tracks per-record provenance can populate it.
 
-`disputed` (boolean) is retained for backward compatibility and MUST equal
-`dispute !== null`.
+<a name="disputed-scope"></a>
+`disputed` (boolean) is retained for backward compatibility. It equals
+`dispute !== null` **except** on the hosted server under a scope-limited
+credential: dispute *detail* is gated on `read:profile` (a reason recomputed
+from a cross-section scan can encode facts from a section the credential cannot
+read), so a section-only grant — e.g. `read:skills` — still sees
+`disputed: true` but receives `dispute: null`. The local server has no scopes
+and always emits the detail, so the equality always holds there.
 
 ## Flag taxonomy registry
 
@@ -66,7 +85,7 @@ An entity holds a UUID cross-reference that does not resolve to a vault entity
 "detail": {
   "field": "skill_ids",     // the holding field
   "index": 2,               // array index, or null for a scalar field (experience_id)
-  "id": "<uuid>",           // the unresolved UUID
+  "id": "<uuid>",           // the unresolved UUID; null on the hosted server (quarantined at ingest, not persisted)
   "target": "skill"         // "skill" | "experience" | "story" — what the field references
 }
 ```
@@ -77,7 +96,7 @@ fields render without the `[index]`, e.g. `experience_id does not resolve`).
 | Produced by | From |
 |---|---|
 | Local | the in-memory vault (mirrors `src/traitprint/audit.py`) |
-| Cloud | ingest `quarantined[]` rows (`{entity_id, file, reason}`); sets `file` |
+| Cloud | persisted `trait_flags` (vault-git dangling rows); the MCP layer parses `field`/`index` from the reason text and maps `field`→`target`. The unresolved `id` is quarantined at ingest and not persisted, so the hosted server emits `id: null` and does not set `file`. |
 
 ### `contradiction`
 
@@ -143,7 +162,11 @@ title/description matches the part-time pattern
 }
 ```
 
-Entities are ordered `(kind, label, entity_id)` for deterministic output.
+Entities are ordered `(kind, label, entity_id)` for deterministic output. The
+hosted server serves this **same** roll-up shape from its
+`traitprint://profile/disputes` MCP resource, so a consumer parses one dispute
+contract everywhere (per-record `dispute`, the `get_profile_summary` roll-up,
+and the resource).
 
 ## <a name="since"></a>Cross-server differences (intentional)
 
@@ -151,13 +174,20 @@ The golden-fixture acceptance (`docs/schema/dispute-v1/` fixtures in both repos)
 diffs the two servers' `dispute` output and tolerates exactly these fields:
 
 - `sources` — names the producing engine; this is the *intended* distinguisher.
-- `file` — cloud-only; the local server omits it.
 - `since` — cloud persists flag rows (timestamp = scan time); local recomputes
   (timestamp = the entity's `updated_at`). The two cannot agree, by design.
+- dangling `detail.id` — the hosted server quarantines the unresolved id at
+  ingest and does not persist it, so it emits `null` where the local server
+  emits the offending UUID. Every other dangling `detail` field — `field`,
+  `index`, `target` — is identical.
+- `file` — optional / reserved; **currently omitted by both servers** (see the
+  `file` note above). Tolerated only so a future server that begins to populate
+  it does not break the diff.
 
-Everything else — `flags[].type`, `flags[].reason`, `flags[].detail`, the
-derived `reason`, and the `disputes` roll-up `count`/`entities` (modulo the same
-fields) — must be byte-identical for records both servers can evaluate.
+Everything else — `flags[].type`, `flags[].reason`, `flags[].detail` (except the
+dangling `id` noted above), the derived `reason`, the canonical `flags[]` order,
+and the `disputes` roll-up `count`/`entities` (modulo the same fields) — must be
+byte-identical for records both servers can evaluate.
 
 ## Version history
 
