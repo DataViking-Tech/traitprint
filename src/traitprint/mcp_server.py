@@ -11,6 +11,14 @@ local and cloud is a URL swap. Four tools are exposed:
 
 Every tool returns a ``{"result": <payload>, "meta": {...}}`` envelope.
 
+Every record a tool emits carries a structured ``dispute`` object (``None``
+when the record is clean) alongside the kept-for-compatibility ``disputed``
+boolean. A dispute is a dangling UUID cross-reference (Decision D10 / Layer-1
+referential integrity) recomputed locally from the same check
+:mod:`traitprint.audit` performs — see :func:`_compute_disputes`.
+``get_profile_summary`` additionally rolls every disputed entity up into a
+vault-wide ``disputes`` inventory.
+
 It also exposes five *prompts* — ``fill_vault``, ``mine_story_gaps``,
 ``discover_skills``, ``draft_star_story``, and ``audit_coherence``. They hand
 an agent a ready-made workflow for helping the user build out and tighten
@@ -60,6 +68,15 @@ PhilosophyCategoryLabel = Literal[
     "decision-making",
 ]
 
+# Disputes (Decision D10 / Layer-1 referential integrity). A record is
+# *disputed* when it holds a UUID cross-reference (``skill_ids[]``,
+# ``experience_id``, ``evidence_story_ids[]``) that no longer resolves to a
+# vault entity — the same dangling-reference check :mod:`traitprint.audit`
+# performs. The MCP layer recomputes this locally and attaches a structured
+# ``dispute`` object to every record. ``source`` marks the dispute as a local
+# recompute so a consumer can tell it apart from a cloud "trust-layer" one.
+DISPUTE_SOURCE = "local-referential-integrity"
+
 
 def _map_proficiency(level: int) -> str:
     """Map a 1-5 proficiency onto the five-label vocabulary."""
@@ -92,10 +109,25 @@ def _meets_proficiency(level: str, minimum: str) -> bool:
     return PROFICIENCY_ORDER.get(level, 0) >= PROFICIENCY_ORDER.get(minimum, 0)
 
 
+def _iso(dt: datetime) -> str:
+    """Render ``dt`` as ISO-8601 UTC with a ``Z`` suffix (cloud format).
+
+    A naive datetime is assumed to already be UTC: vault timestamps are
+    written UTC-aware, so this only tolerates a legacy naive value rather
+    than shifting it by the host's local offset.
+    """
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return (
+        dt.astimezone(timezone.utc)
+        .isoformat(timespec="milliseconds")
+        .replace("+00:00", "Z")
+    )
+
+
 def _now_iso() -> str:
     """Return UTC time in ISO-8601 with a ``Z`` suffix (cloud format)."""
-    now = datetime.now(timezone.utc)
-    return now.isoformat(timespec="milliseconds").replace("+00:00", "Z")
+    return _iso(datetime.now(timezone.utc))
 
 
 def _make_meta() -> dict[str, Any]:
@@ -314,6 +346,133 @@ def _story_evidence_by_skill(
     return evidence
 
 
+# ── Disputes (referential integrity) ────────────────────────────────
+
+
+def _dangling_ref(field: str, ref: UUID, index: int | None) -> dict[str, Any]:
+    """Describe a single unresolved cross-reference.
+
+    ``path`` is the cloud-style locator: ``skill_ids[2]`` for an array
+    element, the bare field name for a scalar (``experience_id``).
+    """
+    path = field if index is None else f"{field}[{index}]"
+    return {"path": path, "field": field, "ref_id": str(ref)}
+
+
+def _dangling_in(
+    refs: list[UUID], valid: set[UUID], field: str
+) -> list[dict[str, Any]]:
+    """Return descriptors for every entry of ``refs`` missing from ``valid``."""
+    return [
+        _dangling_ref(field, ref, i)
+        for i, ref in enumerate(refs)
+        if ref not in valid
+    ]
+
+
+def _dispute_reason(paths: list[str]) -> str:
+    """Render the cloud's dangling-reference phrasing for ``paths``.
+
+    One ref → ``"dangling reference: skill_ids[2] does not resolve"``;
+    several → the paths joined, ``"… do not resolve"``.
+    """
+    joined = ", ".join(paths)
+    verb = "does not resolve" if len(paths) == 1 else "do not resolve"
+    return f"dangling reference: {joined} {verb}"
+
+
+def _dispute(refs: list[dict[str, Any]], since: datetime) -> dict[str, Any]:
+    """Build the structured ``dispute`` object for a disputed record."""
+    return {
+        "reason": _dispute_reason([str(r["path"]) for r in refs]),
+        "source": DISPUTE_SOURCE,
+        "dangling_refs": refs,
+        "since": _iso(since),
+    }
+
+
+def _compute_disputes(vault: VaultSchema) -> dict[UUID, dict[str, Any]]:
+    """Recompute per-entity disputes from referential integrity.
+
+    A dispute is one or more dangling UUID cross-references (Decision D10 /
+    Layer-1). This mirrors the dangling-reference checks in
+    :mod:`traitprint.audit`, so the MCP layer reports the same state
+    ``traitprint vault audit`` does without a cloud round-trip. The result is
+    keyed by entity id; only entities that hold at least one unresolved
+    reference appear. Skills carry no outgoing vault references and so are
+    never disputed.
+    """
+    skill_ids = {s.id for s in vault.skills}
+    experience_ids = {e.id for e in vault.experiences}
+    story_ids = {s.id for s in vault.stories}
+
+    disputes: dict[UUID, dict[str, Any]] = {}
+
+    for story in vault.stories:
+        refs = _dangling_in(story.skill_ids, skill_ids, "skill_ids")
+        if (
+            story.experience_id is not None
+            and story.experience_id not in experience_ids
+        ):
+            refs.append(_dangling_ref("experience_id", story.experience_id, None))
+        if refs:
+            disputes[story.id] = _dispute(refs, story.updated_at)
+
+    for exp in vault.experiences:
+        refs = _dangling_in(exp.skill_ids, skill_ids, "skill_ids")
+        if refs:
+            disputes[exp.id] = _dispute(refs, exp.updated_at)
+
+    for phil in vault.philosophies:
+        refs = _dangling_in(phil.evidence_story_ids, story_ids, "evidence_story_ids")
+        if refs:
+            disputes[phil.id] = _dispute(refs, phil.updated_at)
+
+    return disputes
+
+
+def _entity_labels(vault: VaultSchema) -> dict[UUID, tuple[str, str]]:
+    """Map every entity id to its ``(kind, label)`` for the disputes roll-up."""
+    labels: dict[UUID, tuple[str, str]] = {}
+    for skill in vault.skills:
+        labels[skill.id] = ("skill", skill.name)
+    for exp in vault.experiences:
+        labels[exp.id] = ("experience", exp.title)
+    for story in vault.stories:
+        labels[story.id] = ("story", story.title)
+    for phil in vault.philosophies:
+        labels[phil.id] = ("philosophy", phil.title)
+    return labels
+
+
+def _disputes_rollup(
+    vault: VaultSchema, disputes: dict[UUID, dict[str, Any]]
+) -> dict[str, Any]:
+    """Inventory every disputed entity vault-wide for ``get_profile_summary``.
+
+    Mirrors the inventory style of the rest of the summary: a count, the
+    shared ``source``, and one entry per disputed entity carrying its id,
+    kind, human label, and reason. Entries sort by ``(kind, label, id)`` for
+    deterministic output.
+    """
+    labels = _entity_labels(vault)
+    entities = [
+        {
+            "entity_id": str(entity_id),
+            "kind": labels.get(entity_id, ("unknown", ""))[0],
+            "label": labels.get(entity_id, ("unknown", ""))[1],
+            "reason": dispute["reason"],
+        }
+        for entity_id, dispute in disputes.items()
+    ]
+    entities.sort(key=lambda e: (e["kind"], e["label"], e["entity_id"]))
+    return {
+        "count": len(entities),
+        "source": DISPUTE_SOURCE,
+        "entities": entities,
+    }
+
+
 # ── Tool handlers ───────────────────────────────────────────────────
 
 
@@ -325,6 +484,9 @@ def _handle_get_profile_summary(vault: VaultSchema, depth: str) -> dict[str, Any
     if depth == "brief":
         return result
 
+    disputes = _compute_disputes(vault)
+    result["disputes"] = _disputes_rollup(vault, disputes)
+
     skill_limit = 10 if depth == "detailed" else 5
     skills = sorted(
         vault.skills,
@@ -335,7 +497,8 @@ def _handle_get_profile_summary(vault: VaultSchema, depth: str) -> dict[str, Any
             "name": s.name,
             "proficiency": _map_proficiency(s.proficiency),
             "evidence": None,
-            "disputed": False,
+            "disputed": s.id in disputes,
+            "dispute": disputes.get(s.id),
         }
         for s in skills
     ]
@@ -358,7 +521,8 @@ def _handle_get_profile_summary(vault: VaultSchema, depth: str) -> dict[str, Any
                 if sid in skill_name_by_id
             ],
             "evidence": None,
-            "disputed": False,
+            "disputed": e.id in disputes,
+            "dispute": disputes.get(e.id),
         }
         for e in experiences
     ]
@@ -370,7 +534,8 @@ def _handle_get_profile_summary(vault: VaultSchema, depth: str) -> dict[str, Any
             "topic": p.title,
             "stance": p.description,
             "evidence": None,
-            "disputed": False,
+            "disputed": p.id in disputes,
+            "dispute": disputes.get(p.id),
         }
         for p in philosophies
     ]
@@ -451,7 +616,10 @@ def _handle_search_skills(
                 "top_evidence": ev["top"],
                 "match_distance": distance,
                 "evidence": skill.notes or None,
+                # Skills hold no outgoing vault references, so a skill is
+                # never disputed under referential integrity.
                 "disputed": False,
+                "dispute": None,
             }
         )
 
@@ -521,6 +689,7 @@ def _handle_find_story(
     has_theme = bool(theme and theme.strip())
     has_text_filter = bool(sit_kw) or has_theme
 
+    disputes = _compute_disputes(vault)
     skill_name_by_id = {skill.id: skill.name for skill in vault.skills}
 
     scored: list[tuple[StorySchema, float, str]] = []
@@ -567,7 +736,8 @@ def _handle_find_story(
                 ),
                 "match_score": _round3(score),
                 "evidence": None,
-                "disputed": False,
+                "disputed": story.id in disputes,
+                "dispute": disputes.get(story.id),
             }
         )
     return {"stories": stories_out}
@@ -612,6 +782,7 @@ def _handle_get_philosophy(
     top = top[:limit]
 
     story_by_id = {s.id: s for s in vault.stories}
+    disputes = _compute_disputes(vault)
 
     philosophies_out: list[dict[str, Any]] = []
     for phil, score in top:
@@ -632,7 +803,8 @@ def _handle_get_philosophy(
                 "related_story_ids": [str(sid) for sid in phil.evidence_story_ids],
                 "match_score": _round3(score),
                 "evidence": None,
-                "disputed": False,
+                "disputed": phil.id in disputes,
+                "dispute": disputes.get(phil.id),
             }
         )
     return {"philosophies": philosophies_out}
@@ -858,9 +1030,11 @@ def run_stdio(store: VaultStore) -> None:
 
 
 __all__ = [
+    "DISPUTE_SOURCE",
     "SERVER_NAME",
     "SERVER_VERSION",
     "_audit_coherence_prompt",
+    "_compute_disputes",
     "_discover_skills_prompt",
     "_draft_star_story_prompt",
     "_fill_vault_prompt",
