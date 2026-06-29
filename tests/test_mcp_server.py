@@ -24,9 +24,11 @@ from mcp.client.stdio import stdio_client
 
 from traitprint.git_ops import commit, init_repo
 from traitprint.mcp_server import (
+    DISPUTE_SOURCE,
     SERVER_NAME,
     SERVER_VERSION,
     _coerce_min_proficiency,
+    _compute_disputes,
     _envelope,
     _handle_find_story,
     _handle_get_philosophy,
@@ -194,8 +196,15 @@ class TestGetProfileSummary:
         assert out["top_skills"][0]["name"] == "Python"
         assert out["top_skills"][0]["proficiency"] == "authority"
         for skill in out["top_skills"]:
-            assert set(skill) == {"name", "proficiency", "evidence", "disputed"}
+            assert set(skill) == {
+                "name",
+                "proficiency",
+                "evidence",
+                "disputed",
+                "dispute",
+            }
             assert skill["disputed"] is False
+            assert skill["dispute"] is None
         assert "signature_experiences" not in out
 
     def test_detailed_includes_experiences_and_philosophies(
@@ -205,7 +214,7 @@ class TestGetProfileSummary:
         assert "signature_experiences" in out
         assert "core_philosophies" in out
         phil = out["core_philosophies"][0]
-        assert set(phil) == {"topic", "stance", "evidence", "disputed"}
+        assert set(phil) == {"topic", "stance", "evidence", "disputed", "dispute"}
         assert phil["topic"] == "Delegation as Leverage"
 
     def test_detailed_experiences_carry_related_skills(
@@ -222,6 +231,7 @@ class TestGetProfileSummary:
             "related_skills",
             "evidence",
             "disputed",
+            "dispute",
         }
         assert exp["title"] == "Staff Data Engineer"
         assert set(exp["related_skills"]) == {"Python", "SQL"}
@@ -259,6 +269,7 @@ class TestSearchSkills:
             "match_distance",
             "evidence",
             "disputed",
+            "dispute",
         }
         qi = out["query_interpretation"]
         assert set(qi) == {
@@ -517,6 +528,7 @@ class TestFindStory:
             "match_score",
             "evidence",
             "disputed",
+            "dispute",
         }
         assert story["outcome"] == "win"
         assert story["match_score"] > 0
@@ -621,6 +633,7 @@ class TestGetPhilosophy:
             "match_score",
             "evidence",
             "disputed",
+            "dispute",
         }
         assert phil["topic"] == "Delegation as Leverage"
         assert phil["match_score"] > 0
@@ -686,6 +699,114 @@ class TestGetPhilosophyCategoryFilter:
         )
         assert [p["topic"] for p in out["philosophies"]] == ["Blameless Postmortems"]
         assert out["philosophies"][0]["match_score"] >= 0.5
+
+
+# ── Disputes (referential integrity) ────────────────────────────────
+
+
+class TestDisputes:
+    """Dangling-reference disputes surfaced on MCP records (D10 / Layer-1)."""
+
+    def _disputed_vault(self) -> tuple[VaultSchema, UUID]:
+        """A vault whose lone experience has a dangling ``skill_ids[2]``."""
+        skill_a = SkillSchema(name="Python", category="technical", proficiency=5)
+        skill_b = SkillSchema(name="SQL", category="technical", proficiency=4)
+        exp = ExperienceSchema(
+            title="Staff Engineer",
+            company="Acme",
+            # index 0 and 1 resolve; index 2 dangles.
+            skill_ids=[skill_a.id, skill_b.id, uuid4()],
+        )
+        vault = VaultSchema(
+            profile=ProfileSchema(
+                display_name="Wesley Johnson",
+                headline="Engineer",
+                summary="Bio.",
+            ),
+            skills=[skill_a, skill_b],
+            experiences=[exp],
+        )
+        return vault, exp.id
+
+    def test_clean_vault_has_no_disputes(self, populated_store: VaultStore) -> None:
+        # The seeded vault resolves every cross-reference.
+        assert _compute_disputes(populated_store.load()) == {}
+
+    def test_reason_matches_cloud_phrasing(self) -> None:
+        vault, exp_id = self._disputed_vault()
+        disputes = _compute_disputes(vault)
+        assert set(disputes) == {exp_id}
+        dispute = disputes[exp_id]
+        assert dispute["reason"] == "dangling reference: skill_ids[2] does not resolve"
+        assert dispute["source"] == DISPUTE_SOURCE == "local-referential-integrity"
+        assert [r["path"] for r in dispute["dangling_refs"]] == ["skill_ids[2]"]
+        # ``since`` is ISO-8601 UTC with a Z suffix (cloud format).
+        datetime.fromisoformat(dispute["since"].replace("Z", "+00:00"))
+
+    def test_dangling_scalar_experience_id_on_story(self) -> None:
+        skill = SkillSchema(name="Python", category="technical", proficiency=5)
+        story = StorySchema(
+            title="Migration",
+            situation="s",
+            task="t",
+            action="a",
+            result="r",
+            skill_ids=[skill.id],
+            experience_id=uuid4(),  # dangling scalar reference
+        )
+        vault = VaultSchema(skills=[skill], stories=[story])
+        dispute = _compute_disputes(vault)[story.id]
+        # A scalar ref renders with the bare field name, no ``[index]``.
+        assert dispute["reason"] == "dangling reference: experience_id does not resolve"
+
+    def test_multiple_dangling_refs_pluralize(self) -> None:
+        story = StorySchema(
+            title="Two gaps",
+            situation="s",
+            task="t",
+            action="a",
+            result="r",
+            skill_ids=[uuid4(), uuid4()],  # both dangle
+        )
+        vault = VaultSchema(stories=[story])
+        dispute = _compute_disputes(vault)[story.id]
+        assert dispute["reason"] == (
+            "dangling reference: skill_ids[0], skill_ids[1] do not resolve"
+        )
+
+    def test_dangling_philosophy_evidence_rides_on_record(self) -> None:
+        phil = PhilosophySchema(
+            title="Stance",
+            description="A position with no surviving evidence.",
+            evidence_story_ids=[uuid4()],  # dangling
+        )
+        vault = VaultSchema(philosophies=[phil])
+        record = _handle_get_philosophy(vault, "stance", 3)["philosophies"][0]
+        assert record["disputed"] is True
+        assert record["dispute"]["reason"] == (
+            "dangling reference: evidence_story_ids[0] does not resolve"
+        )
+
+    def test_profile_summary_rollup(self) -> None:
+        vault, exp_id = self._disputed_vault()
+        out = _handle_get_profile_summary(vault, "detailed")
+        rollup = out["disputes"]
+        assert rollup["count"] == 1
+        assert rollup["source"] == DISPUTE_SOURCE
+        assert rollup["entities"] == [
+            {
+                "entity_id": str(exp_id),
+                "kind": "experience",
+                "label": "Staff Engineer",
+                "reason": "dangling reference: skill_ids[2] does not resolve",
+            }
+        ]
+        # The same dispute also rides on the experience record itself, while a
+        # clean skill record carries ``dispute: None``.
+        exp_record = out["signature_experiences"][0]
+        assert exp_record["disputed"] is True
+        assert exp_record["dispute"]["reason"] == rollup["entities"][0]["reason"]
+        assert out["top_skills"][0]["dispute"] is None
 
 
 # ── In-process server: tool registration ────────────────────────────
