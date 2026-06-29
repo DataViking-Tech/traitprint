@@ -25,6 +25,7 @@ from mcp.client.stdio import stdio_client
 from traitprint.git_ops import commit, init_repo
 from traitprint.mcp_server import (
     DISPUTE_SOURCE,
+    RESPONSE_CONTRACT_VERSION,
     SERVER_NAME,
     SERVER_VERSION,
     _coerce_min_proficiency,
@@ -170,7 +171,7 @@ class TestEnvelope:
         env = _envelope({"foo": "bar"})
         assert set(env) == {"result", "meta"}
         assert env["result"] == {"foo": "bar"}
-        assert env["meta"]["server_version"] == SERVER_VERSION
+        assert env["meta"]["server_version"] == RESPONSE_CONTRACT_VERSION == "1.1.0"
         assert env["meta"]["trust_layer_status"] == "active"
         # ISO-8601 UTC parseable
         datetime.fromisoformat(env["meta"]["generated_at"].replace("Z", "+00:00"))
@@ -701,11 +702,11 @@ class TestGetPhilosophyCategoryFilter:
         assert out["philosophies"][0]["match_score"] >= 0.5
 
 
-# ── Disputes (referential integrity) ────────────────────────────────
+# ── Disputes (canonical flags[] schema, docs/schema/dispute-v1/) ─────
 
 
 class TestDisputes:
-    """Dangling-reference disputes surfaced on MCP records (D10 / Layer-1)."""
+    """Canonical ``dispute`` objects: dangling_reference + date_overlap flags."""
 
     def _disputed_vault(self) -> tuple[VaultSchema, UUID]:
         """A vault whose lone experience has a dangling ``skill_ids[2]``."""
@@ -714,6 +715,8 @@ class TestDisputes:
         exp = ExperienceSchema(
             title="Staff Engineer",
             company="Acme",
+            start_date="2020-01",
+            end_date="2021-12",
             # index 0 and 1 resolve; index 2 dangles.
             skill_ids=[skill_a.id, skill_b.id, uuid4()],
         )
@@ -728,18 +731,43 @@ class TestDisputes:
         )
         return vault, exp.id
 
+    def _two_roles(
+        self,
+        a_range: tuple[str, str],
+        b_range: tuple[str, str],
+        *,
+        a_title: str = "Role A",
+        b_title: str = "Role B",
+    ) -> tuple[VaultSchema, ExperienceSchema, ExperienceSchema]:
+        a = ExperienceSchema(
+            title=a_title, company="A", start_date=a_range[0], end_date=a_range[1]
+        )
+        b = ExperienceSchema(
+            title=b_title, company="B", start_date=b_range[0], end_date=b_range[1]
+        )
+        return VaultSchema(experiences=[a, b]), a, b
+
     def test_clean_vault_has_no_disputes(self, populated_store: VaultStore) -> None:
-        # The seeded vault resolves every cross-reference.
+        # The seeded vault resolves every cross-reference (and has one role).
         assert _compute_disputes(populated_store.load()) == {}
 
-    def test_reason_matches_cloud_phrasing(self) -> None:
+    def test_dangling_reference_flag_shape(self) -> None:
         vault, exp_id = self._disputed_vault()
         disputes = _compute_disputes(vault)
         assert set(disputes) == {exp_id}
         dispute = disputes[exp_id]
+        assert dispute["sources"] == [DISPUTE_SOURCE] == ["local-referential-integrity"]
         assert dispute["reason"] == "dangling reference: skill_ids[2] does not resolve"
-        assert dispute["source"] == DISPUTE_SOURCE == "local-referential-integrity"
-        assert [r["path"] for r in dispute["dangling_refs"]] == ["skill_ids[2]"]
+        assert len(dispute["flags"]) == 1
+        flag = dispute["flags"][0]
+        assert flag["type"] == "dangling_reference"
+        assert flag["reason"] == "dangling reference: skill_ids[2] does not resolve"
+        assert flag["detail"] == {
+            "field": "skill_ids",
+            "index": 2,
+            "id": str(vault.experiences[0].skill_ids[2]),
+            "target": "skill",
+        }
         # ``since`` is ISO-8601 UTC with a Z suffix (cloud format).
         datetime.fromisoformat(dispute["since"].replace("Z", "+00:00"))
 
@@ -755,11 +783,14 @@ class TestDisputes:
             experience_id=uuid4(),  # dangling scalar reference
         )
         vault = VaultSchema(skills=[skill], stories=[story])
-        dispute = _compute_disputes(vault)[story.id]
+        flag = _compute_disputes(vault)[story.id]["flags"][0]
         # A scalar ref renders with the bare field name, no ``[index]``.
-        assert dispute["reason"] == "dangling reference: experience_id does not resolve"
+        assert flag["reason"] == "dangling reference: experience_id does not resolve"
+        assert flag["detail"]["field"] == "experience_id"
+        assert flag["detail"]["index"] is None
+        assert flag["detail"]["target"] == "experience"
 
-    def test_multiple_dangling_refs_pluralize(self) -> None:
+    def test_multiple_dangling_refs_are_separate_flags(self) -> None:
         story = StorySchema(
             title="Two gaps",
             situation="s",
@@ -770,8 +801,12 @@ class TestDisputes:
         )
         vault = VaultSchema(stories=[story])
         dispute = _compute_disputes(vault)[story.id]
+        assert [f["detail"]["index"] for f in dispute["flags"]] == [0, 1]
+        assert all(f["type"] == "dangling_reference" for f in dispute["flags"])
+        # The derived reason joins the per-flag reasons with "; ".
         assert dispute["reason"] == (
-            "dangling reference: skill_ids[0], skill_ids[1] do not resolve"
+            "dangling reference: skill_ids[0] does not resolve; "
+            "dangling reference: skill_ids[1] does not resolve"
         )
 
     def test_dangling_philosophy_evidence_rides_on_record(self) -> None:
@@ -783,21 +818,62 @@ class TestDisputes:
         vault = VaultSchema(philosophies=[phil])
         record = _handle_get_philosophy(vault, "stance", 3)["philosophies"][0]
         assert record["disputed"] is True
-        assert record["dispute"]["reason"] == (
+        flag = record["dispute"]["flags"][0]
+        assert flag["detail"]["target"] == "story"
+        assert flag["reason"] == (
             "dangling reference: evidence_story_ids[0] does not resolve"
         )
+
+    def test_date_overlap_flags_both_roles_symmetrically(self) -> None:
+        # Clear overlap: 2021-01..2022-06 and 2021-09..2023-01.
+        vault, a, b = self._two_roles(("2021-01", "2022-06"), ("2021-09", "2023-01"))
+        disputes = _compute_disputes(vault)
+        assert set(disputes) == {a.id, b.id}
+
+        fa = disputes[a.id]["flags"][0]
+        assert fa["type"] == "contradiction"
+        assert fa["detail"]["kind"] == "date_overlap"
+        assert fa["detail"]["entities"] == [str(a.id), str(b.id)]
+        assert fa["detail"]["ranges"] == [
+            ["2021-01", "2022-06"],
+            ["2021-09", "2023-01"],
+        ]
+        assert "overlap in time" in fa["reason"]
+
+        # B's flag lists B first — symmetric perspective, order-independent.
+        fb = disputes[b.id]["flags"][0]
+        assert fb["detail"]["entities"] == [str(b.id), str(a.id)]
+        assert fb["detail"]["ranges"] == [
+            ["2021-09", "2023-01"],
+            ["2021-01", "2022-06"],
+        ]
+
+    def test_shared_boundary_month_is_adjacency_not_overlap(self) -> None:
+        # Back-to-back roles sharing transition month 2023-04 — NOT flagged.
+        vault, _a, _b = self._two_roles(("2021-10", "2023-04"), ("2023-04", "2025-10"))
+        assert _compute_disputes(vault) == {}
+
+    def test_part_time_role_suppresses_overlap(self) -> None:
+        # Genuine month overlap, but one role reads part-time — not flagged.
+        vault, _a, _b = self._two_roles(
+            ("2021-01", "2022-06"),
+            ("2021-09", "2023-01"),
+            b_title="Freelance Advisor",
+        )
+        assert _compute_disputes(vault) == {}
 
     def test_profile_summary_rollup(self) -> None:
         vault, exp_id = self._disputed_vault()
         out = _handle_get_profile_summary(vault, "detailed")
         rollup = out["disputes"]
         assert rollup["count"] == 1
-        assert rollup["source"] == DISPUTE_SOURCE
+        assert rollup["sources"] == [DISPUTE_SOURCE]
         assert rollup["entities"] == [
             {
                 "entity_id": str(exp_id),
                 "kind": "experience",
                 "label": "Staff Engineer",
+                "flag_types": ["dangling_reference"],
                 "reason": "dangling reference: skill_ids[2] does not resolve",
             }
         ]
@@ -807,6 +883,38 @@ class TestDisputes:
         assert exp_record["disputed"] is True
         assert exp_record["dispute"]["reason"] == rollup["entities"][0]["reason"]
         assert out["top_skills"][0]["dispute"] is None
+
+
+class TestDisputeGoldenFixture:
+    """The shared cross-server fixture (docs/schema/dispute-v1/golden-fixture.json).
+
+    The local server must reproduce ``expected_disputes`` (flags + derived
+    reason) for this input. The cloud server carries the same fixture and
+    asserts the same output, so the two cannot drift on detection or shape.
+    """
+
+    def test_local_matches_golden(self) -> None:
+        path = (
+            Path(__file__).resolve().parent.parent
+            / "docs"
+            / "schema"
+            / "dispute-v1"
+            / "golden-fixture.json"
+        )
+        data = json.loads(path.read_text())
+        inp = data["input"]
+        vault = VaultSchema(
+            skills=[SkillSchema(**s) for s in inp["skills"]],
+            experiences=[ExperienceSchema(**e) for e in inp["experiences"]],
+            stories=[StorySchema(**s) for s in inp["stories"]],
+            philosophies=[PhilosophySchema(**p) for p in inp["philosophies"]],
+        )
+        disputes = _compute_disputes(vault)
+        normalized = {
+            str(entity_id): {"reason": d["reason"], "flags": d["flags"]}
+            for entity_id, d in disputes.items()
+        }
+        assert normalized == data["expected_disputes"]
 
 
 # ── In-process server: tool registration ────────────────────────────
@@ -952,7 +1060,7 @@ class TestStdioRoundTrip:
         summary = json.loads(results["get_profile_summary"])
         assert set(summary) == {"result", "meta"}
         assert summary["result"]["headline"] == "Data Engineering Leader"
-        assert summary["meta"]["server_version"] == SERVER_VERSION
+        assert summary["meta"]["server_version"] == RESPONSE_CONTRACT_VERSION
 
         skills = json.loads(results["search_skills"])
         assert skills["result"]["query_interpretation"]["used_distance_graph"] is False

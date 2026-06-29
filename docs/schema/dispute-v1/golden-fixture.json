@@ -1,0 +1,192 @@
+{
+  "_comment": "Shared dispute golden fixture (docs/schema/dispute-v1/). Both MCP servers must produce `expected_disputes` for this input, comparing only the cross-server-portable fields (flags + derived reason); `sources`, `since`, and the optional cloud-only `file` are allowed to differ.",
+  "input": {
+    "skills": [
+      {
+        "id": "11111111-1111-1111-1111-111111111111",
+        "name": "Python",
+        "proficiency": 5
+      }
+    ],
+    "experiences": [
+      {
+        "id": "22222222-2222-2222-2222-222222220001",
+        "title": "Data Engineer",
+        "start_date": "2021-10",
+        "end_date": "2023-04",
+        "skill_ids": [
+          "11111111-1111-1111-1111-111111111111"
+        ]
+      },
+      {
+        "id": "22222222-2222-2222-2222-222222220002",
+        "title": "Senior Manager",
+        "start_date": "2023-04",
+        "end_date": "2025-10",
+        "skill_ids": [
+          "11111111-1111-1111-1111-111111111111"
+        ]
+      },
+      {
+        "id": "22222222-2222-2222-2222-222222220003",
+        "title": "Platform Lead",
+        "start_date": "2022-01",
+        "end_date": "2024-06",
+        "skill_ids": [
+          "11111111-1111-1111-1111-111111111111",
+          "99999999-9999-9999-9999-999999999991"
+        ]
+      }
+    ],
+    "stories": [
+      {
+        "id": "33333333-3333-3333-3333-333333330001",
+        "title": "Big Migration",
+        "situation": "s",
+        "task": "t",
+        "action": "a",
+        "result": "r",
+        "skill_ids": [
+          "99999999-9999-9999-9999-999999999992"
+        ],
+        "experience_id": "22222222-2222-2222-2222-222222220001"
+      }
+    ],
+    "philosophies": [
+      {
+        "id": "44444444-4444-4444-4444-444444440001",
+        "title": "Ship small",
+        "description": "Small PRs.",
+        "evidence_story_ids": [
+          "33333333-3333-3333-3333-333333330001"
+        ]
+      }
+    ]
+  },
+  "expected_disputes": {
+    "33333333-3333-3333-3333-333333330001": {
+      "reason": "dangling reference: skill_ids[0] does not resolve",
+      "flags": [
+        {
+          "type": "dangling_reference",
+          "reason": "dangling reference: skill_ids[0] does not resolve",
+          "detail": {
+            "field": "skill_ids",
+            "index": 0,
+            "id": "99999999-9999-9999-9999-999999999992",
+            "target": "skill"
+          }
+        }
+      ]
+    },
+    "22222222-2222-2222-2222-222222220003": {
+      "reason": "dangling reference: skill_ids[1] does not resolve; These two roles overlap in time (2022-01 to 2024-06 and 2021-10 to 2023-04). An interviewer might notice if both were full-time positions.; These two roles overlap in time (2022-01 to 2024-06 and 2023-04 to 2025-10). An interviewer might notice if both were full-time positions.",
+      "flags": [
+        {
+          "type": "dangling_reference",
+          "reason": "dangling reference: skill_ids[1] does not resolve",
+          "detail": {
+            "field": "skill_ids",
+            "index": 1,
+            "id": "99999999-9999-9999-9999-999999999991",
+            "target": "skill"
+          }
+        },
+        {
+          "type": "contradiction",
+          "reason": "These two roles overlap in time (2022-01 to 2024-06 and 2021-10 to 2023-04). An interviewer might notice if both were full-time positions.",
+          "detail": {
+            "kind": "date_overlap",
+            "entities": [
+              "22222222-2222-2222-2222-222222220003",
+              "22222222-2222-2222-2222-222222220001"
+            ],
+            "ranges": [
+              [
+                "2022-01",
+                "2024-06"
+              ],
+              [
+                "2021-10",
+                "2023-04"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "contradiction",
+          "reason": "These two roles overlap in time (2022-01 to 2024-06 and 2023-04 to 2025-10). An interviewer might notice if both were full-time positions.",
+          "detail": {
+            "kind": "date_overlap",
+            "entities": [
+              "22222222-2222-2222-2222-222222220003",
+              "22222222-2222-2222-2222-222222220002"
+            ],
+            "ranges": [
+              [
+                "2022-01",
+                "2024-06"
+              ],
+              [
+                "2023-04",
+                "2025-10"
+              ]
+            ]
+          }
+        }
+      ]
+    },
+    "22222222-2222-2222-2222-222222220001": {
+      "reason": "These two roles overlap in time (2021-10 to 2023-04 and 2022-01 to 2024-06). An interviewer might notice if both were full-time positions.",
+      "flags": [
+        {
+          "type": "contradiction",
+          "reason": "These two roles overlap in time (2021-10 to 2023-04 and 2022-01 to 2024-06). An interviewer might notice if both were full-time positions.",
+          "detail": {
+            "kind": "date_overlap",
+            "entities": [
+              "22222222-2222-2222-2222-222222220001",
+              "22222222-2222-2222-2222-222222220003"
+            ],
+            "ranges": [
+              [
+                "2021-10",
+                "2023-04"
+              ],
+              [
+                "2022-01",
+                "2024-06"
+              ]
+            ]
+          }
+        }
+      ]
+    },
+    "22222222-2222-2222-2222-222222220002": {
+      "reason": "These two roles overlap in time (2023-04 to 2025-10 and 2022-01 to 2024-06). An interviewer might notice if both were full-time positions.",
+      "flags": [
+        {
+          "type": "contradiction",
+          "reason": "These two roles overlap in time (2023-04 to 2025-10 and 2022-01 to 2024-06). An interviewer might notice if both were full-time positions.",
+          "detail": {
+            "kind": "date_overlap",
+            "entities": [
+              "22222222-2222-2222-2222-222222220002",
+              "22222222-2222-2222-2222-222222220003"
+            ],
+            "ranges": [
+              [
+                "2023-04",
+                "2025-10"
+              ],
+              [
+                "2022-01",
+                "2024-06"
+              ]
+            ]
+          }
+        }
+      ]
+    }
+  }
+}
