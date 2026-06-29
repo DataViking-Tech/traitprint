@@ -1350,3 +1350,40 @@ class TestLenses:
     def test_invalid_slug_rejected(self) -> None:
         with pytest.raises(ValueError, match="kebab-case"):
             LensSchema(slug="Not A Slug", name="x")
+
+    def test_empty_lens_vault_omits_lenses_json(self, vault_dir: Path) -> None:
+        # A vault that never opted into lenses keeps its exact file tree — no
+        # new tracked lenses.json (Codex P2). And a missing file reads as [].
+        store = VaultStore(vault_dir)
+        store.save(VaultSchema(profile=ProfileSchema(display_name="Wesley")))
+        assert not (vault_dir / "lenses.json").exists()
+        assert store.load().lenses == []
+
+    def test_removing_last_lens_deletes_stale_lenses_json(
+        self, vault_dir: Path
+    ) -> None:
+        vault, _sk = self._two_lens_vault()
+        store = VaultStore(vault_dir)
+        store.save(vault)
+        assert (vault_dir / "lenses.json").is_file()
+        # Drop all lenses → the stale file must be removed, not left behind.
+        store.save(store.load().model_copy(update={"lenses": []}))
+        assert not (vault_dir / "lenses.json").exists()
+
+    def test_duplicate_slug_rejected(self) -> None:
+        with pytest.raises(ValueError, match="duplicate lens slug"):
+            VaultSchema(
+                lenses=[
+                    LensSchema(slug="dup", name="A"),
+                    LensSchema(slug="dup", name="B"),
+                ]
+            )
+
+    def test_multiple_defaults_rejected(self) -> None:
+        with pytest.raises(ValueError, match="at most one lens may be is_default"):
+            VaultSchema(
+                lenses=[
+                    LensSchema(slug="a", name="A", is_default=True),
+                    LensSchema(slug="b", name="B", is_default=True),
+                ]
+            )

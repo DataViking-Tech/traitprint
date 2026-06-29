@@ -25,7 +25,7 @@ import re
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 def _now() -> datetime:
@@ -267,3 +267,23 @@ class VaultSchema(BaseModel):
     # Positioning lenses (emphasis-only projections; see LensSchema). Empty by
     # default, so an un-lensed vault renders exactly as before.
     lenses: list[LensSchema] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _validate_lenses(self) -> VaultSchema:
+        """Vault-level lens invariants: unique slugs and at most one default.
+
+        A lens is resolved by slug (and the bare profile renders the default),
+        so a duplicate slug would shadow other lenses and two defaults would make
+        the bare rendering depend on list order. Enforce both at load time —
+        ``lenses.json`` can be hand-edited or synced.
+        """
+        slugs = [lens.slug for lens in self.lenses]
+        duplicates = sorted({s for s in slugs if slugs.count(s) > 1})
+        if duplicates:
+            raise ValueError(f"duplicate lens slug(s): {duplicates}")
+        defaults = [lens.slug for lens in self.lenses if lens.is_default]
+        if len(defaults) > 1:
+            raise ValueError(
+                f"at most one lens may be is_default, got {len(defaults)}: {defaults}"
+            )
+        return self
