@@ -80,15 +80,21 @@ proficiency, date, employer, or metric absent from the vault). The trust layer
 validates each lens and reuses the dispute machinery
 (`docs/schema/dispute-v1/`):
 
-- every `signature_*_id` and `skill_salience` key must resolve to a vault entity
-  — a dangling id raises the same `dangling_reference` flag class as the dispute
-  work;
+- every `signature_experience_id` / `signature_story_id` / `skill_salience` key
+  must resolve to a vault entity — a dangling id raises the same
+  `dangling_reference` flag class as the dispute work. **Enforced**: a lens with
+  an unresolved reference is `disputed`, surfaced on `vault_lens_list` /
+  `vault_lens_get` and in the `get_profile_summary` disputes roll-up (kind
+  `lens`).
 - `headline_override` / `bio_override` must assert nothing unsupported — an
-  unsupported assertion raises an `unsupported_claim` flag.
+  unsupported assertion raises an `unsupported_claim` flag. **Reserved /
+  deferred**: deterministically proving free text introduces no new fact is not
+  tractable, so the flag class is reserved and the detector is a follow-up
+  (heuristic or BYOK-assisted). When it lands, the flag flows through the same
+  dispute path.
 
 A failing lens is `disputed` with a reason, via the identical mechanism that
-records record-level disputes. (Validation is enforced in a follow-up; this
-document fixes the contract.)
+records record-level disputes.
 
 ## Version history
 

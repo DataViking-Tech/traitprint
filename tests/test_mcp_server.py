@@ -1387,3 +1387,48 @@ class TestLenses:
                     LensSchema(slug="b", name="B", is_default=True),
                 ]
             )
+
+    def test_clean_lens_is_not_disputed(self) -> None:
+        vault, _sk = self._two_lens_vault()
+        listing = _handle_vault_lens_list(vault)
+        assert all(row["disputed"] is False for row in listing["lenses"])
+        assert all(row["dispute"] is None for row in listing["lenses"])
+
+    def test_dangling_signature_story_flags_lens_disputed(self) -> None:
+        # §11.6: a lens whose signature_story_id no longer resolves is disputed
+        # via the same dangling_reference mechanism as records.
+        ghost = uuid4()
+        lens = LensSchema(
+            slug="ic", name="IC", signature_story_ids=[ghost]
+        )
+        vault = VaultSchema(lenses=[lens])
+        detail = _handle_vault_lens_get(vault, "ic")
+        assert detail["disputed"] is True
+        flag = detail["dispute"]["flags"][0]
+        assert flag["type"] == "dangling_reference"
+        assert flag["detail"]["field"] == "signature_story_ids"
+        assert flag["detail"]["target"] == "story"
+        assert flag["reason"] == (
+            "dangling reference: signature_story_ids[0] does not resolve"
+        )
+
+    def test_dangling_salience_skill_flags_lens_disputed(self) -> None:
+        ghost = uuid4()
+        lens = LensSchema(
+            slug="ic", name="IC", skill_salience={ghost: SalienceLevel.CORE}
+        )
+        vault = VaultSchema(lenses=[lens])
+        flag = _handle_vault_lens_get(vault, "ic")["dispute"]["flags"][0]
+        assert flag["detail"]["field"] == "skill_salience"
+        assert flag["detail"]["index"] is None  # keyed by id, not positional
+        assert flag["detail"]["target"] == "skill"
+
+    def test_disputed_lens_rides_in_profile_summary_rollup(self) -> None:
+        ghost = uuid4()
+        lens = LensSchema(slug="ic", name="IC Lens", signature_experience_ids=[ghost])
+        vault = VaultSchema(lenses=[lens])
+        rollup = _handle_get_profile_summary(vault, "detailed")["disputes"]
+        entry = next(e for e in rollup["entities"] if e["entity_id"] == str(lens.id))
+        assert entry["kind"] == "lens"
+        assert entry["label"] == "IC Lens"
+        assert entry["flag_types"] == ["dangling_reference"]

@@ -550,7 +550,14 @@ def _date_overlap_flags(experiences: list[Any]) -> dict[UUID, list[dict[str, Any
 
 def _entity_updated_at(vault: VaultSchema) -> dict[UUID, datetime]:
     updated: dict[UUID, datetime] = {}
-    for group in (vault.skills, vault.experiences, vault.stories, vault.philosophies):
+    groups = (
+        vault.skills,
+        vault.experiences,
+        vault.stories,
+        vault.philosophies,
+        vault.lenses,
+    )
+    for group in groups:
         for item in group:
             updated[item.id] = item.updated_at
     return updated
@@ -640,6 +647,33 @@ def _compute_disputes(vault: VaultSchema) -> dict[UUID, dict[str, Any]]:
     for entity_id, overlap_flags in _date_overlap_flags(vault.experiences).items():
         add(entity_id, overlap_flags)
 
+    # Lenses are emphasis-only projections; the trust layer holds them to the
+    # vault by checking every reference resolves (decision §9). An unresolved
+    # signature/salience id flags the lens `disputed` via the same
+    # dangling_reference machinery as records.
+    for lens in vault.lenses:
+        lens_flags = _dangling_flags(
+            lens.signature_experience_ids,
+            experience_ids,
+            "signature_experience_ids",
+            "experience",
+        )
+        lens_flags += _dangling_flags(
+            lens.signature_story_ids, story_ids, "signature_story_ids", "story"
+        )
+        # skill_salience is keyed by skill id (not an ordered array), so each
+        # unresolved key is a scalar-style dangling ref (index None).
+        for skill_id in lens.skill_salience:
+            if skill_id not in skill_ids:
+                lens_flags.append(
+                    _dangling_flag("skill_salience", skill_id, None, "skill")
+                )
+        # NOTE: headline/bio override claim validation (the `unsupported_claim`
+        # flag class, docs/schema/lens-v1/) is a deferred follow-up — proving
+        # free text introduces no new fact is not deterministic. Such a flag
+        # would flow through this same dispute path once a detector exists.
+        add(lens.id, lens_flags)
+
     updated = _entity_updated_at(vault)
     return {
         entity_id: _dispute(sorted(flags, key=_flag_order_key), updated.get(entity_id))
@@ -658,6 +692,8 @@ def _entity_labels(vault: VaultSchema) -> dict[UUID, tuple[str, str]]:
         labels[story.id] = ("story", story.title)
     for phil in vault.philosophies:
         labels[phil.id] = ("philosophy", phil.title)
+    for lens in vault.lenses:
+        labels[lens.id] = ("lens", lens.name)
     return labels
 
 
@@ -815,7 +851,12 @@ def _handle_get_profile_summary(
 
 
 def _handle_vault_lens_list(vault: VaultSchema) -> dict[str, Any]:
-    """Inventory of the vault's positioning lenses (names + emphasis counts)."""
+    """Inventory of the vault's positioning lenses (names + emphasis counts).
+
+    Each lens carries the trust signal: ``disputed`` is true when a signature
+    or salience reference no longer resolves (see _compute_disputes).
+    """
+    disputes = _compute_disputes(vault)
     return {
         "lenses": [
             {
@@ -833,6 +874,8 @@ def _handle_vault_lens_list(vault: VaultSchema) -> dict[str, Any]:
                     for v in lens.skill_salience.values()
                     if v == SalienceLevel.SUPPRESSED
                 ),
+                "disputed": lens.id in disputes,
+                "dispute": disputes.get(lens.id),
             }
             for lens in vault.lenses
         ],
@@ -848,6 +891,7 @@ def _handle_vault_lens_get(vault: VaultSchema, slug_or_id: str) -> dict[str, Any
     exp_title = {e.id: e.title for e in vault.experiences}
     story_title = {s.id: s.title for s in vault.stories}
     skill_name = {s.id: s.name for s in vault.skills}
+    dispute = _compute_disputes(vault).get(lens.id)
     return {
         "slug": lens.slug,
         "name": lens.name,
@@ -867,6 +911,10 @@ def _handle_vault_lens_get(vault: VaultSchema, slug_or_id: str) -> dict[str, Any
             {"skill_id": str(sid), "name": skill_name.get(sid), "salience": level.value}
             for sid, level in lens.skill_salience.items()
         ],
+        # Trust signal: a reference that no longer resolves makes the lens
+        # disputed (the title/name resolves to None above for the broken ref).
+        "disputed": dispute is not None,
+        "dispute": dispute,
     }
 
 
