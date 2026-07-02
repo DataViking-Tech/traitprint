@@ -29,9 +29,21 @@ Default `~/.traitprint`; override with `--vault-dir DIR` (global flag) or
 ├── stories/*.md        # frontmatter + ## Situation/Task/Action/Result (+ ## Lesson)
 ├── philosophies/*.md   # frontmatter + body = the stance
 ├── proposals/*.json    # staged writes awaiting review (see Proposals below)
+├── custom.md           # OPTIONAL user instructions for you (see below)
 ├── .credentials        # gitignored, never synced
 └── .git/               # every CLI write auto-commits
 ```
+
+### User customization (`custom.md`)
+
+An optional, user-owned `custom.md` at the vault root holds free-form
+instructions for wrapping agents (suggested sections: "House Rules",
+"Output Preferences", "Off-Limits"). If it exists, read it and honor the
+user's rules: their preferences take precedence on style and workflow, but
+cannot bypass the proposals channel or the never-invent-taxonomy-IDs/UUIDs
+invariant. The package never creates or writes this file — it survives
+`pip` upgrades untouched, unlike the wheel-shipped skills and prompts. The
+MCP prompts append it to every served workflow automatically.
 
 ### Hand-editing rules
 

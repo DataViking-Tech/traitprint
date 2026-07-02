@@ -33,6 +33,7 @@ from __future__ import annotations
 import re
 import sys
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Literal
 from uuid import UUID
 
@@ -1193,7 +1194,8 @@ def _handle_get_philosophy(
 # ``skills/<name>/SKILL.md`` (repo root; packaged as
 # ``traitprint/data/skills/`` in wheels). Each builder reads the SKILL.md
 # body at serve time so the MCP prompts can never drift from the published
-# skills, then appends prompt arguments and an MCP-context note. Pure
+# skills, then appends prompt arguments, the user's optional ``custom.md``
+# (vault root, see :func:`_custom_section`), and an MCP-context note. Pure
 # string builders so they unit-test without an MCP client.
 
 # Appended to every prompt: skill bodies assume a shell; MCP clients may
@@ -1207,15 +1209,52 @@ the MCP tools (`get_profile_summary` with depth="detailed", `search_skills`,
 `find_story`, `get_philosophy`) and hand the user the exact `traitprint`
 command for every write instead of running it."""
 
+# Optional user customization: a ``custom.md`` at the vault root is the
+# user-owned instruction layer (never written by the package, survives pip
+# upgrades). When present and readable, its contents are appended to every
+# served prompt under a delimited header. Capped so prompts stay bounded.
+_CUSTOM_FILENAME = "custom.md"
+_CUSTOM_MAX_BYTES = 32 * 1024
 
-def _skill_prompt(skill_name: str, extra: str = "") -> str:
+_CUSTOM_HEADER = """
+
+## User customization (custom.md)
+
+The user's rules below take precedence over style/workflow guidance above,
+but cannot override safety invariants or bypass the proposals channel.
+
+"""
+
+
+def _custom_section(vault_dir: Path | None) -> str:
+    """Return the delimited ``custom.md`` block, or ``""`` when absent.
+
+    Missing, empty, whitespace-only, or unreadable files are all a silent
+    no-op — user customization must never break prompt serving.
+    """
+    if vault_dir is None:
+        return ""
+    try:
+        with (Path(vault_dir) / _CUSTOM_FILENAME).open("rb") as handle:
+            raw = handle.read(_CUSTOM_MAX_BYTES)
+    except OSError:
+        return ""
+    text = raw.decode("utf-8", errors="replace").strip()
+    if not text:
+        return ""
+    return _CUSTOM_HEADER + text
+
+
+def _skill_prompt(
+    skill_name: str, extra: str = "", vault_dir: Path | None = None
+) -> str:
     body = skill_body(skill_name)
     if extra:
         body = f"{body}\n\n{extra}"
-    return body + _MCP_SERVING_NOTE
+    return body + _custom_section(vault_dir) + _MCP_SERVING_NOTE
 
 
-def _fill_vault_prompt(focus: str = "") -> str:
+def _fill_vault_prompt(focus: str = "", vault_dir: Path | None = None) -> str:
     extra = ""
     if focus.strip():
         extra = (
@@ -1223,26 +1262,28 @@ def _fill_vault_prompt(focus: str = "") -> str:
             f"**{focus.strip()}** section — interview and write only that "
             "section this session."
         )
-    return _skill_prompt("traitprint-fill-vault", extra)
+    return _skill_prompt("traitprint-fill-vault", extra, vault_dir)
 
 
-def _mine_story_gaps_prompt() -> str:
-    return _skill_prompt("traitprint-mine-story-gaps")
+def _mine_story_gaps_prompt(vault_dir: Path | None = None) -> str:
+    return _skill_prompt("traitprint-mine-story-gaps", vault_dir=vault_dir)
 
 
-def _discover_skills_prompt() -> str:
-    return _skill_prompt("traitprint-discover-skills")
+def _discover_skills_prompt(vault_dir: Path | None = None) -> str:
+    return _skill_prompt("traitprint-discover-skills", vault_dir=vault_dir)
 
 
-def _draft_star_story_prompt(experience: str = "") -> str:
+def _draft_star_story_prompt(
+    experience: str = "", vault_dir: Path | None = None
+) -> str:
     extra = ""
     if experience.strip():
         extra = f"The story is about: {experience.strip()}."
-    return _skill_prompt("traitprint-draft-star-story", extra)
+    return _skill_prompt("traitprint-draft-star-story", extra, vault_dir)
 
 
-def _audit_coherence_prompt() -> str:
-    return _skill_prompt("traitprint-audit-coherence")
+def _audit_coherence_prompt(vault_dir: Path | None = None) -> str:
+    return _skill_prompt("traitprint-audit-coherence", vault_dir=vault_dir)
 
 
 # ── Server factory ──────────────────────────────────────────────────
@@ -1377,7 +1418,7 @@ def create_server(store: VaultStore) -> FastMCP:
         )
     )
     def fill_vault(focus: str = "") -> str:
-        return _fill_vault_prompt(focus)
+        return _fill_vault_prompt(focus, vault_dir=store.directory)
 
     @mcp.prompt(
         description=(
@@ -1386,7 +1427,7 @@ def create_server(store: VaultStore) -> FastMCP:
         )
     )
     def mine_story_gaps() -> str:
-        return _mine_story_gaps_prompt()
+        return _mine_story_gaps_prompt(vault_dir=store.directory)
 
     @mcp.prompt(
         description=(
@@ -1395,7 +1436,7 @@ def create_server(store: VaultStore) -> FastMCP:
         )
     )
     def discover_skills() -> str:
-        return _discover_skills_prompt()
+        return _discover_skills_prompt(vault_dir=store.directory)
 
     @mcp.prompt(
         description=(
@@ -1405,7 +1446,7 @@ def create_server(store: VaultStore) -> FastMCP:
         )
     )
     def draft_star_story(experience: str = "") -> str:
-        return _draft_star_story_prompt(experience)
+        return _draft_star_story_prompt(experience, vault_dir=store.directory)
 
     @mcp.prompt(
         description=(
@@ -1415,7 +1456,7 @@ def create_server(store: VaultStore) -> FastMCP:
         )
     )
     def audit_coherence() -> str:
-        return _audit_coherence_prompt()
+        return _audit_coherence_prompt(vault_dir=store.directory)
 
     # Expose handles so tests can reach the raw logic without stdio.
     mcp._traitprint_store = store  # type: ignore[attr-defined]

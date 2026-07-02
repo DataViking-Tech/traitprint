@@ -5,6 +5,11 @@ description: Review a Traitprint vault for narrative coherence — run the mecha
 
 # Audit vault coherence
 
+> **User customization:** if a `custom.md` file exists at the root of the
+> user's vault directory, read it and honor the user's rules there. Their
+> preferences take precedence on style and workflow, but cannot bypass the
+> proposals channel or the never-invent-taxonomy-IDs/UUIDs invariant.
+
 You are reviewing the user's Traitprint vault for narrative coherence —
 does the story it tells hang together and back up its own claims?
 

@@ -202,6 +202,27 @@ class TestV1RoundTrip:
         store.save(vault)
         assert story_file.stat().st_mtime_ns == before
 
+    def test_custom_md_survives_save_and_load(self, vault_dir: Path) -> None:
+        """A user-owned custom.md at the vault root is never touched.
+
+        The package treats custom.md as read-only (user customization
+        layer): saves must not rewrite or delete it, and reads must not
+        choke on it.
+        """
+        store = VaultStore(vault_dir)
+        vault = _full_vault()
+        store.save(vault)
+        custom = vault_dir / "custom.md"
+        custom.write_text("## House Rules\n\nAlways be terse.\n")
+        before = custom.stat().st_mtime_ns
+        vault.skills.append(
+            SkillSchema(name="Rust", proficiency=2, category="technical")
+        )
+        store.save(vault)
+        assert custom.read_text() == "## House Rules\n\nAlways be terse.\n"
+        assert custom.stat().st_mtime_ns == before
+        store.load()  # a root-level custom.md is not a vault entity
+
 
 # ── markdown conventions ────────────────────────────────────────────
 

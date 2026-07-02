@@ -45,6 +45,26 @@ story is grounded because it belongs to a real **experience**. Those links are
 what the MCP tools traverse, and what the [coherence audit](#audit-the-vault-for-coherence)
 checks.
 
+### User layer vs system layer
+
+Traitprint splits cleanly into two layers with different owners:
+
+- **User layer — yours, never touched by upgrades.** Everything in the vault
+  directory: your JSON and markdown entries, git history, and an optional
+  `custom.md` at the vault root. `custom.md` is a free-form instruction file
+  for the agents that wrap traitprint — house rules, output preferences,
+  off-limits topics. The package only ever *reads* it (the MCP prompts append
+  it to every served workflow); it never creates, writes, or deletes it, so
+  your customizations survive every `pip install --upgrade traitprint`.
+- **System layer — ours, replaced on upgrade.** The wheel-shipped CLI, MCP
+  server, and [Agent Skills](skills/). Any edits you make to installed skill
+  files are silently reverted by the next upgrade — put durable instructions
+  in `custom.md` instead.
+
+Your `custom.md` rules win on style and workflow, but they cannot override
+safety invariants: agents still stage extracted writes through the proposals
+channel and never invent taxonomy IDs or UUIDs.
+
 ## Quickstart
 
 ```
