@@ -7,6 +7,13 @@ can help you build.**
 > of your skills, experience, stories, and philosophy — kept on your laptop,
 > shared on your terms.
 
+One rule holds everywhere: **the vault never asserts a fact you didn't put in
+it.** Lenses re-order and re-weight what's true for a given audience — they
+cannot invent. Agents stage what they extract as proposals *you* approve, and
+they never fabricate a skill, an ID, or a link. Presentation flexes; facts
+don't. (This isn't a promise in a README — it's enforced by the schema, the
+proposals channel, and the audit.)
+
 Traitprint ships as **two products**:
 
 - **Traitprint Local** (`pip install traitprint`) — a local-first vault and

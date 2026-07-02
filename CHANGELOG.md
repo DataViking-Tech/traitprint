@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Repo launch playbook.** GitHub issue forms (bug report, feature
+  request, and a "Share your story" testimonial template with explicit
+  quote-permission field), `SECURITY.md` (private reporting channels +
+  the local-first threat-model scope), `CONTRIBUTING.md` (dev setup, CI
+  gates, contract-revision and skill-registry rules), and
+  `CITATION.cff`. The README lead now surfaces the ethics invariant —
+  "the vault never asserts a fact you didn't put in it" — as the
+  quotable framing; it was already enforced by the schema, proposals
+  channel, and audit. GOVERNANCE.md, translations scaffolding, and an
+  outcome-narrative rewrite are deliberately deferred per #65.
+
 - **User customization layer (`custom.md`).** An optional, user-owned
   `custom.md` at the vault root holds durable instructions for wrapping
   agents (suggested sections: House Rules, Output Preferences,
