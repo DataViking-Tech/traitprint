@@ -29,9 +29,13 @@ from traitprint.mcp_server import (
     RESPONSE_CONTRACT_VERSION,
     SERVER_NAME,
     SERVER_VERSION,
+    _audit_coherence_prompt,
     _coerce_min_proficiency,
     _compute_disputes,
+    _discover_skills_prompt,
+    _draft_star_story_prompt,
     _envelope,
+    _fill_vault_prompt,
     _flag_order_key,
     _handle_find_story,
     _handle_get_philosophy,
@@ -41,6 +45,7 @@ from traitprint.mcp_server import (
     _handle_vault_lens_list,
     _map_proficiency,
     _meets_proficiency,
+    _mine_story_gaps_prompt,
     _resolve_lens,
     create_server,
 )
@@ -1124,6 +1129,106 @@ class TestPrompts:
         )
         text = got.messages[0].content.text  # type: ignore[union-attr]
         assert "a tricky migration" in text
+
+
+class TestPromptCustomization:
+    """An optional user-owned custom.md at the vault root rides along on
+    every served prompt — appended after the skill body, clearly
+    delimited, and impossible to break prompt serving with."""
+
+    HEADER = "## User customization (custom.md)"
+
+    def test_custom_md_appended_after_body_before_serving_note(
+        self, tmp_path: Path
+    ) -> None:
+        (tmp_path / "custom.md").write_text(
+            "Always answer in Norwegian.", encoding="utf-8"
+        )
+        text = _fill_vault_prompt(vault_dir=tmp_path)
+        assert "Always answer in Norwegian." in text
+        # Skill body, then the delimited custom block, then the MCP note.
+        assert (
+            text.index("Socratic")
+            < text.index(self.HEADER)
+            < text.index("Serving context")
+        )
+        # The delimiter states the precedence contract.
+        assert (
+            "cannot override safety invariants or bypass the proposals channel"
+            in text
+        )
+
+    def test_all_five_builders_include_custom_md(self, tmp_path: Path) -> None:
+        (tmp_path / "custom.md").write_text("HOUSE-RULE-MARKER", encoding="utf-8")
+        for built in (
+            _fill_vault_prompt(vault_dir=tmp_path),
+            _mine_story_gaps_prompt(vault_dir=tmp_path),
+            _discover_skills_prompt(vault_dir=tmp_path),
+            _draft_star_story_prompt(vault_dir=tmp_path),
+            _audit_coherence_prompt(vault_dir=tmp_path),
+        ):
+            assert "HOUSE-RULE-MARKER" in built
+            assert self.HEADER in built
+
+    def test_no_vault_dir_is_noop(self) -> None:
+        assert self.HEADER not in _fill_vault_prompt()
+
+    def test_missing_file_is_noop(self, tmp_path: Path) -> None:
+        text = _fill_vault_prompt(vault_dir=tmp_path)
+        assert self.HEADER not in text
+        assert text == _fill_vault_prompt()
+
+    def test_empty_file_is_noop(self, tmp_path: Path) -> None:
+        (tmp_path / "custom.md").write_text("", encoding="utf-8")
+        assert self.HEADER not in _fill_vault_prompt(vault_dir=tmp_path)
+
+    def test_whitespace_only_file_is_noop(self, tmp_path: Path) -> None:
+        (tmp_path / "custom.md").write_text("  \n\n\t\n", encoding="utf-8")
+        assert self.HEADER not in _fill_vault_prompt(vault_dir=tmp_path)
+
+    def test_unreadable_file_is_noop_not_a_crash(self, tmp_path: Path) -> None:
+        # A directory named custom.md raises OSError on read regardless of
+        # the uid the tests run under (chmod tricks don't stop root).
+        (tmp_path / "custom.md").mkdir()
+        text = _fill_vault_prompt(vault_dir=tmp_path)
+        assert self.HEADER not in text
+        assert text == _fill_vault_prompt()
+
+    def test_oversized_file_is_capped(self, tmp_path: Path) -> None:
+        big = ("x" * (40 * 1024)) + "TAIL-MARKER"
+        (tmp_path / "custom.md").write_text(big, encoding="utf-8")
+        text = _fill_vault_prompt(vault_dir=tmp_path)
+        assert self.HEADER in text
+        assert "TAIL-MARKER" not in text  # truncated at the 32 KiB cap
+
+    def test_served_prompts_read_custom_md_from_the_store_dir(
+        self, populated_store: VaultStore
+    ) -> None:
+        (populated_store.directory / "custom.md").write_text(
+            "Prefer terse bullet answers.", encoding="utf-8"
+        )
+        server = create_server(populated_store)
+        for name, args in (
+            ("fill_vault", {"focus": "stories"}),
+            ("audit_coherence", {}),
+        ):
+            got = asyncio.run(server.get_prompt(name, args))
+            text = got.messages[0].content.text  # type: ignore[union-attr]
+            assert "Prefer terse bullet answers." in text
+            assert self.HEADER in text
+
+    def test_served_prompt_reads_custom_md_at_serve_time(
+        self, populated_store: VaultStore
+    ) -> None:
+        """custom.md is read per request — edits apply without a restart."""
+        server = create_server(populated_store)
+        got = asyncio.run(server.get_prompt("fill_vault", {}))
+        assert self.HEADER not in got.messages[0].content.text  # type: ignore[union-attr]
+        (populated_store.directory / "custom.md").write_text(
+            "LATE-EDIT-MARKER", encoding="utf-8"
+        )
+        got = asyncio.run(server.get_prompt("fill_vault", {}))
+        assert "LATE-EDIT-MARKER" in got.messages[0].content.text  # type: ignore[union-attr]
 
 
 # ── JSON-RPC round-trip over stdio ──────────────────────────────────

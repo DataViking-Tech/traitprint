@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **User customization layer (`custom.md`).** An optional, user-owned
+  `custom.md` at the vault root holds durable instructions for wrapping
+  agents (suggested sections: House Rules, Output Preferences,
+  Off-Limits). The package never creates or writes it, so it survives
+  pip upgrades — unlike the wheel-shipped skills. The MCP workflow
+  prompts append its contents (capped at 32 KiB; missing/empty/
+  unreadable is a silent no-op) under a delimited "User customization"
+  header, and every shipped SKILL.md now tells the wrapping agent to
+  honor it. User rules win on style and workflow but cannot bypass the
+  proposals channel or the never-invent-taxonomy-IDs/UUIDs invariant.
+  Schema-ignored: no vault contract revision.
+
 ## [0.11.0] - 2026-06-11
 
 ### Added

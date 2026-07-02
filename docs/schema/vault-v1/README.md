@@ -23,9 +23,17 @@ validation happens against [`vault-v1.schema.json`](vault-v1.schema.json)
 ├── stories/*.md             # frontmatter          → $defs/storyFrontmatter
 ├── philosophies/*.md        # frontmatter          → $defs/philosophyFrontmatter
 ├── proposals/*.json         # staged writes        → $defs/proposal
+├── custom.md                # optional, schema-ignored user instructions
 ├── .credentials             # gitignored, never synced
 └── .git/
 ```
+
+`custom.md` is an **optional, schema-ignored** file: free-form user
+instructions for wrapping agents (served alongside the MCP workflow
+prompts). It has no `$defs` entry, is never created or written by tooling
+(user-owned; read-only from the package's perspective), and readers must
+ignore it. Like `.credentials`, its presence or absence carries no schema
+meaning — no contract revision tracks it.
 
 ## Rules
 

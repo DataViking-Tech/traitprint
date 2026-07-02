@@ -5,6 +5,11 @@ description: Import a resume (PDF, DOCX, TXT, MD) into a Traitprint vault by doi
 
 # Import a resume into the Traitprint vault
 
+> **User customization:** if a `custom.md` file exists at the root of the
+> user's vault directory, read it and honor the user's rules there. Their
+> preferences take precedence on style and workflow, but cannot bypass the
+> proposals channel or the never-invent-taxonomy-IDs/UUIDs invariant.
+
 You are the model (architecture decision D11): when no BYOK LLM provider is
 configured, `traitprint vault import-resume` does not error — it emits an
 **agent-assist payload** (the extracted resume text plus the extraction
