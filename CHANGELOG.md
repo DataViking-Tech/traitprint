@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **New Agent Skill `traitprint-agent-vault-sync`** — teaches a wrapping
+  agent the supported round-trip between a Traitprint vault and the
+  working directory of an external agent-driven career tool (career-ops
+  or any CLI-agent career tool, referenced nominatively): deterministic
+  `vault export` out, judgment gaps (compensation targets, exit story,
+  archetype fits) filled only by asking the user, everything the tool
+  produced staged back via `traitprint proposals add`, and
+  `traitprint vault audit --json` to close the loop. No BYOK key —
+  agent-is-the-model (D11). Registered as the seventh skill; ships in
+  the wheel like the rest.
+- **New docs page `docs/external-tool-sync.md`** — the external-tool
+  sync workflow in prose, a copy-paste "sync traitprint" Custom
+  Workflows snippet for the user layer of a career-ops-style
+  `modes/_custom.md` (user-owned config, survives the tool's own
+  updater), and a note on preferring `traitprint mcp-serve`
+  (`get_profile_summary`, `find_story`) for grounded, UUID-linked facts
+  over re-reading a freeform `cv.md` snapshot. Includes the brand and
+  MIT-attribution note for nominative career-ops references.
+
 - **User customization layer (`custom.md`).** An optional, user-owned
   `custom.md` at the vault root holds durable instructions for wrapping
   agents (suggested sections: House Rules, Output Preferences,

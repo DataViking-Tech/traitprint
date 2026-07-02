@@ -182,3 +182,75 @@ class TestNoLegacyVocabulary:
         text = path.read_text(encoding="utf-8")
         for needle in _FORBIDDEN:
             assert needle not in text, f"{path} mentions legacy {needle!r}"
+
+
+# ── (e) The external-tool sync skill + docs page (issue #67) ─────────
+
+SYNC_SKILL = "traitprint-agent-vault-sync"
+SYNC_DOCS_PAGE = REPO_ROOT / "docs" / "external-tool-sync.md"
+
+
+class TestAgentVaultSyncSkill:
+    """The four-step external-tool sync loop and its safety framing."""
+
+    def test_registered_and_loadable(self) -> None:
+        assert SYNC_SKILL in SKILL_NAMES
+        fm, body = load_skill(SYNC_SKILL)
+        assert fm["name"] == SYNC_SKILL
+        assert body.strip()
+
+    def test_four_step_loop_present(self) -> None:
+        body = skill_body(SYNC_SKILL)
+        # export → judgment gaps → proposals write-back → audit
+        assert "traitprint vault export -f career-bundle" in body
+        assert "config/profile.yml" in body
+        assert "traitprint proposals add" in body
+        assert "traitprint vault audit --json" in body
+
+    def test_export_has_always_present_fallback(self) -> None:
+        # `career-bundle` is version-dependent; the skill must keep
+        # working against installs that predate it.
+        body = skill_body(SYNC_SKILL)
+        assert "traitprint vault export -f markdown" in body
+        assert "traitprint vault export -f json" in body
+
+    def test_writeback_is_proposals_only(self) -> None:
+        body = skill_body(SYNC_SKILL)
+        assert "never as direct writes" in body
+        assert "Never approve on" in body  # the USER approves, not the agent
+        assert "Never invent taxonomy IDs or UUIDs" in body
+
+    def test_mcp_serve_alternative_documented(self) -> None:
+        body = skill_body(SYNC_SKILL)
+        assert "traitprint mcp-serve" in body
+        assert "get_profile_summary" in body
+        assert "find_story" in body
+
+    def test_reserved_brand_not_in_any_skill_identifier(self) -> None:
+        # "career-ops" is a reserved brand: nominative references in
+        # descriptions/docs are fine, product identifiers must stay
+        # neutral (this guards future skills too).
+        for name in SKILL_NAMES:
+            assert "careerops" not in name.replace("-", "").replace("_", "")
+
+
+class TestExternalToolSyncDocsPage:
+    def test_docs_page_exists(self) -> None:
+        assert SYNC_DOCS_PAGE.is_file()
+
+    def test_custom_workflow_snippet_and_mcp_note(self) -> None:
+        text = SYNC_DOCS_PAGE.read_text(encoding="utf-8")
+        # the user-layer Custom Workflows snippet
+        assert "modes/_custom.md" in text
+        assert "sync traitprint" in text
+        assert "traitprint proposals add" in text
+        # the skill cross-reference and the grounded-MCP alternative
+        assert SYNC_SKILL in text
+        assert "traitprint mcp-serve" in text
+        assert "get_profile_summary" in text
+        assert "find_story" in text
+
+    def test_brand_reference_carries_attribution_note(self) -> None:
+        text = SYNC_DOCS_PAGE.read_text(encoding="utf-8")
+        assert "nominative" in text
+        assert "MIT" in text
