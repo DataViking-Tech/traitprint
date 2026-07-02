@@ -1235,10 +1235,11 @@ def _custom_section(vault_dir: Path | None) -> str:
     if vault_dir is None:
         return ""
     try:
-        raw = (Path(vault_dir) / _CUSTOM_FILENAME).read_bytes()
+        with (Path(vault_dir) / _CUSTOM_FILENAME).open("rb") as handle:
+            raw = handle.read(_CUSTOM_MAX_BYTES)
     except OSError:
         return ""
-    text = raw[:_CUSTOM_MAX_BYTES].decode("utf-8", errors="replace").strip()
+    text = raw.decode("utf-8", errors="replace").strip()
     if not text:
         return ""
     return _CUSTOM_HEADER + text
