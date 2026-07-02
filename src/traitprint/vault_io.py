@@ -34,6 +34,7 @@ import yaml
 from traitprint.schema import (
     EducationSchema,
     ExperienceSchema,
+    LensSchema,
     PhilosophySchema,
     ProfileSchema,
     SkillSchema,
@@ -46,6 +47,7 @@ V0_FILENAME = "vault.json"
 PROFILE_FILENAME = "profile.json"
 SKILLS_FILENAME = "skills.json"
 EDUCATION_FILENAME = "education.json"
+LENSES_FILENAME = "lenses.json"
 EXPERIENCES_DIR = "experiences"
 STORIES_DIR = "stories"
 PHILOSOPHIES_DIR = "philosophies"
@@ -307,6 +309,13 @@ def build_tree(vault: VaultSchema, directory: Path) -> dict[str, str]:
     tree[EDUCATION_FILENAME] = _json_doc(
         [e.model_dump(mode="json") for e in vault.education]
     )
+    # Only emit lenses.json when the vault actually has lenses, so a vault that
+    # never opted into lenses keeps its exact file tree (no new tracked file,
+    # no diff churn). A missing file reads back as an empty list.
+    if vault.lenses:
+        tree[LENSES_FILENAME] = _json_doc(
+            [lens.model_dump(mode="json") for lens in vault.lenses]
+        )
 
     # experiences/*.md — slug from title + company; body = description.
     exp_existing = _scan_markdown_dir(directory / EXPERIENCES_DIR)
@@ -365,6 +374,11 @@ def write_vault_tree(directory: Path, vault: VaultSchema) -> None:
         for file in sorted(dirpath.glob("*.md")):
             if f"{subdir}/{file.name}" not in wanted:
                 file.unlink()
+
+    # lenses.json is written only when the vault has lenses (see build_tree);
+    # remove a stale one if the last lens was deleted.
+    if LENSES_FILENAME not in wanted:
+        (directory / LENSES_FILENAME).unlink(missing_ok=True)
 
     for rel_path, content in tree.items():
         target = directory / rel_path
@@ -430,6 +444,11 @@ def read_vault_tree(directory: Path) -> VaultSchema:
             EducationSchema.model_validate(e) for e in _read_json(education_path)
         ]
 
+    lenses: list[LensSchema] = []
+    lenses_path = directory / LENSES_FILENAME
+    if lenses_path.is_file():
+        lenses = [LensSchema.model_validate(x) for x in _read_json(lenses_path)]
+
     experiences: list[ExperienceSchema] = []
     for fm, body, _path in _read_markdown_items(directory / EXPERIENCES_DIR):
         experiences.append(ExperienceSchema.model_validate({**fm, "description": body}))
@@ -462,6 +481,7 @@ def read_vault_tree(directory: Path) -> VaultSchema:
             "stories": stories,
             "philosophies": philosophies,
             "education": education,
+            "lenses": lenses,
         }
     )
 

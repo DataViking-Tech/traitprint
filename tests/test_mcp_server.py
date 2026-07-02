@@ -37,15 +37,20 @@ from traitprint.mcp_server import (
     _handle_get_philosophy,
     _handle_get_profile_summary,
     _handle_search_skills,
+    _handle_vault_lens_get,
+    _handle_vault_lens_list,
     _map_proficiency,
     _meets_proficiency,
+    _resolve_lens,
     create_server,
 )
 from traitprint.schema import (
     ExperienceSchema,
+    LensSchema,
     PhilosophyCategory,
     PhilosophySchema,
     ProfileSchema,
+    SalienceLevel,
     SkillSchema,
     StorySchema,
     VaultSchema,
@@ -1037,7 +1042,7 @@ class TestDisputeGoldenFixture:
 
 
 class TestServerRegistration:
-    def test_name_and_four_tools(self, populated_store: VaultStore) -> None:
+    def test_name_and_tools_registered(self, populated_store: VaultStore) -> None:
         server = create_server(populated_store)
         assert server.name == SERVER_NAME
         tools = asyncio.run(server.list_tools())
@@ -1047,6 +1052,8 @@ class TestServerRegistration:
             "search_skills",
             "find_story",
             "get_philosophy",
+            "vault_lens_list",
+            "vault_lens_get",
         }
 
     def test_server_version_in_init_options(self, populated_store: VaultStore) -> None:
@@ -1156,6 +1163,9 @@ async def _stdio_roundtrip(vault_dir: Path) -> tuple[list[str], dict[str, str]]:
         r = await session.call_tool("get_philosophy", {"topic": "delegation"})
         results["get_philosophy"] = r.content[0].text  # type: ignore[union-attr]
 
+        r = await session.call_tool("vault_lens_list", {})
+        results["vault_lens_list"] = r.content[0].text  # type: ignore[union-attr]
+
     return names, results
 
 
@@ -1164,14 +1174,20 @@ async def _stdio_roundtrip(vault_dir: Path) -> tuple[list[str], dict[str, str]]:
     reason="stdio_client subprocess behavior is unreliable on Windows",
 )
 class TestStdioRoundTrip:
-    def test_four_tools_callable_via_jsonrpc(self, populated_store: VaultStore) -> None:
+    def test_tools_callable_via_jsonrpc(self, populated_store: VaultStore) -> None:
         names, results = asyncio.run(_stdio_roundtrip(populated_store.directory))
         assert set(names) == {
             "get_profile_summary",
             "search_skills",
             "find_story",
             "get_philosophy",
+            "vault_lens_list",
+            "vault_lens_get",
         }
+
+        # The seeded vault carries no lenses, so the inventory is empty.
+        lens_list = json.loads(results["vault_lens_list"])
+        assert lens_list["result"] == {"lenses": [], "total": 0}
 
         summary = json.loads(results["get_profile_summary"])
         assert set(summary) == {"result", "meta"}
@@ -1189,3 +1205,230 @@ class TestStdioRoundTrip:
         phils = json.loads(results["get_philosophy"])
         assert len(phils["result"]["philosophies"]) == 1
         assert phils["result"]["philosophies"][0]["topic"] == "Delegation as Leverage"
+
+
+# ── Positioning Lenses (docs/schema/lens-v1/) ───────────────────────
+
+
+class TestLenses:
+    """Lens projection: one vault, multiple honest positionings."""
+
+    def _two_lens_vault(self) -> tuple[VaultSchema, dict[str, SkillSchema]]:
+        """A vault with four skills, two experiences, and IC + People lenses."""
+        arch = SkillSchema(
+            name="Data Architecture", category="technical", proficiency=4
+        )
+        prod = SkillSchema(
+            name="Product Management", category="business", proficiency=5
+        )
+        lead = SkillSchema(
+            name="Technical Leadership", category="leadership", proficiency=4
+        )
+        py = SkillSchema(name="Python", category="technical", proficiency=3)
+        ic_exp = ExperienceSchema(
+            title="Staff Engineer", company="Acme", start_date="2021-01"
+        )
+        mgr_exp = ExperienceSchema(
+            title="Engineering Manager", company="Acme", start_date="2023-01"
+        )
+        ic_lens = LensSchema(
+            slug="ic-architecture",
+            name="IC / Architecture",
+            headline_override="Staff/Principal Data & Platform Engineer",
+            signature_experience_ids=[ic_exp.id],
+            skill_salience={
+                arch.id: SalienceLevel.CORE,
+                prod.id: SalienceLevel.SUPPRESSED,
+            },
+            is_default=True,
+        )
+        people_lens = LensSchema(
+            slug="people-leadership",
+            name="People / Leadership",
+            headline_override="Director of Data & Analytics",
+            signature_experience_ids=[mgr_exp.id],
+            skill_salience={
+                prod.id: SalienceLevel.CORE,
+                lead.id: SalienceLevel.CORE,
+            },
+        )
+        vault = VaultSchema(
+            profile=ProfileSchema(
+                display_name="Wesley", headline="Engineer", summary="Bio."
+            ),
+            skills=[arch, prod, lead, py],
+            experiences=[ic_exp, mgr_exp],
+            lenses=[ic_lens, people_lens],
+        )
+        return vault, {"arch": arch, "prod": prod, "lead": lead, "py": py}
+
+    def test_two_lenses_render_differently_from_one_vault(self) -> None:
+        vault, sk = self._two_lens_vault()
+        ic = _resolve_lens(vault, "ic-architecture")
+        people = _resolve_lens(vault, "people-leadership")
+
+        ic_out = _handle_get_profile_summary(vault, "detailed", ic)
+        people_out = _handle_get_profile_summary(vault, "detailed", people)
+
+        # Headline overrides differ.
+        assert ic_out["headline"] == "Staff/Principal Data & Platform Engineer"
+        assert people_out["headline"] == "Director of Data & Analytics"
+        assert ic_out["lens"] == "ic-architecture"
+
+        ic_skills = [s["name"] for s in ic_out["top_skills"]]
+        people_skills = [s["name"] for s in people_out["top_skills"]]
+        # IC: Data Architecture (core) leads; Product Management (suppressed) gone.
+        assert ic_skills[0] == "Data Architecture"
+        assert "Product Management" not in ic_skills
+        # People: Product Management is core and present; nothing suppressed.
+        assert "Product Management" in people_skills
+        assert people_skills[0] in {"Product Management", "Technical Leadership"}
+
+        # Signature experiences differ per lens.
+        assert ic_out["signature_experiences"][0]["title"] == "Staff Engineer"
+        assert people_out["signature_experiences"][0]["title"] == "Engineering Manager"
+
+    def test_no_lens_is_byte_identical_to_pre_lens(self) -> None:
+        # Acceptance §11.7: a vault with no lenses renders exactly as before —
+        # no "lens" key, every skill present, proficiency-sorted.
+        vault, _sk = self._two_lens_vault()
+        bare = vault.model_copy(update={"lenses": []})
+        out = _handle_get_profile_summary(bare, "detailed", _resolve_lens(bare, None))
+        assert "lens" not in out
+        names = [s["name"] for s in out["top_skills"]]
+        assert "Product Management" in names  # nothing suppressed without a lens
+        # Canonical sort: highest proficiency first (Product Management, prof 5).
+        assert names[0] == "Product Management"
+
+    def test_default_lens_applies_without_an_explicit_arg(self) -> None:
+        # The IC lens is is_default=True, so the bare call renders through it.
+        vault, _sk = self._two_lens_vault()
+        out = _handle_get_profile_summary(vault, "standard", _resolve_lens(vault, None))
+        assert out["lens"] == "ic-architecture"
+        assert out["headline"] == "Staff/Principal Data & Platform Engineer"
+
+    def test_unknown_lens_raises(self) -> None:
+        vault, _sk = self._two_lens_vault()
+        with pytest.raises(ValueError, match="lens not found"):
+            _resolve_lens(vault, "nope")
+
+    def test_lens_list_and_get_shapes(self) -> None:
+        vault, sk = self._two_lens_vault()
+        listing = _handle_vault_lens_list(vault)
+        assert listing["total"] == 2
+        ic_row = next(x for x in listing["lenses"] if x["slug"] == "ic-architecture")
+        assert ic_row["is_default"] is True
+        assert ic_row["core_skills"] == 1
+        assert ic_row["suppressed_skills"] == 1
+
+        detail = _handle_vault_lens_get(vault, "ic-architecture")
+        assert detail["name"] == "IC / Architecture"
+        assert detail["signature_experiences"][0]["title"] == "Staff Engineer"
+        sal = {row["name"]: row["salience"] for row in detail["skill_salience"]}
+        assert sal["Data Architecture"] == "core"
+        assert sal["Product Management"] == "suppressed"
+
+    def test_lenses_round_trip_through_the_vault_store(self, vault_dir: Path) -> None:
+        # Persistence: a vault with lenses saves to lenses.json and reloads with
+        # skill_salience (UUID keys + enum values) intact.
+        vault, sk = self._two_lens_vault()
+        store = VaultStore(vault_dir)
+        store.save(vault)
+        assert (vault_dir / "lenses.json").is_file()
+        reloaded = store.load()
+        assert {lens.slug for lens in reloaded.lenses} == {
+            "ic-architecture",
+            "people-leadership",
+        }
+        ic = _resolve_lens(reloaded, "ic-architecture")
+        assert ic is not None
+        assert ic.salience_for(sk["arch"].id) == SalienceLevel.CORE
+        assert ic.salience_for(sk["prod"].id) == SalienceLevel.SUPPRESSED
+        # An unspecified skill defaults to SUPPORTING.
+        assert ic.salience_for(sk["py"].id) == SalienceLevel.SUPPORTING
+
+    def test_invalid_slug_rejected(self) -> None:
+        with pytest.raises(ValueError, match="kebab-case"):
+            LensSchema(slug="Not A Slug", name="x")
+
+    def test_empty_lens_vault_omits_lenses_json(self, vault_dir: Path) -> None:
+        # A vault that never opted into lenses keeps its exact file tree — no
+        # new tracked lenses.json (Codex P2). And a missing file reads as [].
+        store = VaultStore(vault_dir)
+        store.save(VaultSchema(profile=ProfileSchema(display_name="Wesley")))
+        assert not (vault_dir / "lenses.json").exists()
+        assert store.load().lenses == []
+
+    def test_removing_last_lens_deletes_stale_lenses_json(
+        self, vault_dir: Path
+    ) -> None:
+        vault, _sk = self._two_lens_vault()
+        store = VaultStore(vault_dir)
+        store.save(vault)
+        assert (vault_dir / "lenses.json").is_file()
+        # Drop all lenses → the stale file must be removed, not left behind.
+        store.save(store.load().model_copy(update={"lenses": []}))
+        assert not (vault_dir / "lenses.json").exists()
+
+    def test_duplicate_slug_rejected(self) -> None:
+        with pytest.raises(ValueError, match="duplicate lens slug"):
+            VaultSchema(
+                lenses=[
+                    LensSchema(slug="dup", name="A"),
+                    LensSchema(slug="dup", name="B"),
+                ]
+            )
+
+    def test_multiple_defaults_rejected(self) -> None:
+        with pytest.raises(ValueError, match="at most one lens may be is_default"):
+            VaultSchema(
+                lenses=[
+                    LensSchema(slug="a", name="A", is_default=True),
+                    LensSchema(slug="b", name="B", is_default=True),
+                ]
+            )
+
+    def test_clean_lens_is_not_disputed(self) -> None:
+        vault, _sk = self._two_lens_vault()
+        listing = _handle_vault_lens_list(vault)
+        assert all(row["disputed"] is False for row in listing["lenses"])
+        assert all(row["dispute"] is None for row in listing["lenses"])
+
+    def test_dangling_signature_story_flags_lens_disputed(self) -> None:
+        # §11.6: a lens whose signature_story_id no longer resolves is disputed
+        # via the same dangling_reference mechanism as records.
+        ghost = uuid4()
+        lens = LensSchema(
+            slug="ic", name="IC", signature_story_ids=[ghost]
+        )
+        vault = VaultSchema(lenses=[lens])
+        detail = _handle_vault_lens_get(vault, "ic")
+        assert detail["disputed"] is True
+        flag = detail["dispute"]["flags"][0]
+        assert flag["type"] == "dangling_reference"
+        assert flag["detail"]["field"] == "signature_story_ids"
+        assert flag["detail"]["target"] == "story"
+        assert flag["reason"] == (
+            "dangling reference: signature_story_ids[0] does not resolve"
+        )
+
+    def test_dangling_salience_skill_flags_lens_disputed(self) -> None:
+        ghost = uuid4()
+        lens = LensSchema(
+            slug="ic", name="IC", skill_salience={ghost: SalienceLevel.CORE}
+        )
+        vault = VaultSchema(lenses=[lens])
+        flag = _handle_vault_lens_get(vault, "ic")["dispute"]["flags"][0]
+        assert flag["detail"]["field"] == "skill_salience"
+        assert flag["detail"]["index"] is None  # keyed by id, not positional
+        assert flag["detail"]["target"] == "skill"
+
+    def test_disputed_lens_rides_in_profile_summary_rollup(self) -> None:
+        ghost = uuid4()
+        lens = LensSchema(slug="ic", name="IC Lens", signature_experience_ids=[ghost])
+        vault = VaultSchema(lenses=[lens])
+        rollup = _handle_get_profile_summary(vault, "detailed")["disputes"]
+        entry = next(e for e in rollup["entities"] if e["entity_id"] == str(lens.id))
+        assert entry["kind"] == "lens"
+        assert entry["label"] == "IC Lens"
+        assert entry["flag_types"] == ["dangling_reference"]
