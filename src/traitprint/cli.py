@@ -21,7 +21,7 @@ from traitprint.proposals import (
     LoadedProposal,
     ProposalFileIssue,
 )
-from traitprint.schema import PhilosophyCategory, VaultSchema
+from traitprint.schema import PhilosophyCategory, ProfileLink, VaultSchema
 from traitprint.taxonomy import find_exact, suggest_matches
 from traitprint.vault import DuplicateSkillError, VaultStore
 
@@ -507,6 +507,18 @@ def vault_list(ctx: click.Context, section: str, as_json: bool) -> None:
 @click.option("--summary", default=None, help="Longer professional summary.")
 @click.option("--location", default=None, help="Location (e.g. city, country).")
 @click.option("--email", "contact_email", default=None, help="Contact email.")
+@click.option("--phone", default=None, help="Contact phone number.")
+@click.option("--url", default=None, help="Personal website / portfolio URL.")
+@click.option(
+    "--link",
+    "links",
+    multiple=True,
+    help=(
+        "Profile link as NETWORK=URL (e.g. linkedin=https://linkedin.com/in/x). "
+        "Repeatable; passing any --link replaces the whole list. "
+        "A single --link '' clears it."
+    ),
+)
 @click.pass_context
 def vault_set_profile(
     ctx: click.Context,
@@ -515,6 +527,9 @@ def vault_set_profile(
     summary: str | None,
     location: str | None,
     contact_email: str | None,
+    phone: str | None,
+    url: str | None,
+    links: tuple[str, ...],
 ) -> None:
     """Set profile fields on the vault.
 
@@ -526,15 +541,45 @@ def vault_set_profile(
         click.echo("No vault found. Run 'traitprint init' first.")
         return
 
-    if all(
-        v is None for v in (display_name, headline, summary, location, contact_email)
+    if (
+        all(
+            v is None
+            for v in (
+                display_name,
+                headline,
+                summary,
+                location,
+                contact_email,
+                phone,
+                url,
+            )
+        )
+        and not links
     ):
         click.echo(
             "No fields provided. Pass at least one of "
-            "--name, --headline, --summary, --location, --email."
+            "--name, --headline, --summary, --location, --email, "
+            "--phone, --url, --link."
         )
         ctx.exit(1)
         return
+
+    profiles: list[ProfileLink] | None = None
+    if links:
+        profiles = []
+        if links != ("",):
+            for raw in links:
+                network, sep, link_url = raw.partition("=")
+                if not sep or not network.strip() or not link_url.strip():
+                    click.echo(
+                        f"Invalid --link {raw!r}: expected NETWORK=URL "
+                        "(e.g. github=https://github.com/x)."
+                    )
+                    ctx.exit(1)
+                    return
+                profiles.append(
+                    ProfileLink(network=network.strip(), url=link_url.strip())
+                )
 
     profile = store.set_profile(
         display_name=display_name,
@@ -542,6 +587,9 @@ def vault_set_profile(
         summary=summary,
         location=location,
         contact_email=contact_email,
+        phone=phone,
+        url=url,
+        profiles=profiles,
     )
     click.echo("Updated profile:")
     click.echo(f"  display_name:  {profile.display_name}")
@@ -549,6 +597,12 @@ def vault_set_profile(
     click.echo(f"  summary:       {profile.summary}")
     click.echo(f"  location:      {profile.location}")
     click.echo(f"  contact_email: {profile.contact_email}")
+    click.echo(f"  phone:         {profile.phone}")
+    click.echo(f"  url:           {profile.url}")
+    if profile.profiles:
+        click.echo("  links:")
+        for link in profile.profiles:
+            click.echo(f"    {link.network}: {link.url or link.username}")
 
 
 # --- vault add-skill ---
