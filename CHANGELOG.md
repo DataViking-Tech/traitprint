@@ -9,6 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`traitprint doctor`: vault phase detection + freshness audit.**
+  New read-only CLI command (and local-only MCP tool of the same name)
+  classifying the vault from deterministic date math — `first-run` |
+  `growing` | `established` | `stale` — plus freshness findings folded
+  into `vault audit`, all at minor severity:
+  - `vault.stale_stories` — the story bank as a whole untouched past
+    the threshold (aggregate, never per-story spam).
+  - `experience.current_stale` — a current role (no end date) not
+    edited past the threshold.
+  - `skill.stale_evidence` — a strong (4-5/5) skill whose only
+    evidence stories are stale (no-evidence skills stay
+    `skill.unsupported_strength`).
+  - `lens.draft_signature` — a lens showcasing a story that scores
+    only Draft.
+  Findings carry a structured `fix_skill` field naming the shipped
+  Agent Skill that addresses them (fill-vault / mine-story-gaps /
+  capture-story / draft-star-story), so wrapping agents can
+  self-orient at session start. `vault show` now leads with the phase
+  and top staleness flags. Threshold configurable via
+  `doctor --stale-days` (default 90).
+
 - **User customization layer (`custom.md`).** An optional, user-owned
   `custom.md` at the vault root holds durable instructions for wrapping
   agents (suggested sections: House Rules, Output Preferences,

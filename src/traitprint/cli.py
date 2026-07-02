@@ -230,6 +230,8 @@ def vault_show(ctx: click.Context, verbose: bool, as_json: bool) -> None:
 
 def _render_vault_summary(v: VaultSchema) -> None:
     """Render a concise summary of the vault — git-status style."""
+    from traitprint.audit import compute_phase, freshness_findings
+
     # Profile header
     p = v.profile
     if p.display_name or p.headline:
@@ -241,6 +243,16 @@ def _render_vault_summary(v: VaultSchema) -> None:
         click.echo(f"Location: {p.location}")
     if p.display_name or p.headline or p.location:
         click.echo("")
+
+    # Phase + top staleness flags (see 'traitprint doctor' for the full view)
+    phase = compute_phase(v)
+    click.echo(f"Phase: {phase.phase} — {phase.reason}")
+    stale = freshness_findings(v)
+    for f in stale[:2]:
+        click.echo(f"  ! {f.message}")
+    if len(stale) > 2:
+        click.echo(f"  ... {len(stale) - 2} more — run 'traitprint doctor'.")
+    click.echo("")
 
     # Skills: top 5 by proficiency
     click.echo(f"Skills ({len(v.skills)}):")
@@ -1929,6 +1941,102 @@ def vault_audit(
 
     if strict and (summary["critical"] or summary["major"]):
         ctx.exit(1)
+
+
+# --- doctor (vault phase + freshness) ---
+
+
+_PHASE_NEXT_STEP = {
+    "first-run": (
+        "Bootstrap the vault: 'traitprint vault import-resume <file>' or "
+        "the traitprint-fill-vault skill."
+    ),
+    "growing": (
+        "Round it out with the traitprint-fill-vault and "
+        "traitprint-mine-story-gaps skills."
+    ),
+    "established": (
+        "Keep it fresh opportunistically with the traitprint-capture-story "
+        "skill."
+    ),
+    "stale": (
+        "Refresh current roles with traitprint-fill-vault and capture "
+        "recent wins with traitprint-capture-story."
+    ),
+}
+
+
+@cli.command(name="doctor")
+@click.option(
+    "--json",
+    "as_json",
+    is_flag=True,
+    default=False,
+    help="Emit {phase, stale_days, findings, next} as JSON.",
+)
+@click.option(
+    "--stale-days",
+    type=click.IntRange(min=1),
+    default=None,
+    help="Days without a touch before content counts as stale (default 90).",
+)
+@click.pass_context
+def doctor(ctx: click.Context, as_json: bool, stale_days: int | None) -> None:
+    """Vault phase detection + freshness audit.
+
+    Classifies the vault (first-run | growing | established | stale) from
+    deterministic date math and reports what has gone stale — each finding
+    names the Agent Skill that fixes it. Read-only; for the full coherence
+    audit use 'traitprint vault audit'.
+    """
+    from traitprint.audit import (
+        STALE_DAYS_DEFAULT,
+        compute_phase,
+        freshness_findings,
+    )
+
+    store = _get_store(ctx)
+    if not store.exists():
+        click.echo("No vault found. Run 'traitprint init' first.")
+        return
+
+    days = stale_days if stale_days is not None else STALE_DAYS_DEFAULT
+    vault = store.load()
+    phase = compute_phase(vault, stale_days=days)
+    findings = freshness_findings(vault, stale_days=days)
+    next_step = _PHASE_NEXT_STEP[phase.phase]
+
+    if as_json:
+        click.echo(
+            json.dumps(
+                {
+                    "phase": phase.to_dict(),
+                    "stale_days": days,
+                    "findings": [f.to_dict() for f in findings],
+                    "next": next_step,
+                },
+                indent=2,
+            )
+        )
+        return
+
+    click.echo(f"Vault phase: {phase.phase}")
+    click.echo(f"  {phase.reason}")
+    click.echo(
+        f"  skills {phase.skills} · experiences {phase.experiences} · "
+        f"stories {phase.stories}"
+    )
+    click.echo("")
+    if findings:
+        click.echo("Freshness:")
+        for f in findings:
+            click.echo(f"  [{f.severity}] {f.section}: {f.message}")
+            if f.fix_skill:
+                click.echo(f"          fix: {f.fix_skill}")
+    else:
+        click.echo(f"No staleness detected (threshold {days} days). ✨")
+    click.echo("")
+    click.echo(f"Next: {next_step}")
 
 
 # --- vault extract-text ---

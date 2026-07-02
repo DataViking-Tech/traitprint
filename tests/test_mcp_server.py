@@ -1059,7 +1059,24 @@ class TestServerRegistration:
             "get_philosophy",
             "vault_lens_list",
             "vault_lens_get",
+            "doctor",
         }
+
+    def test_doctor_tool_reports_phase_and_findings(
+        self, populated_store: VaultStore
+    ) -> None:
+        server = create_server(populated_store)
+        result = asyncio.run(server.call_tool("doctor", {}))
+        payload = json.loads(result[0][0].text)  # type: ignore[union-attr]
+        body = payload["result"]
+        assert body["phase"]["phase"] in (
+            "first-run",
+            "growing",
+            "established",
+            "stale",
+        )
+        assert body["stale_days"] == 90
+        assert isinstance(body["findings"], list)
 
     def test_server_version_in_init_options(self, populated_store: VaultStore) -> None:
         """serverInfo.version must report *our* version, not the MCP SDK."""
@@ -1288,6 +1305,7 @@ class TestStdioRoundTrip:
             "get_philosophy",
             "vault_lens_list",
             "vault_lens_get",
+            "doctor",
         }
 
         # The seeded vault carries no lenses, so the inventory is empty.
