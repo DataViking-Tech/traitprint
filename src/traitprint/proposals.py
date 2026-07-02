@@ -311,6 +311,73 @@ def validate_proposal_fields(
     return problems
 
 
+def _error_lines(exc: ValidationError) -> list[str]:
+    """Normalize a pydantic error into ``field: message`` lines."""
+    lines = []
+    for err in exc.errors(include_url=False):
+        loc = ".".join(str(p) for p in err.get("loc", ())) or "value"
+        msg = str(err.get("msg", "invalid value")).removeprefix("Value error, ")
+        lines.append(f"{loc}: {msg}")
+    return lines
+
+
+def validate_proposal_document(data: Any) -> list[str]:
+    """Contract-validate one full proposal document (parsed JSON).
+
+    The same two checks :meth:`ProposalStore.load_all` runs on every
+    ``proposals/*.json`` file before it enters the review queue: the
+    ``$defs/proposal`` shape (:class:`ProposalSchema`) first, then the
+    kind/target/payload-key rules (:func:`validate_proposal_fields`).
+    Returns a list of problems — empty when the document would load and
+    review cleanly. Read-only and vault-independent: external proposers
+    (exporters, importers, plugins in any language) can pre-flight
+    their emitted files with this before staging them.
+    """
+    if not isinstance(data, dict):
+        return ["proposal must be a JSON object"]
+    try:
+        proposal = ProposalSchema.model_validate(data)
+    except ValidationError as exc:
+        return _error_lines(exc)
+    return validate_proposal_fields(
+        proposal.kind,
+        str(proposal.target_id) if proposal.target_id else None,
+        proposal.payload,
+        proposal.rationale,
+    )
+
+
+def proposal_contract() -> dict[str, Any]:
+    """Machine-readable statement of the proposal contract.
+
+    One JSON-serializable document naming the kinds, statuses, per-kind
+    allowed/required payload keys, profile ``basics`` keys, and the
+    kinds that require a ``target_id`` — exactly the validation that
+    ``proposals add``, the review queue, and the hosted
+    ``vault_propose`` all enforce. External tools that mirror this
+    validation in another language can vendor the document (or diff it
+    against a live install via ``traitprint proposals contract
+    --json``) to catch contract drift instead of re-reading this
+    module.
+    """
+    return {
+        "contract": "vault-v1",
+        "definition": "$defs/proposal",
+        "kinds": list(PROPOSAL_KINDS),
+        "statuses": list(PROPOSAL_STATUSES),
+        "payload_keys": {
+            kind: list(keys) for kind, keys in PROPOSAL_PAYLOAD_KEYS.items()
+        },
+        "required_payload_keys": {
+            kind: list(keys) for kind, keys in _REQUIRED_ADD_KEYS.items()
+        },
+        "profile_basics_keys": list(_PROFILE_BASICS_KEYS),
+        "target_id_required_for": [
+            kind for kind in PROPOSAL_KINDS if is_update_kind(kind)
+        ],
+    }
+
+
 # ── store ───────────────────────────────────────────────────────────
 
 
@@ -473,12 +540,7 @@ class ProposalStore:
 
 
 def _problems(exc: ValidationError) -> str:
-    parts = []
-    for err in exc.errors(include_url=False):
-        loc = ".".join(str(p) for p in err.get("loc", ())) or "value"
-        msg = str(err.get("msg", "invalid value")).removeprefix("Value error, ")
-        parts.append(f"{loc}: {msg}")
-    return "; ".join(parts) or "invalid value"
+    return "; ".join(_error_lines(exc)) or "invalid value"
 
 
 def _find_item(items: list[Any], target_id: UUID) -> Any | None:
@@ -720,6 +782,8 @@ __all__ = [
     "apply_proposal",
     "is_update_kind",
     "kind_entity",
+    "proposal_contract",
     "proposal_diff",
+    "validate_proposal_document",
     "validate_proposal_fields",
 ]

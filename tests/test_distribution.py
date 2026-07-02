@@ -130,3 +130,50 @@ class TestDistributionDocsAgree:
         text = README.read_text(encoding="utf-8")
         assert HOSTED_MCP_URL in text
         assert f"gemini extensions install {INSTALL_URL}" in text
+
+
+EXPORTER_GUIDE = REPO_ROOT / "docs" / "external-exporters.md"
+
+
+class TestExternalExportersGuide:
+    """Truthfulness of docs/external-exporters.md (Refs #68).
+
+    The guide is the integration contract for third-party tools that
+    stage vault writes as proposals/*.json — same rules as the skills:
+    every CLI mention resolves, no legacy vocabulary, and (because the
+    upstream naming/trademark question on #68 is unresolved) no
+    reserved third-party brand strings anywhere in the page.
+    """
+
+    def test_cli_mentions_resolve(self) -> None:
+        text = EXPORTER_GUIDE.read_text(encoding="utf-8")
+        mentions = _CLI_MENTION.findall(text)
+        assert mentions, "exporter guide never shows a traitprint command"
+        for raw in mentions:
+            tokens = raw.split()
+            first = tokens[0]
+            assert first in cli.commands, f"unknown command 'traitprint {first}'"
+            node = cli.commands[first]
+            if isinstance(node, click.Group):
+                assert len(tokens) >= 2 and tokens[1] in node.commands, (
+                    f"unknown subcommand 'traitprint {first} "
+                    f"{tokens[1] if len(tokens) > 1 else ''}'"
+                )
+
+    def test_no_legacy_vocabulary(self) -> None:
+        text = EXPORTER_GUIDE.read_text(encoding="utf-8")
+        for needle in _FORBIDDEN:
+            assert needle not in text, f"exporter guide mentions legacy {needle!r}"
+
+    def test_documents_the_preflight_surface(self) -> None:
+        text = EXPORTER_GUIDE.read_text(encoding="utf-8")
+        assert "traitprint proposals validate" in text
+        assert "traitprint proposals contract" in text
+        assert "$defs/proposal" in text
+
+    def test_neutral_naming_no_reserved_brands(self) -> None:
+        lowered = EXPORTER_GUIDE.read_text(encoding="utf-8").lower()
+        for needle in ("career-ops", "careerops", "career ops"):
+            assert needle not in lowered, (
+                f"exporter guide must stay brand-neutral; found {needle!r}"
+            )
