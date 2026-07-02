@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`traitprint-capture-story` skill.** New Agent Skill
+  (`skills/traitprint-capture-story/`) for opportunistic, background
+  STAR story capture: whenever the user recounts a work event in any
+  session (or right after job-application work that used vault
+  context), the wrapping agent drafts a STAR + Lesson story, runs a
+  deterministic dedup *pre-check* against the existing bank
+  (`vault list stories`; near-matches are surfaced to the user, never
+  silently skipped), confirms, and stages the result via
+  `traitprint proposals add --kind add_story` — never a direct write.
+  This intentionally diverges from the interactive story skills'
+  direct-write pattern: for side-effect capture the user approves
+  later through the proposals review queue. Ships in `SKILL_NAMES`
+  (wheel package data + `npx skills add`); no MCP prompt counterpart,
+  same as `traitprint-import-resume`.
+
 - **User customization layer (`custom.md`).** An optional, user-owned
   `custom.md` at the vault root holds durable instructions for wrapping
   agents (suggested sections: House Rules, Output Preferences,
