@@ -20,6 +20,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   channel, and audit. GOVERNANCE.md, translations scaffolding, and an
   outcome-narrative rewrite are deliberately deferred per #65.
 
+- **`traitprint-capture-story` skill.** New Agent Skill
+  (`skills/traitprint-capture-story/`) for opportunistic, background
+  STAR story capture: whenever the user recounts a work event in any
+  session (or right after job-application work that used vault
+  context), the wrapping agent drafts a STAR + Lesson story, runs a
+  deterministic dedup *pre-check* against the existing bank
+  (`vault list stories`; near-matches are surfaced to the user, never
+  silently skipped), confirms, and stages the result via
+  `traitprint proposals add --kind add_story` — never a direct write.
+  This intentionally diverges from the interactive story skills'
+  direct-write pattern: for side-effect capture the user approves
+  later through the proposals review queue. Ships in `SKILL_NAMES`
+  (wheel package data + `npx skills add`); no MCP prompt counterpart,
+  same as `traitprint-import-resume`.
+
+- **Profile phone + links (vault contract revision 1.3, additive).**
+  The profile gains optional `phone`, `url` (personal website/portfolio)
+  and `profiles[]` (social links, `{ network, username?, url? }`),
+  following the JSON Resume `basics` vocabulary. Older vaults remain
+  valid (`schema_version` stays 1); the new keys are omitted from
+  `profile.json` while empty, so pre-1.3 vaults round-trip
+  byte-identically. Shipped across the local product:
+  - `vault set-profile --phone`, `--url`, and repeatable
+    `--link NETWORK=URL` (passing any `--link` replaces the list; a
+    single `--link ''` clears it).
+  - The jsonresume exporter emits `basics.phone`, `basics.url` and real
+    `basics.profiles[]` entries instead of a hardcoded empty array.
+  - Proposals: `phone`, `url` and `profiles` allowlisted in
+    `update_profile` payloads, with shape validation for links.
+  - Job-search preference fields (target titles, compensation, work
+    authorization) are deliberately **not** part of this revision — they
+    are not JSON Resume basics and need their own design.
+
 - **User customization layer (`custom.md`).** An optional, user-owned
   `custom.md` at the vault root holds durable instructions for wrapping
   agents (suggested sections: House Rules, Output Preferences,
