@@ -159,9 +159,12 @@ shell access so the agent can run the CLI directly:
 
 ### Agent Skills
 
-The same five workflows ship as [SKILL.md Agent Skills](skills/)
+The same workflows ship as [SKILL.md Agent Skills](skills/)
 (agentskills.io open standard) for filesystem agents like Claude Code,
-Codex CLI, Gemini CLI, and Cursor:
+Codex CLI, Gemini CLI, and Cursor — plus two skills with no prompt
+counterpart: `traitprint-import-resume` (agent-assisted resume import)
+and `traitprint-capture-story` (background STAR capture that stages a
+story proposal whenever a work anecdote surfaces mid-session):
 
 ```
 npx skills add DataViking-Tech/traitprint
