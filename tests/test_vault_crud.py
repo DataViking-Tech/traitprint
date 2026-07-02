@@ -13,7 +13,7 @@ from pydantic import ValidationError
 
 from traitprint.cli import cli
 from traitprint.git_ops import commit, init_repo
-from traitprint.schema import PhilosophyCategory, SkillSchema
+from traitprint.schema import PhilosophyCategory, ProfileLink, SkillSchema
 from traitprint.taxonomy import find_exact, suggest_matches
 from traitprint.vault import DuplicateSkillError, VaultStore
 
@@ -706,6 +706,94 @@ class TestSetProfileCLI:
         )
         assert result.exit_code == 0
         assert store.load().profile.headline == ""
+
+    def test_set_phone_url_and_links(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "set-profile",
+                "--phone",
+                "+1 555 0100",
+                "--url",
+                "https://ada.example.com",
+                "--link",
+                "github=https://github.com/ada",
+                "--link",
+                "linkedin=https://linkedin.com/in/ada",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        assert "github: https://github.com/ada" in result.output
+
+        profile = VaultStore(vault_dir).load().profile
+        assert profile.phone == "+1 555 0100"
+        assert profile.url == "https://ada.example.com"
+        assert [(p.network, p.url) for p in profile.profiles] == [
+            ("github", "https://github.com/ada"),
+            ("linkedin", "https://linkedin.com/in/ada"),
+        ]
+
+    def test_links_replace_existing_list(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        store = VaultStore(vault_dir)
+        store.set_profile(
+            profiles=[ProfileLink(network="github", url="https://github.com/old")]
+        )
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "set-profile",
+                "--link",
+                "mastodon=https://hachyderm.io/@ada",
+            ],
+        )
+        assert result.exit_code == 0
+        profiles = store.load().profile.profiles
+        assert [(p.network, p.url) for p in profiles] == [
+            ("mastodon", "https://hachyderm.io/@ada")
+        ]
+
+    def test_empty_link_clears_list(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        store = VaultStore(vault_dir)
+        store.set_profile(
+            profiles=[ProfileLink(network="github", url="https://github.com/x")]
+        )
+        result = runner.invoke(
+            cli,
+            ["--path", str(vault_dir), "vault", "set-profile", "--link", ""],
+        )
+        assert result.exit_code == 0
+        assert store.load().profile.profiles == []
+
+    def test_invalid_link_format_errors(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "set-profile",
+                "--link",
+                "github",
+            ],
+        )
+        assert result.exit_code == 1
+        assert "Invalid --link" in result.output
+        # Nothing was written.
+        assert VaultStore(vault_dir).load().profile.profiles == []
 
 
 # ------------------------------------------------------------------
