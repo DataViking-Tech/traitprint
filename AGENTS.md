@@ -329,6 +329,23 @@ Six SKILL.md workflow skills (agentskills.io format) live under
 into any skills-aware agent with `npx skills add DataViking-Tech/traitprint`;
 they also ship inside the wheel as `traitprint/data/skills/`.
 
+### Scaffolding a project for agent CLIs
+
+`traitprint agents init [DIR] [--json]` (default: cwd) bootstraps a
+directory so agent CLIs pick up traitprint on first launch — a Node-free
+alternative to `npx skills add` that also wires MCP. It writes: a
+canonical copy of this manual as `AGENTS.md`; thin wrappers delegating to
+it (`CLAUDE.md`, `QWEN.md`, `.grok/GROK.md` — Codex CLI, OpenCode, and
+Kimi CLI read `AGENTS.md` natively); the six skills under
+`.agents/skills/` and `.claude/skills/`; and project-scoped MCP
+registration for `traitprint mcp-serve` (`.mcp.json`, `opencode.json`,
+`.qwen/settings.json`, `.grok/settings.json`). Home-directory configs
+(Codex `~/.codex/config.toml`, Kimi `~/.kimi/mcp.json`) are printed as
+snippets — nothing outside DIR is ever touched, existing files are never
+overwritten (re-runs are idempotent), and Gemini CLI is skipped because
+the published extension (`gemini-extension.json`) already covers it.
+`--json` emits `{directory, written, skipped, mcp, next_steps}`.
+
 ## Gotchas
 
 - **Interactive fallback**: `add-*` without required flags prompts on

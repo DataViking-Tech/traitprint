@@ -9,6 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Agent-runtime entrypoint scaffolder (`traitprint agents init`).**
+  New `agents` command group; `traitprint agents init [DIR] [--json]`
+  bootstraps a project directory for agent CLIs without touching the
+  existing `traitprint init` (which keeps its "create the vault"
+  meaning). It writes a canonical `AGENTS.md` copy (the operating
+  manual, now also shipped in the wheel as
+  `traitprint/data/AGENTS.md`), thin wrappers that delegate to it
+  (`CLAUDE.md`, `QWEN.md`, `.grok/GROK.md`; Codex CLI, OpenCode, and
+  Kimi CLI read `AGENTS.md` natively), the six Agent Skills under
+  `.agents/skills/` and `.claude/skills/`, and project-scoped MCP
+  registration for `traitprint mcp-serve` (`.mcp.json`,
+  `opencode.json`, `.qwen/settings.json`, `.grok/settings.json`).
+  Home-directory registrations (Codex `~/.codex/config.toml`, Kimi
+  `~/.kimi/mcp.json`) are emitted as snippets; nothing outside DIR is
+  ever written, existing files are never overwritten (idempotent
+  re-runs), and Gemini CLI is skipped — the published extension
+  (`gemini-extension.json`) already covers it. Ends with a plain
+  next-steps checklist (`traitprint init` if no vault, MCP snippets,
+  launch the `traitprint-fill-vault` interview). `--json` emits
+  `{directory, written, skipped, mcp, next_steps}`.
+
 - **User customization layer (`custom.md`).** An optional, user-owned
   `custom.md` at the vault root holds durable instructions for wrapping
   agents (suggested sections: House Rules, Output Preferences,
