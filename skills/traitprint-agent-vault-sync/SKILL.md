@@ -25,20 +25,16 @@ working directory → vault only as staged proposals the USER approves.
 Deterministic — no LLM, no judgment, no vault writes:
 
 ```bash
-traitprint vault export -f career-bundle -o <workdir>
-```
-
-renders `cv.md`, `config/profile.yml`, and `interview-prep/story-bank.md`
-from vault facts. The `career-bundle` format is version-dependent: `-f`
-is a fixed choice list, so `traitprint vault export --help` (or the
-usage error itself) tells you what your installed version supports. If
-`career-bundle` is not available, compose the equivalent from the
-always-present formats:
-
-```bash
 traitprint vault export -f markdown -o <workdir>/cv.md
 traitprint vault export -f json -o <workdir>/traitprint-export.json   # grounded facts, with UUIDs
 ```
+
+Then populate the external tool's fact fields — the work-history and
+education blocks of `config/profile.yml`, the grounding facts of its
+story bank — by copying values out of those exports. `-f` is a fixed
+choice list, so `traitprint vault export --help` shows every format your
+installed version supports; if a newer version ships a format that
+renders the tool's working-directory layout in one command, prefer it.
 
 Never paraphrase vault facts from memory into the working directory —
 export them, so titles, dates, and metrics stay grounded in what the
@@ -46,7 +42,7 @@ user actually recorded.
 
 ## 2. Fill ONLY the judgment gaps — by asking the user
 
-The export fills in everything the vault knows. What remains blank in
+The exports carry everything the vault knows. What remains blank in
 `config/profile.yml` are judgment calls a vault does not store:
 compensation targets, the exit story, archetype/role-fit rankings. Ask
 the user for each — a few focused questions, not an interview. Never
@@ -83,11 +79,6 @@ payload-key tables are in the
 - Nothing touches the vault until the USER runs
   `traitprint proposals approve <id>` (or `--all`). Never approve on
   their behalf.
-
-Some Traitprint versions also ship a deterministic story-bank importer
-(`vault import-story-bank <workdir>`) that stages these proposals for
-you from the working directory's files; prefer it when your installed
-version has it, and fall back to `traitprint proposals add` otherwise.
 
 ## 4. Audit and hand off
 

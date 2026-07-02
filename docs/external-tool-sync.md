@@ -14,8 +14,7 @@ it into the external tool's own user-layer configuration.
 > Traitprint identifier. career-ops is MIT-licensed; where Traitprint
 > adapts code from it, attribution lives in the adapting module's
 > docstring. Traitprint's own identifiers stay brand-neutral: the skill
-> is `traitprint-agent-vault-sync`, the bundle export format token is
-> `career-bundle`.
+> is `traitprint-agent-vault-sync`.
 
 ## The sync loop
 
@@ -25,13 +24,13 @@ Agent Skill (`npx skills add DataViking-Tech/traitprint` installs it into
 any skills-aware agent):
 
 1. **Export — deterministic.**
-   `traitprint vault export -f career-bundle -o <workdir>` renders
-   `cv.md`, `config/profile.yml`, and `interview-prep/story-bank.md`
-   from vault facts. No LLM, no judgment, no vault writes. On Traitprint
-   versions whose export choice list does not yet include
-   `career-bundle`, the agent composes the equivalent from the
-   always-present formats (`-f markdown` for a `cv.md`, `-f json` for
-   grounded, UUID-carrying facts).
+   `traitprint vault export -f markdown -o <workdir>/cv.md` renders the
+   CV, and `traitprint vault export -f json` supplies grounded,
+   UUID-carrying facts the agent copies into the tool's other files
+   (the fact fields of `config/profile.yml`, the story bank's grounding
+   details). No LLM, no judgment, no vault writes. `-f` is a fixed
+   choice list — `traitprint vault export --help` shows what an
+   installed version supports.
 2. **Judgment gaps — the agent asks the user.** The export fills
    everything the vault knows; what remains in `config/profile.yml` are
    judgment calls a vault does not store — compensation targets, the
@@ -40,9 +39,7 @@ any skills-aware agent):
 3. **Write-back — proposals, never direct writes.** Anything the
    external tool produced that belongs in the vault (a STAR story mined
    during interview prep, a sharper summary, a newly surfaced skill) is
-   staged with `traitprint proposals add` — or, on versions that ship
-   the deterministic story-bank importer (`vault import-story-bank`),
-   staged by that command. The user reviews with
+   staged with `traitprint proposals add`. The user reviews with
    `traitprint proposals list` / `traitprint proposals show` and applies
    with `traitprint proposals approve`. Nothing touches the vault
    silently, and taxonomy IDs / UUIDs are never invented.
@@ -67,9 +64,9 @@ configuration file — editing it is ordinary user-layer use):
 When I say "sync traitprint":
 
 1. Refresh this working directory from my Traitprint vault:
-   `traitprint vault export -f career-bundle -o .`
-   (if my installed traitprint version lacks the career-bundle format,
-   run `traitprint vault export -f markdown -o cv.md` instead).
+   `traitprint vault export -f markdown -o cv.md`, plus
+   `traitprint vault export -f json -o traitprint-export.json` for
+   grounded facts with UUIDs — copy from these, never from memory.
 2. Ask me — do not guess — for any judgment fields still blank in
    config/profile.yml: compensation targets, exit story, archetype fits.
 3. Stage anything new this directory produced since the last sync
