@@ -323,7 +323,7 @@ the Agent Skills below, so prompt and skill never drift.
 
 ## Agent Skills
 
-Six SKILL.md workflow skills (agentskills.io format) live under
+Seven SKILL.md workflow skills (agentskills.io format) live under
 [`skills/`](skills/), with a shared CLI cheatsheet at
 [`skills/shared/cli-reference.md`](skills/shared/cli-reference.md). Install
 into any skills-aware agent with `npx skills add DataViking-Tech/traitprint`;

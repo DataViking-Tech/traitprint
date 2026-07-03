@@ -39,6 +39,7 @@ SKILL_NAMES = (
     "traitprint-audit-coherence",
     "traitprint-import-resume",
     "traitprint-capture-story",
+    "traitprint-agent-vault-sync",
 )
 
 
