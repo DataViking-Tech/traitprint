@@ -41,6 +41,7 @@ from mcp.server.fastmcp import FastMCP
 
 from traitprint import __version__
 from traitprint.schema import (
+    RESERVED_LENS_SLUG,
     LensSchema,
     PhilosophySchema,
     SalienceLevel,
@@ -740,11 +741,24 @@ _SALIENCE_RANK = {SalienceLevel.CORE: 0, SalienceLevel.SUPPORTING: 1}
 
 
 def _resolve_lens(vault: VaultSchema, lens_arg: str | None) -> LensSchema | None:
-    """Resolve a lens by slug or id; absent an explicit arg, the default lens.
+    """Resolve a lens by slug or full id; absent an explicit arg, the default.
 
-    Returns ``None`` when no lens is requested and none is default, so the
-    canonical (un-lensed) rendering is byte-identical to pre-lens output.
+    Resolution grammar (shared verbatim with the hosted server so an agent can
+    swap stdio ↔ HTTPS without behavior change):
+
+    - ``"none"`` — the reserved canonical-rendering escape hatch: explicitly
+      request the un-lensed profile even when a default lens exists. The slug
+      validator forbids any user lens from claiming this keyword, so it can
+      never shadow a real lens.
+    - a ``slug`` or a full ``UUID`` — the matching lens (``ValueError`` if none
+      matches).
+    - absent — the default lens, else ``None``.
+
+    Returns ``None`` when no lens applies, so the canonical (un-lensed)
+    rendering stays byte-identical to pre-lens output.
     """
+    if lens_arg == RESERVED_LENS_SLUG:
+        return None
     if lens_arg:
         for lens in vault.lenses:
             if lens.slug == lens_arg or str(lens.id) == lens_arg:
@@ -1313,7 +1327,9 @@ def create_server(store: VaultStore) -> FastMCP:
             "profile through — applies headline/bio overrides, the lens's "
             "signature experiences, and skill salience (core skills lead, "
             "suppressed skills hidden). Omit to render the default lens if "
-            "one exists, else the canonical profile. See vault_lens_list."
+            "one exists, else the canonical profile; pass lens=\"none\" to "
+            "force the canonical (un-lensed) profile even when a default "
+            "lens exists. See vault_lens_list."
         )
     )
     def get_profile_summary(

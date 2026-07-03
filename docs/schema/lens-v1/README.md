@@ -72,6 +72,27 @@ The result carries `"lens": "<slug>"` when a lens was applied (absent otherwise)
 Read tools: `vault_lens_list` (inventory + emphasis counts) and `vault_lens_get`
 (one lens, references resolved to names).
 
+### Lens reference resolution grammar
+
+Wherever a tool accepts a `lens` argument (`get_profile_summary`,
+`vault_lens_get`), it is resolved identically on **both** MCP servers so an
+agent swaps stdio ↔ HTTPS without behavior change:
+
+| `lens` argument | Resolves to |
+|---|---|
+| a **slug** (`ic-data-architecture`) | the lens with that slug |
+| a full **UUID** (`id`) | the lens with that id |
+| `"none"` (**reserved**) | the canonical, un-lensed rendering — the escape hatch |
+| *omitted* / empty | the **default** lens if one exists, else canonical |
+
+`"none"` is a **reserved keyword**, not a user slug: the slug validator rejects
+`none` at write time, so it can never shadow a real lens. It exists so a caller
+can force the canonical (un-lensed) profile *even when a default lens is set* —
+without it, a default lens would make the bare rendering unreachable. A `slug`
+or `UUID` that matches no lens is an error (`lens not found`); the CLI
+additionally accepts an 8-hex id prefix as documented CLI-only sugar (the MCP
+grammar stays strict: slug or full UUID).
+
 ## Trust layer — lenses are emphasis, never contradiction
 
 A lens may only select/order/weight existing vault content, plus override
