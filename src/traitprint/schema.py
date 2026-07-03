@@ -33,14 +33,44 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+class ProfileLink(BaseModel):
+    """One social/professional profile link (JSON Resume ``basics.profiles[]``).
+
+    Contract revision 1.3 (additive). ``network`` identifies the site
+    (e.g. ``linkedin``, ``github``); ``username`` and ``url`` are optional
+    so entries can carry either or both, matching JSON Resume.
+    """
+
+    network: str
+    username: str = ""
+    url: str = ""
+
+    @field_validator("network")
+    @classmethod
+    def _validate_network(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("network must be a non-empty string")
+        return value
+
+
 class ProfileSchema(BaseModel):
-    """User profile information."""
+    """User profile information.
+
+    ``phone``, ``url`` and ``profiles`` (contract revision 1.3, additive)
+    follow the JSON Resume ``basics`` vocabulary: ``url`` is the personal
+    website/portfolio, ``profiles`` are social links. Vaults written
+    before 1.3 omit the keys; they default to empty and are not emitted
+    into ``profile.json`` while empty.
+    """
 
     display_name: str = ""
     headline: str = ""
     summary: str = ""
     location: str = ""
     contact_email: str = ""
+    phone: str = ""
+    url: str = ""
+    profiles: list[ProfileLink] = Field(default_factory=list)
 
 
 class SkillSchema(BaseModel):

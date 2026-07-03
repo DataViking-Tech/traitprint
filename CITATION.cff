@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use Traitprint in your work, please cite it as below."
+title: "Traitprint"
+abstract: "A structured career profile that AI tools can query. Local-first vault with MCP server."
+type: software
+authors:
+  - name: "DataViking Technologies"
+    email: hello@traitprint.com
+repository-code: "https://github.com/DataViking-Tech/traitprint"
+url: "https://traitprint.com"
+license: MIT
+version: 0.11.0
+date-released: 2026-06-11
+keywords:
+  - mcp
+  - career
+  - identity
+  - vault
+  - local-first
+  - ai-agents
