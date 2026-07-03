@@ -3028,6 +3028,116 @@ def proposals_add(
     )
 
 
+@proposals.command(name="validate")
+@click.argument("paths", nargs=-1, type=click.Path(exists=True))
+@click.option(
+    "--json",
+    "as_json",
+    is_flag=True,
+    default=False,
+    help="Emit results as JSON: {valid, checked, results: [...]}.",
+)
+@click.pass_context
+def proposals_validate(
+    ctx: click.Context, paths: tuple[str, ...], as_json: bool
+) -> None:
+    """Validate proposal JSON files against the contract (read-only).
+
+    Runs the exact checks 'proposals add', the review queue, and the
+    hosted vault_propose enforce — the $defs/proposal document shape
+    plus the kind/target/payload-key rules — without writing anything.
+    No vault is required: point it at files any external tool produced
+    before staging them. A directory argument validates every *.json
+    inside it. Exit 0 when every document is valid, 1 otherwise.
+    """
+    from pathlib import Path as _Path
+
+    from traitprint.proposals import validate_proposal_document
+
+    files: list[_Path] = []
+    for raw in paths:
+        path = _Path(raw)
+        if path.is_dir():
+            files.extend(sorted(path.glob("*.json")))
+        else:
+            files.append(path)
+    if not files:
+        raise click.UsageError(
+            "pass at least one proposal .json file, or a directory "
+            "containing proposals/*.json files"
+        )
+
+    results: list[dict[str, Any]] = []
+    for file in files:
+        try:
+            data: Any = json.loads(file.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError) as exc:
+            problems = [f"invalid JSON: {exc}"]
+        else:
+            problems = validate_proposal_document(data)
+        results.append(
+            {"file": str(file), "valid": not problems, "problems": problems}
+        )
+
+    invalid = sum(1 for row in results if not row["valid"])
+    if as_json:
+        doc = {"valid": invalid == 0, "checked": len(results), "results": results}
+        click.echo(json.dumps(doc, indent=2))
+    else:
+        for row in results:
+            if row["valid"]:
+                click.echo(f"[ok] {row['file']}")
+            else:
+                for problem in row["problems"]:
+                    click.echo(f"[err] {row['file']}: {problem}")
+        click.echo(f"Summary: {len(results) - invalid} valid, {invalid} invalid")
+    if invalid:
+        ctx.exit(1)
+
+
+@proposals.command(name="contract")
+@click.option(
+    "--json",
+    "as_json",
+    is_flag=True,
+    default=False,
+    help="Emit the contract as a JSON document.",
+)
+def proposals_contract(as_json: bool) -> None:
+    """Print the proposal contract: kinds, payload keys, statuses.
+
+    A machine-readable statement of the validation that 'proposals
+    add', the review queue, and the hosted vault_propose all enforce
+    (vault v1, $defs/proposal). External tools that stage proposals
+    from another language can vendor the --json document, or diff it
+    against a live install to catch contract drift. Needs no vault;
+    writes nothing.
+    """
+    from traitprint.proposals import proposal_contract
+
+    doc = proposal_contract()
+    if as_json:
+        click.echo(json.dumps(doc, indent=2))
+        return
+    click.echo(f"Contract: {doc['contract']} {doc['definition']}")
+    click.echo(f"Statuses: {', '.join(doc['statuses'])}")
+    click.echo(
+        "update_profile basics keys: " + ", ".join(doc["profile_basics_keys"])
+    )
+    click.echo("Kinds:")
+    for kind in doc["kinds"]:
+        target = (
+            "required" if kind in doc["target_id_required_for"] else "forbidden"
+        )
+        click.echo(f"  {kind}  (target_id {target})")
+        click.echo(
+            "    allowed payload keys: " + ", ".join(doc["payload_keys"][kind])
+        )
+        required = doc["required_payload_keys"].get(kind, [])
+        if required:
+            click.echo("    required: " + ", ".join(required))
+
+
 # --- export (top-level alias of ``vault export``) ---
 
 

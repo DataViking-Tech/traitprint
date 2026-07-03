@@ -154,6 +154,8 @@ until approval.
 | `traitprint proposals approve --all [-y]` | D9 one-step approve-all: applies every pending proposal in ONE batch commit (`Approve N proposals`); failures print `[err]` lines, those proposals stay pending, exit 1 |
 | `traitprint proposals reject ID [-y]` | Sets `status: rejected` + `resolved_at`; the file is kept (and committed) |
 | `traitprint proposals add --kind K [--target-id UUID] [--rationale R] [--source S] --payload-json -` | Stage a new pending proposal from a JSON object (file or stdin). Same validation as the hosted MCP `vault_propose`: kind enum, per-kind allowed payload keys, `target_id` required for `update_*` kinds (forbidden otherwise). Exit 1 with `[err] proposal: ...` lines on violations |
+| `traitprint proposals validate PATH... [--json]` | Read-only, needs no vault: contract-validate proposal `.json` files (or every `*.json` in a directory) with the exact checks `add`/review run, without staging anything. `[ok]`/`[err]` lines + `Summary:`; exit 0 all valid, 1 otherwise. For pre-flighting files produced by external tools — see `docs/external-exporters.md` |
+| `traitprint proposals contract [--json]` | Print the proposal contract (kinds, per-kind allowed/required payload keys, statuses, profile `basics` keys, which kinds take `target_id`). `--json` emits a machine-readable document external proposers can vendor/diff to catch contract drift. Needs no vault |
 
 Payload rules (contract): full entity for `add_*`, only the changed fields
 for `update_*`; narrative text travels in `payload.body` for experiences,

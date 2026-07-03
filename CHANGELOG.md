@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Proposal pre-flight surface for external tools**
+  (`traitprint proposals validate`, `traitprint proposals contract`).
+  Two read-only subcommands that need no vault: `validate` checks
+  proposal `.json` files (or a directory of them) with the exact
+  contract checks `proposals add` and the review queue run — document
+  shape plus kind/target/payload-key rules — without staging anything
+  (`[ok]`/`[err]` lines, `--json` report, exit 0/1); `contract` prints
+  the machine-readable proposal contract (kinds, per-kind
+  allowed/required payload keys, statuses, profile `basics` keys,
+  `target_id` rules) so exporters in any language can vendor or diff
+  it to catch drift instead of re-reading Python source. New
+  `docs/external-exporters.md` guide documents the staged-write
+  integration path (emit `proposals/*.json`, validate, hand off to
+  user review) and its safety invariants. No vault contract change —
+  validation semantics are unchanged. (Refs #68: the neutral,
+  non-contingent substrate for third-party exporter plugins.)
 - **Agent-runtime entrypoint scaffolder (`traitprint agents init`).**
   New `agents` command group; `traitprint agents init [DIR] [--json]`
   bootstraps a project directory for agent CLIs without touching the
