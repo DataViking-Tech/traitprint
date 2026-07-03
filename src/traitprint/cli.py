@@ -2297,10 +2297,12 @@ def vault_import_story_bank(
     """Import a job-search working directory as pending proposals.
 
     Detects the config/profile.yml + interview-prep/*.md layout by shape
-    and stages one add_story proposal per STAR block plus one
-    update_profile proposal — nothing is written to the vault until you
-    approve ('traitprint proposals list'). A cv.md is not parsed here:
-    run 'traitprint vault import-resume <dir>/cv.md --propose' for it.
+    and stages one add_story proposal per STAR block, one update_profile
+    proposal, and — when config/profile.yml carries target_roles.archetypes
+    — one add_lens proposal for the target positioning. Nothing is written
+    to the vault until you approve ('traitprint proposals list'). A cv.md is
+    not parsed here: run 'traitprint vault import-resume <dir>/cv.md
+    --propose' for it.
     """
     from pathlib import Path
 
@@ -2326,6 +2328,7 @@ def vault_import_story_bank(
                 {
                     "stories": [payload for _, payload in plan.stories],
                     "profile": plan.profile_payload,
+                    "lens": plan.lens_payload,
                     "has_cv": plan.has_cv,
                 },
                 indent=2,
@@ -2377,6 +2380,30 @@ def vault_import_story_bank(
                 errors += 1
                 click.echo(f"[err] update_profile: {exc}")
 
+    if plan.lens_payload is not None:
+        if dry_run:
+            click.echo(
+                f"[plan] add_lens: {plan.lens_payload['name']} "
+                f"({plan.lens_payload['slug']})"
+            )
+        else:
+            try:
+                lp = proposals_store.create(
+                    "add_lens",
+                    plan.lens_payload,
+                    rationale="Target roles imported from config/profile.yml",
+                    source=IMPORT_SOURCE,
+                )
+                staged += 1
+                results.append({"kind": "add_lens", "id": str(lp.proposal.id)})
+                click.echo(
+                    f"[ok] add_lens: {plan.lens_payload['name']} "
+                    f"[{lp.proposal.id.hex[:8]}]"
+                )
+            except ProposalValidationError as exc:
+                errors += 1
+                click.echo(f"[err] add_lens: {exc}")
+
     if plan.has_cv:
         click.echo(
             "Found cv.md — import it with "
@@ -2385,8 +2412,9 @@ def vault_import_story_bank(
 
     if dry_run:
         click.echo(
-            f"Dry run: {len(plan.stories)} story proposal(s) and "
-            f"{1 if plan.profile_payload else 0} profile proposal(s) "
+            f"Dry run: {len(plan.stories)} story proposal(s), "
+            f"{1 if plan.profile_payload else 0} profile proposal(s) and "
+            f"{1 if plan.lens_payload else 0} lens proposal(s) "
             "would be staged."
         )
         return

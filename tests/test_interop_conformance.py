@@ -35,6 +35,7 @@ import yaml
 from traitprint.export import export_vault_bundle
 from traitprint.importers.story_bank import (
     detect_and_plan,
+    lens_proposal,
     parse_story_bank,
     profile_proposal,
 )
@@ -359,9 +360,11 @@ class TestRoundTripConformance:
                 "summary": "Eight years building boring, reliable data platforms.",
             }
         }
-        # Archetypes ride in the rationale (no lens proposal kind yet).
-        assert "Data Platform Lead" in plan.profile_rationale
-        assert "Senior Data Engineer" in plan.profile_rationale
+        # Archetypes now land as an add_lens proposal, not the rationale.
+        assert plan.profile_rationale == "Imported from config/profile.yml"
+        assert plan.lens_payload is not None
+        assert "Data Platform Lead" in plan.lens_payload["target_archetypes"]
+        assert "Senior Data Engineer" in plan.lens_payload["target_archetypes"]
 
 
 # ── Class 2: importer dialect conformance ────────────────────────────
@@ -481,13 +484,17 @@ class TestImportConformance:
         # guessed into basics (mappings are exact, never invented).
         assert "name" not in basics
         assert "summary" not in basics
-        # Every archetype rides in the rationale for the reviewer.
+        # Archetypes no longer pollute the profile rationale.
+        assert rationale == "Imported from config/profile.yml"
+        # Every archetype rides in the add_lens proposal for the reviewer.
+        lens = lens_proposal(raw)
+        assert lens is not None
         for archetype in (
             "AI/ML Engineer",
             "AI Product Manager",
             "Solutions Architect",
         ):
-            assert archetype in rationale
+            assert archetype in lens["target_archetypes"]
 
     def test_full_workdir_import_plan(self, tmp_path: Path) -> None:
         (tmp_path / "config").mkdir()

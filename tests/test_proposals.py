@@ -38,7 +38,12 @@ from traitprint.proposals import (
     validate_proposal_document,
     validate_proposal_fields,
 )
-from traitprint.schema import VaultSchema
+from traitprint.schema import (
+    MAX_LENSES,
+    LensSchema,
+    SalienceLevel,
+    VaultSchema,
+)
 from traitprint.vault import VaultStore
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
@@ -227,6 +232,7 @@ class TestValidateProposalFields:
             "add_philosophy": {"title": "Code review"},
             "add_education": {"institution": "State U"},
             "update_profile": {"basics": {"name": "Ada"}},
+            "add_lens": {"slug": "pm", "name": "Product"},
         }
         for kind, payload in minimal.items():
             assert validate_proposal_fields(kind, None, payload) == []
@@ -238,6 +244,7 @@ class TestValidateProposalFields:
             "update_story": {"outcome": "win"},
             "update_philosophy": {"category": "leadership"},
             "update_education": {"degree": "M.S."},
+            "update_lens": {"name": "Product Leadership"},
         }
         entity_update_kinds = {
             k
@@ -583,6 +590,226 @@ class TestApplyProposal:
         )
         rows = proposal_diff(vault, p)
         assert rows == [{"field": "proficiency", "current": 3, "proposed": 4}]
+
+
+# ── lens proposal kinds ─────────────────────────────────────────────
+
+
+def _lens_vault(*slugs: str) -> VaultSchema:
+    """A vault carrying one lens per slug (first is default)."""
+    return VaultSchema(
+        lenses=[
+            LensSchema(slug=s, name=s.title(), is_default=(i == 0))
+            for i, s in enumerate(slugs)
+        ]
+    )
+
+
+class TestLensProposalValidation:
+    def test_add_lens_requires_slug_and_name(self) -> None:
+        problems = validate_proposal_fields("add_lens", None, {"slug": "pm"})
+        assert any("payload.name" in p for p in problems)
+        problems = validate_proposal_fields("add_lens", None, {"name": "PM"})
+        assert any("payload.slug" in p for p in problems)
+
+    def test_add_lens_minimal_payload_valid(self) -> None:
+        assert (
+            validate_proposal_fields(
+                "add_lens", None, {"slug": "pm", "name": "Product"}
+            )
+            == []
+        )
+
+    def test_unknown_lens_key_rejected(self) -> None:
+        problems = validate_proposal_fields(
+            "add_lens", None, {"slug": "pm", "name": "PM", "bogus": 1}
+        )
+        assert any("bogus" in p for p in problems)
+
+    def test_update_lens_requires_target_id(self) -> None:
+        problems = validate_proposal_fields(
+            "update_lens", None, {"name": "Renamed"}
+        )
+        assert any("target_id" in p for p in problems)
+
+    def test_full_lens_payload_valid(self) -> None:
+        sid = uuid4()
+        assert (
+            validate_proposal_fields(
+                "add_lens",
+                None,
+                {
+                    "slug": "pm",
+                    "name": "Product",
+                    "target_archetypes": ["Product Manager"],
+                    "headline_override": "PM leader",
+                    "bio_override": "Ships product.",
+                    "signature_experience_ids": [str(uuid4())],
+                    "signature_story_ids": [str(uuid4())],
+                    "skill_salience": {str(sid): "core"},
+                    "is_default": True,
+                },
+            )
+            == []
+        )
+
+
+class TestApplyLensProposal:
+    def test_add_lens_creates_lens(self) -> None:
+        vault = VaultSchema()
+        msg = apply_proposal(
+            vault,
+            ProposalSchema(
+                kind="add_lens", payload={"slug": "pm", "name": "Product"}
+            ),
+        )
+        assert vault.lenses[0].slug == "pm"
+        assert "Added lens" in msg
+
+    def test_add_lens_salience_applied(self) -> None:
+        vault = VaultSchema()
+        sid = uuid4()
+        apply_proposal(
+            vault,
+            ProposalSchema(
+                kind="add_lens",
+                payload={
+                    "slug": "pm",
+                    "name": "Product",
+                    "skill_salience": {str(sid): "core"},
+                },
+            ),
+        )
+        assert vault.lenses[0].salience_for(sid) is SalienceLevel.CORE
+
+    def test_add_lens_new_default_clears_others(self) -> None:
+        vault = _lens_vault("eng")  # eng is default
+        apply_proposal(
+            vault,
+            ProposalSchema(
+                kind="add_lens",
+                payload={"slug": "pm", "name": "Product", "is_default": True},
+            ),
+        )
+        by_slug = {lens.slug: lens for lens in vault.lenses}
+        assert by_slug["pm"].is_default is True
+        assert by_slug["eng"].is_default is False
+
+    def test_add_lens_cap_rejected_at_apply(self) -> None:
+        vault = _lens_vault(*[f"l{i}" for i in range(MAX_LENSES)])
+        assert len(vault.lenses) == MAX_LENSES
+        with pytest.raises(ProposalApplyError, match="at most"):
+            apply_proposal(
+                vault,
+                ProposalSchema(
+                    kind="add_lens", payload={"slug": "over", "name": "Over"}
+                ),
+            )
+        assert len(vault.lenses) == MAX_LENSES  # nothing applied
+
+    def test_add_lens_duplicate_slug_rejected(self) -> None:
+        vault = _lens_vault("pm")
+        with pytest.raises(ProposalApplyError, match="already exists"):
+            apply_proposal(
+                vault,
+                ProposalSchema(
+                    kind="add_lens", payload={"slug": "pm", "name": "Dup"}
+                ),
+            )
+
+    def test_add_lens_reserved_slug_rejected(self) -> None:
+        vault = VaultSchema()
+        with pytest.raises(ProposalApplyError, match="reserved"):
+            apply_proposal(
+                vault,
+                ProposalSchema(
+                    kind="add_lens", payload={"slug": "none", "name": "Nope"}
+                ),
+            )
+
+    def test_add_lens_dangling_refs_warn_not_block(self) -> None:
+        # Per Layer 1, a dangling signature/salience ref does not block the
+        # apply — it applies and is surfaced later by the dispute machinery.
+        vault = VaultSchema()
+        missing = uuid4()
+        apply_proposal(
+            vault,
+            ProposalSchema(
+                kind="add_lens",
+                payload={
+                    "slug": "pm",
+                    "name": "Product",
+                    "signature_experience_ids": [str(missing)],
+                    "skill_salience": {str(uuid4()): "suppressed"},
+                },
+            ),
+        )
+        assert vault.lenses[0].signature_experience_ids == [missing]
+
+    def test_update_lens_changes_fields(self) -> None:
+        vault = _lens_vault("pm")
+        target = vault.lenses[0]
+        apply_proposal(
+            vault,
+            ProposalSchema(
+                kind="update_lens",
+                target_id=target.id,
+                payload={"headline_override": "Product leader"},
+            ),
+        )
+        assert vault.lenses[0].headline_override == "Product leader"
+        assert vault.lenses[0].slug == "pm"  # untouched fields survive
+
+    def test_update_lens_missing_target_rejected(self) -> None:
+        vault = _lens_vault("pm")
+        with pytest.raises(ProposalApplyError, match="does not exist"):
+            apply_proposal(
+                vault,
+                ProposalSchema(
+                    kind="update_lens",
+                    target_id=uuid4(),
+                    payload={"name": "Ghost"},
+                ),
+            )
+
+    def test_update_lens_sets_default_and_clears_others(self) -> None:
+        vault = _lens_vault("eng", "pm")  # eng default
+        pm = next(lens for lens in vault.lenses if lens.slug == "pm")
+        apply_proposal(
+            vault,
+            ProposalSchema(
+                kind="update_lens",
+                target_id=pm.id,
+                payload={"is_default": True},
+            ),
+        )
+        by_slug = {lens.slug: lens for lens in vault.lenses}
+        assert by_slug["pm"].is_default is True
+        assert by_slug["eng"].is_default is False
+
+    def test_update_lens_duplicate_slug_rejected(self) -> None:
+        vault = _lens_vault("eng", "pm")
+        pm = next(lens for lens in vault.lenses if lens.slug == "pm")
+        with pytest.raises(ProposalApplyError, match="already exists"):
+            apply_proposal(
+                vault,
+                ProposalSchema(
+                    kind="update_lens",
+                    target_id=pm.id,
+                    payload={"slug": "eng"},
+                ),
+            )
+
+
+class TestLensProposalContract:
+    def test_new_kinds_in_contract(self) -> None:
+        doc = proposal_contract()
+        assert "add_lens" in doc["kinds"]
+        assert "update_lens" in doc["kinds"]
+        assert doc["required_payload_keys"]["add_lens"] == ["slug", "name"]
+        assert "slug" in doc["payload_keys"]["add_lens"]
+        assert "update_lens" in doc["target_id_required_for"]
+        assert "add_lens" not in doc["target_id_required_for"]
 
 
 # ── CLI: list / show ────────────────────────────────────────────────
@@ -1372,10 +1599,18 @@ class TestValidateProposalDocument:
 
     def test_unknown_kind(self) -> None:
         problems = validate_proposal_document(
-            {"kind": "add_lens", "payload": {"name": "x"}}
+            {"kind": "add_unicorn", "payload": {"name": "x"}}
         )
         assert problems
         assert "kind" in problems[0]
+
+    def test_add_lens_is_now_a_known_kind(self) -> None:
+        # add_lens graduated from "rejected" to a first-class kind — a
+        # well-formed lens proposal document validates clean.
+        problems = validate_proposal_document(
+            {"kind": "add_lens", "payload": {"slug": "pm", "name": "Product"}}
+        )
+        assert problems == []
 
     def test_field_rules_collected(self) -> None:
         problems = validate_proposal_document(

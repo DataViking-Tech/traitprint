@@ -13,6 +13,7 @@ from traitprint.cli import cli
 from traitprint.git_ops import commit, init_repo
 from traitprint.importers.story_bank import (
     detect_and_plan,
+    lens_proposal,
     parse_story_bank,
     profile_proposal,
     story_proposal_payload,
@@ -136,9 +137,10 @@ class TestProfileProposal:
                 "summary": "Eight years building boring, reliable data platforms.",
             }
         }
-        # Archetypes have no lens proposal kind — stashed in the rationale.
-        assert "Data Platform Lead" in rationale
-        assert "Senior Data Engineer" in rationale
+        # Archetypes are positioning data — they no longer pollute the
+        # profile rationale; they land in a separate add_lens proposal.
+        assert rationale == "Imported from config/profile.yml"
+        assert "Data Platform Lead" not in rationale
 
     def test_invalid_yaml_returns_none(self) -> None:
         payload, _ = profile_proposal(":\n  - not valid: [")
@@ -149,12 +151,65 @@ class TestProfileProposal:
         assert payload is None
 
 
+class TestLensProposal:
+    def test_maps_archetypes_to_add_lens_payload(self) -> None:
+        raw = (FIXTURE_DIR / "config" / "profile.yml").read_text()
+        payload = lens_proposal(raw)
+        assert payload == {
+            "slug": "data-platform-lead",
+            "name": "Data Platform Lead",
+            "target_archetypes": ["Data Platform Lead", "Senior Data Engineer"],
+        }
+
+    def test_bare_string_archetypes(self) -> None:
+        payload = lens_proposal(
+            "target_roles:\n  archetypes:\n    - Staff Engineer\n"
+        )
+        assert payload == {
+            "slug": "staff-engineer",
+            "name": "Staff Engineer",
+            "target_archetypes": ["Staff Engineer"],
+        }
+
+    def test_no_archetypes_returns_none(self) -> None:
+        assert lens_proposal("candidate:\n  name: Jordan\n") is None
+
+    def test_invalid_yaml_returns_none(self) -> None:
+        assert lens_proposal(":\n  - not valid: [") is None
+
+    def test_payload_applies_cleanly_as_add_lens(self) -> None:
+        # The emitted payload must survive validation and the real apply.
+        from traitprint.proposals import (
+            ProposalSchema,
+            validate_proposal_fields,
+        )
+
+        raw = (FIXTURE_DIR / "config" / "profile.yml").read_text()
+        payload = lens_proposal(raw)
+        assert payload is not None
+        assert validate_proposal_fields("add_lens", None, payload) == []
+        vault = _vault()
+        apply_proposal(vault, ProposalSchema(kind="add_lens", payload=payload))
+        assert vault.lenses[0].slug == "data-platform-lead"
+        assert vault.lenses[0].target_archetypes == [
+            "Data Platform Lead",
+            "Senior Data Engineer",
+        ]
+
+
 class TestDetectAndPlan:
     def test_full_fixture_dir(self) -> None:
         plan = detect_and_plan(FIXTURE_DIR, _vault())
         # 2 canonical + 1 drift-variant story.
         assert len(plan.stories) == 3
         assert plan.profile_payload is not None
+        # target_roles.archetypes land as an add_lens proposal payload.
+        assert plan.lens_payload is not None
+        assert plan.lens_payload["slug"] == "data-platform-lead"
+        assert plan.lens_payload["target_archetypes"] == [
+            "Data Platform Lead",
+            "Senior Data Engineer",
+        ]
         assert plan.has_cv is True
 
     def test_rejects_non_workdir(self, tmp_path: Path) -> None:
@@ -198,12 +253,19 @@ class TestCliImportStoryBank:
         assert result.exit_code == 0, result.output
         assert result.output.count("[ok] add_story") == 3
         assert "[ok] update_profile" in result.output
+        assert "[ok] add_lens: Data Platform Lead" in result.output
         assert "import-resume" in result.output  # cv.md pointer
-        assert "Summary: staged 4, errors 0" in result.output
+        assert "Summary: staged 5, errors 0" in result.output
 
         loaded, issues = ProposalStore(vault_dir).load_all()
         assert issues == []
-        assert len(loaded) == 4
+        assert len(loaded) == 5
+        lens = [lp for lp in loaded if lp.proposal.kind == "add_lens"]
+        assert len(lens) == 1
+        assert lens[0].proposal.payload["target_archetypes"] == [
+            "Data Platform Lead",
+            "Senior Data Engineer",
+        ]
         assert all(lp.proposal.source == "story-bank-import" for lp in loaded)
         # Nothing touched the vault itself.
         assert VaultStore(vault_dir).load().stories == []
@@ -237,6 +299,7 @@ class TestCliImportStoryBank:
         payload = json.loads(result.output)
         assert len(payload["stories"]) == 3
         assert payload["profile"]["basics"]["name"] == "Jordan Vance"
+        assert payload["lens"]["slug"] == "data-platform-lead"
         assert payload["has_cv"] is True
 
     def test_non_workdir_errors(

@@ -250,8 +250,8 @@ def profile_proposal(
     """Map a profile.yml document onto an ``update_profile`` payload.
 
     Returns ``(payload | None, rationale)``. ``target_roles.archetypes``
-    have no proposal kind to land in (lenses are cloud/MCP surface), so
-    they are stashed in the rationale for the reviewer.
+    are positioning data, not profile facts — they land in a separate
+    ``add_lens`` proposal via :func:`lens_proposal`, not stashed here.
     """
     try:
         doc = yaml.safe_load(raw)
@@ -269,25 +269,62 @@ def profile_proposal(
             basics[key] = node.strip()
 
     rationale = "Imported from config/profile.yml"
-    target_roles = doc.get("target_roles")
-    if isinstance(target_roles, dict):
-        archetypes = target_roles.get("archetypes")
-        names: list[str] = []
-        if isinstance(archetypes, list):
-            for item in archetypes:
-                if isinstance(item, dict) and isinstance(item.get("name"), str):
-                    names.append(item["name"])
-                elif isinstance(item, str):
-                    names.append(item)
-        if names:
-            rationale += (
-                "; target archetypes (no lens proposal kind yet): "
-                + ", ".join(names)
-            )
-
     if not basics:
         return None, rationale
     return {"basics": basics}, rationale
+
+
+_SLUG_STRIP_RE = re.compile(r"[^a-z0-9]+")
+
+
+def _slugify(text: str) -> str:
+    """Kebab-case slug from free text (empty if nothing survives)."""
+    return _SLUG_STRIP_RE.sub("-", text.strip().lower()).strip("-")
+
+
+def _archetype_names(doc: Any) -> list[str]:
+    """Pull ``target_roles.archetypes`` names (dict-with-name or bare string)."""
+    if not isinstance(doc, dict):
+        return []
+    target_roles = doc.get("target_roles")
+    if not isinstance(target_roles, dict):
+        return []
+    archetypes = target_roles.get("archetypes")
+    names: list[str] = []
+    if isinstance(archetypes, list):
+        for item in archetypes:
+            if isinstance(item, dict) and isinstance(item.get("name"), str):
+                names.append(item["name"].strip())
+            elif isinstance(item, str):
+                names.append(item.strip())
+    return [n for n in names if n]
+
+
+def lens_proposal(raw: str) -> dict[str, Any] | None:
+    """Build an ``add_lens`` payload from ``target_roles.archetypes``.
+
+    The primary (first) archetype names the lens and derives its slug;
+    every archetype is carried in ``target_archetypes`` so the reviewer
+    can curate the positioning. Returns ``None`` when the document has no
+    usable archetypes or no derivable slug. The lens carries no signature
+    refs or salience — it is a positioning stub for the reviewer to flesh
+    out, never asserting a fact absent from the vault.
+    """
+    try:
+        doc = yaml.safe_load(raw)
+    except yaml.YAMLError:
+        return None
+    names = _archetype_names(doc)
+    if not names:
+        return None
+    slug = _slugify(names[0])
+    if not slug:
+        return None
+    return {
+        "slug": slug,
+        "name": names[0],
+        "target_archetypes": names,
+    }
 
 
 # ── directory-level import ──────────────────────────────────────────
@@ -300,6 +337,7 @@ class ImportPlan:
     stories: list[tuple[ParsedStory, dict[str, Any]]]
     profile_payload: dict[str, Any] | None
     profile_rationale: str
+    lens_payload: dict[str, Any] | None
     has_cv: bool
 
 
@@ -324,10 +362,11 @@ def detect_and_plan(directory: Path, vault: VaultSchema) -> ImportPlan:
 
     profile_payload: dict[str, Any] | None = None
     profile_rationale = ""
+    lens_payload: dict[str, Any] | None = None
     if profile_path.is_file():
-        profile_payload, profile_rationale = profile_proposal(
-            profile_path.read_text(encoding="utf-8")
-        )
+        raw = profile_path.read_text(encoding="utf-8")
+        profile_payload, profile_rationale = profile_proposal(raw)
+        lens_payload = lens_proposal(raw)
 
     if not parsed_stories and not profile_path.is_file():
         raise ValueError(
@@ -338,7 +377,9 @@ def detect_and_plan(directory: Path, vault: VaultSchema) -> ImportPlan:
 
     stories = [(p, story_proposal_payload(p, vault)) for p in parsed_stories]
     has_cv = (directory / "cv.md").is_file()
-    return ImportPlan(stories, profile_payload, profile_rationale, has_cv)
+    return ImportPlan(
+        stories, profile_payload, profile_rationale, lens_payload, has_cv
+    )
 
 
 __all__ = [
@@ -346,6 +387,7 @@ __all__ = [
     "ImportPlan",
     "ParsedStory",
     "detect_and_plan",
+    "lens_proposal",
     "parse_story_bank",
     "profile_proposal",
     "story_proposal_payload",
