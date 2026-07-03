@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`vault export -f career-bundle`: multi-file working-dir bundle.**
+  New bundle exporter emitting three user-layer files an agent-CLI
+  job-search tool can consume directly — `cv.md` (ATS-style resume:
+  the canonical markdown export with "Professional Summary"/"Work
+  Experience" header renames and Stories/Philosophy dropped),
+  `interview-prep/story-bank.md` (one `### [theme] Title` STAR block
+  per story with Reflection, Source, and "Best for questions about"
+  tags built from theme_tags + resolved skill names), and
+  `config/profile.yml` (candidate/narrative/target_roles with
+  commented placeholder keys; string-templated because yaml.safe_dump
+  cannot emit comments, and round-trip-parse tested). New
+  `export_vault_bundle()` dict-returning API beside `export_vault`;
+  the CLI requires `-o DIR` (or `--zip` for a single archive) and
+  gains `--lens SLUG` to project cv.md through a positioning lens
+  (headline/bio overrides, signature experiences first, core skills
+  lead, suppressed skills hidden). The layout is compatible with
+  career-ops-style working directories (nominative reference only;
+  the format token is brand-neutral).
 - **`traitprint doctor`: vault phase detection + freshness audit.**
   New read-only CLI command (and local-only MCP tool of the same name)
   classifying the vault from deterministic date math — `first-run` |

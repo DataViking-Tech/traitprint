@@ -1622,6 +1622,7 @@ _EXPORT_FORMAT_CHOICES = [
     "jsonresume",
     "json-resume",
     "synthpanel-persona",
+    "career-bundle",
 ]
 
 
@@ -1665,18 +1666,53 @@ def _normalize_export_format(
     default=None,
     help="Override the pack name (synthpanel-persona only).",
 )
+@click.option(
+    "--lens",
+    "lens_ref",
+    default=None,
+    help=(
+        "Project cv.md through a positioning lens, by slug or id "
+        "(career-bundle only)."
+    ),
+)
+@click.option(
+    "--zip",
+    "as_zip",
+    is_flag=True,
+    default=False,
+    help=(
+        "Write the bundle as a single .zip archive instead of a directory "
+        "(career-bundle only; -o names the archive)."
+    ),
+)
 @click.pass_context
 def vault_export(
-    ctx: click.Context, fmt: str, output: str | None, pack_name: str | None
+    ctx: click.Context,
+    fmt: str,
+    output: str | None,
+    pack_name: str | None,
+    lens_ref: str | None,
+    as_zip: bool,
 ) -> None:
-    """Export the vault as JSON, Markdown, JSON Resume, or a SynthPanel persona."""
-    from traitprint.export import export_vault
+    """Export the vault as JSON, Markdown, JSON Resume, a SynthPanel
+    persona, or a multi-file career bundle (``-f career-bundle``,
+    requires ``-o DIR`` or ``--zip``)."""
+    from traitprint.export import BUNDLE_FORMATS, export_vault
 
     store = _get_store(ctx)
     if not store.exists():
         click.echo("No vault found. Run 'traitprint init' first.")
         return
     v = store.load()
+
+    if fmt in BUNDLE_FORMATS:
+        _export_bundle(ctx, v, fmt, output, lens_ref, as_zip)
+        return
+    if lens_ref is not None or as_zip:
+        click.echo("--lens and --zip are only supported with -f career-bundle.")
+        ctx.exit(2)
+        return
+
     rendered = export_vault(v, fmt, pack_name=pack_name)
     if output:
         from pathlib import Path
@@ -1685,6 +1721,64 @@ def vault_export(
         click.echo(f"Wrote {fmt} export to {output}")
     else:
         click.echo(rendered, nl=False)
+
+
+def _export_bundle(
+    ctx: click.Context,
+    v: VaultSchema,
+    fmt: str,
+    output: str | None,
+    lens_ref: str | None,
+    as_zip: bool,
+) -> None:
+    """Write a multi-file bundle to a directory or a .zip archive."""
+    import zipfile
+    from pathlib import Path
+
+    from traitprint.export import export_vault_bundle
+
+    if not output:
+        click.echo(
+            f"-f {fmt} writes multiple files — pass -o DIR "
+            "(or -o FILE.zip with --zip)."
+        )
+        ctx.exit(2)
+        return
+
+    lens = None
+    if lens_ref is not None:
+        ref = lens_ref.strip().lower()
+        lens = next(
+            (
+                lns
+                for lns in v.lenses
+                if lns.slug == ref or str(lns.id) == ref or lns.id.hex[:8] == ref
+            ),
+            None,
+        )
+        if lens is None:
+            available = ", ".join(lns.slug for lns in v.lenses) or "none"
+            click.echo(f"No lens matches {lens_ref!r}. Available: {available}.")
+            ctx.exit(1)
+            return
+
+    bundle = export_vault_bundle(v, fmt, lens=lens)
+
+    out = Path(output)
+    if as_zip or out.suffix == ".zip":
+        out.parent.mkdir(parents=True, exist_ok=True)
+        with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as zf:
+            for rel, content in bundle.items():
+                zf.writestr(rel, content)
+        click.echo(f"Wrote {fmt} bundle ({len(bundle)} files) to {out}")
+        return
+
+    for rel, content in bundle.items():
+        target = out / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content, encoding="utf-8")
+        click.echo(f"  {rel}")
+    click.echo(f"Wrote {fmt} bundle ({len(bundle)} files) to {out}/")
 
 
 # --- vault history ---
@@ -2820,14 +2914,30 @@ def proposals_add(
 @click.option(
     "--output",
     "-o",
-    type=click.Path(dir_okay=False, writable=True),
+    type=click.Path(),
     default=None,
-    help="Write to file instead of stdout.",
+    help="Write to file (or, for career-bundle, a directory) instead of stdout.",
 )
 @click.option(
     "--pack-name",
     default=None,
     help="Override the pack name (synthpanel-persona only).",
+)
+@click.option(
+    "--lens",
+    "lens_ref",
+    default=None,
+    help=(
+        "Project cv.md through a positioning lens, by slug or id "
+        "(career-bundle only)."
+    ),
+)
+@click.option(
+    "--zip",
+    "as_zip",
+    is_flag=True,
+    default=False,
+    help="Write the bundle as a single .zip archive (career-bundle only).",
 )
 @click.pass_context
 def export_cmd(
@@ -2835,6 +2945,8 @@ def export_cmd(
     fmt: str,
     output: str | None,
     pack_name: str | None,
+    lens_ref: str | None,
+    as_zip: bool,
 ) -> None:
     """Export the vault in a format consumable by other tools.
 
@@ -2842,7 +2954,14 @@ def export_cmd(
     emits a SynthPanel persona pack (YAML) that can be fed directly to
     ``synthpanel panel run --personas <file>``.
     """
-    ctx.invoke(vault_export, fmt=fmt, output=output, pack_name=pack_name)
+    ctx.invoke(
+        vault_export,
+        fmt=fmt,
+        output=output,
+        pack_name=pack_name,
+        lens_ref=lens_ref,
+        as_zip=as_zip,
+    )
 
 
 # --- mcp-serve ---
