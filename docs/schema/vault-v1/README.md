@@ -2,7 +2,7 @@
 
 **Status:** Stable contract (Phase 0 of the
 [agent-native architecture](../../agent-native-architecture.md))
-**Contract revision:** 1.3 (additive over 1.2 — see [Versioning](#versioning))
+**Contract revision:** 1.4 (additive over 1.3 — see [Versioning](#versioning))
 **Consumers:** the `traitprint` CLI/MCP server (read+write) and the
 traitprint-cloud ingest pipeline (validate+project).
 
@@ -19,6 +19,7 @@ validation happens against [`vault-v1.schema.json`](vault-v1.schema.json)
 ├── profile.json             # identity block       → $defs/profile
 ├── skills.json              # array                → $defs/skill
 ├── education.json           # array                → $defs/education
+├── lenses.json              # array, optional      → $defs/lens
 ├── experiences/*.md         # frontmatter          → $defs/experienceFrontmatter
 ├── stories/*.md             # frontmatter          → $defs/storyFrontmatter
 ├── philosophies/*.md        # frontmatter          → $defs/philosophyFrontmatter
@@ -83,7 +84,21 @@ meaning — no contract revision tracks it.
    and a `resolved_at` timestamp. Filenames are `<kind>-<id8>.json`
    slugs (kebab-case kind + first 8 hex chars of the id) — identity is
    the document `id`, never the filename.
-8. **Readers accept v0 (`vault.json`) and v1; writers emit v1 only.**
+8. **`lenses.json` (optional, revision 1.4) is an array of positioning
+   lenses** — named, emphasis-only projections over the vault (`$defs/lens`;
+   the full object semantics and trust layer live in the canonical
+   [lens-v1 contract](../lens-v1/README.md)). A lens only *selects, orders,
+   and re-weights* existing content plus optional `headline_override`/
+   `bio_override`; it never asserts a fact absent from the vault. Invariants
+   (enforced identically on local load and cloud ingest): slugs are
+   lowercase kebab-case and unique per vault, the slug `none` is **reserved**
+   (the canonical-rendering keyword), at most one lens is `is_default`, and a
+   vault holds **at most 5 lenses**. Signature/salience references follow
+   rule 2 (dangling → Layer 1, warned/surfaced live, never a parse error).
+   The file is emitted **only when the vault has lenses**, so a vault that
+   never opted in round-trips byte-identically; a missing file reads back as
+   an empty list. Additive — `schema_version` stays `1`.
+9. **Readers accept v0 (`vault.json`) and v1; writers emit v1 only.**
    `traitprint vault migrate` converts v0→v1 in place as a single git
    commit. The lossless single-document JSON export remains available for
    v0 consumers.
@@ -99,6 +114,16 @@ they implement.
 
 ### Revision history
 
+- **1.4 (2026-07-03)** — additive: optional top-level `lenses.json`
+  (`$defs/lens`) — an array of positioning lenses (emphasis-only projections
+  over the vault; canonical semantics in the [lens-v1
+  contract](../lens-v1/README.md)). Slugs are unique lowercase kebab-case
+  with `none` reserved, at most one lens is `is_default`, and a vault holds
+  at most 5 lenses; these invariants are enforced identically at local vault
+  load and at cloud ingest (`lenses.json` now projects into the cloud
+  `user_lenses` mirror). Signature/salience references are Layer 1 (rule 2).
+  The file is emitted only when the vault has lenses, so pre-1.4 vaults
+  round-trip byte-identically; `schema_version` stays `1`.
 - **1.3 (2026-07-02)** — additive: optional `basics.phone`, `basics.url`
   and `basics.profiles[]` on the profile entity (`$defs/profile`,
   `$defs/profileLink`), following the JSON Resume `basics` vocabulary:
