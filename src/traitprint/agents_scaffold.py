@@ -13,7 +13,10 @@ Design rules (issue #66):
   :data:`MCP_REGISTRATIONS`, never a new code path. (This
   thin-wrappers-pointing-at-one-manual layout is the bootstrap pattern
   popularized by career-ops — nominative attribution only; no career-ops
-  branding may appear in any generated file or user-facing string.)
+  branding may appear in any scaffolder-authored file or user-facing
+  string. Verbatim copies of the shipped Agent Skills are exempt: their
+  canonical content may reference career-ops nominatively, per the
+  repo-wide policy.)
 - **Only the target directory is written, and nothing is overwritten.**
   Registrations that live in the user's home directory (Codex CLI,
   Kimi CLI) are emitted as copy-paste snippets instead of being written.

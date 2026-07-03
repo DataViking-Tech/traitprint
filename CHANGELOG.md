@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   manual, now also shipped in the wheel as
   `traitprint/data/AGENTS.md`), thin wrappers that delegate to it
   (`CLAUDE.md`, `QWEN.md`, `.grok/GROK.md`; Codex CLI, OpenCode, and
-  Kimi CLI read `AGENTS.md` natively), the six Agent Skills under
+  Kimi CLI read `AGENTS.md` natively), the shipped Agent Skills under
   `.agents/skills/` and `.claude/skills/`, and project-scoped MCP
   registration for `traitprint mcp-serve` (`.mcp.json`,
   `opencode.json`, `.qwen/settings.json`, `.grok/settings.json`).

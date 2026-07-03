@@ -16,7 +16,7 @@ Covers:
 from __future__ import annotations
 
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from click.testing import CliRunner, Result
 
@@ -250,12 +250,22 @@ class TestScaffoldSafety:
             assert not f.path.startswith(("~", "/", ".."))
 
     def test_no_reserved_brand_in_output_or_files(self, tmp_path: Path) -> None:
+        # Verbatim copies of the shipped Agent Skills are exempt: their
+        # canonical content may reference career-ops nominatively (e.g.
+        # traitprint-agent-vault-sync), which is repo policy tested in
+        # tests/test_skills.py. The ban covers everything the scaffolder
+        # authors itself: wrappers, MCP configs, and CLI output.
+        skill_dirs = tuple(PurePosixPath(d).parts for d in SKILL_DESTINATIONS)
         target, result = _scaffold(tmp_path)
         assert "career-ops" not in result.output.lower()
         for p in target.rglob("*"):
-            if p.is_file():
-                text = p.read_text(encoding="utf-8").lower()
-                assert "career-ops" not in text, p
+            if not p.is_file():
+                continue
+            rel_parts = p.relative_to(target).parts
+            if any(rel_parts[: len(d)] == d for d in skill_dirs):
+                continue
+            text = p.read_text(encoding="utf-8").lower()
+            assert "career-ops" not in text, p
 
 
 # ── The --json report contract ───────────────────────────────────────
