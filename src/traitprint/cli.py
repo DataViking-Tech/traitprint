@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+from pathlib import Path
 from typing import IO, TYPE_CHECKING, Any
 from uuid import UUID
 
@@ -3116,6 +3117,136 @@ def mcp_serve(ctx: click.Context) -> None:
             f"No vault found at {store.directory}. Run 'traitprint init' first."
         )
     run_stdio(store)
+
+
+# ------------------------------------------------------------------
+# agents: agent-runtime entrypoint scaffolding
+# ------------------------------------------------------------------
+
+
+@cli.group(name="agents")
+def agents_group() -> None:
+    """Agent-runtime entrypoints (wrappers, skills, MCP wiring)."""
+
+
+@agents_group.command(name="init")
+@click.argument("directory", type=click.Path(file_okay=False), default=".")
+@click.option(
+    "--json",
+    "as_json",
+    is_flag=True,
+    default=False,
+    help="Emit the scaffold report (files, MCP snippets, next steps) as JSON.",
+)
+@click.pass_context
+def agents_init(ctx: click.Context, directory: str, as_json: bool) -> None:
+    """Scaffold agent-CLI entrypoints in DIRECTORY (default: cwd).
+
+    Writes thin wrapper files (CLAUDE.md, QWEN.md, .grok/GROK.md) that all
+    delegate to one canonical AGENTS.md, copies the shipped Agent Skills to
+    .agents/skills/ and .claude/skills/, and registers `traitprint
+    mcp-serve` in project-scoped MCP configs (.mcp.json, opencode.json,
+    .qwen/settings.json, .grok/settings.json). Codex CLI, OpenCode, and
+    Kimi CLI read AGENTS.md natively; registrations that live in the home
+    directory (Codex CLI, Kimi CLI) are printed as snippets — nothing
+    outside DIRECTORY is ever touched, and existing files are never
+    overwritten. Gemini CLI is not scaffolded: the published Gemini
+    extension (gemini-extension.json) already covers it. Already using
+    `npx skills add DataViking-Tech/traitprint`? This command mainly adds
+    the MCP wiring and a Node-free (pip-only) bootstrap path.
+    """
+    from traitprint.agents_scaffold import (
+        MCP_REGISTRATIONS,
+        NATIVE_AGENTS_MD_RUNTIMES,
+        SKILL_DESTINATIONS,
+        ScaffoldError,
+        scaffold,
+    )
+
+    store = _get_store(ctx)
+    vault_exists = store.exists()
+    try:
+        report = scaffold(Path(directory))
+    except ScaffoldError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    written_paths = {f.path for f in report.files if f.written}
+    pending = [reg for reg in MCP_REGISTRATIONS if reg.path not in written_paths]
+
+    next_steps: list[str] = []
+    if not vault_exists:
+        next_steps.append("Create your vault: traitprint init")
+    if pending:
+        labels = ", ".join(reg.label for reg in pending)
+        next_steps.append(
+            f"Register 'traitprint mcp-serve' with {labels} "
+            "(see the MCP snippets)."
+        )
+    next_steps.append(
+        f"Launch your agent CLI in {report.directory} and ask for the "
+        "traitprint-fill-vault interview to build out your vault."
+    )
+
+    if as_json:
+        payload = {
+            "directory": report.directory,
+            "written": report.written,
+            "skipped": report.skipped,
+            "mcp": [
+                {
+                    "runtime": reg.runtime,
+                    "label": reg.label,
+                    "path": reg.path,
+                    "in_project": reg.in_project,
+                    "written": reg.path in written_paths,
+                    "snippet": reg.snippet,
+                }
+                for reg in MCP_REGISTRATIONS
+            ],
+            "next_steps": next_steps,
+        }
+        click.echo(json.dumps(payload, indent=2))
+        return
+
+    click.echo(f"Agent entrypoints scaffolded in {report.directory}")
+    click.echo()
+    for f in report.files:
+        if f.kind == "skill":
+            continue
+        tag = "[ok]  " if f.written else "[skip]"
+        suffix = "" if f.written else " (exists — kept)"
+        click.echo(f"  {tag} {f.path} — {f.label}{suffix}")
+    skill_files = [f for f in report.files if f.kind == "skill"]
+    for dest in SKILL_DESTINATIONS:
+        group = [f for f in skill_files if f.path.startswith(f"{dest}/")]
+        wrote = sum(1 for f in group if f.written)
+        kept = len(group) - wrote
+        detail = f"{wrote} files" + (f", {kept} existing kept" if kept else "")
+        tag = "[ok]  " if wrote else "[skip]"
+        click.echo(f"  {tag} {dest}/ — Agent Skills ({detail})")
+
+    click.echo()
+    click.echo(
+        f"{', '.join(NATIVE_AGENTS_MD_RUNTIMES)} read AGENTS.md natively — "
+        "no wrapper file needed."
+    )
+    click.echo(
+        "Gemini CLI is covered by the published extension "
+        "(gemini-extension.json)."
+    )
+
+    if pending:
+        click.echo()
+        click.echo("MCP registration for 'traitprint mcp-serve':")
+        for reg in pending:
+            click.echo(f"  {reg.label} — add to {reg.path}:")
+            for line in reg.snippet.rstrip("\n").splitlines():
+                click.echo(f"    {line}")
+
+    click.echo()
+    click.echo("Next steps:")
+    for i, step in enumerate(next_steps, start=1):
+        click.echo(f"  {i}. {step}")
 
 
 # ------------------------------------------------------------------
