@@ -4249,6 +4249,23 @@ def _ingest_status_value(ingest: IngestReport | None) -> str | None:
     return ingest.status if ingest is not None and ingest.status else None
 
 
+def _echo_warnings(warnings: list[Any]) -> None:
+    """Render non-blocking proposal contract warnings from a push (Q4).
+
+    Warnings never fail the push — a malformed staged proposal is a
+    reviewable artifact, not vault corruption — but committing agents see
+    them immediately instead of at review time.
+    """
+    if not warnings:
+        return
+    click.echo(f"Proposal warnings ({len(warnings)}):")
+    for w in warnings:
+        location = f"{w.file} @ {w.pointer}" if w.pointer else w.file
+        click.echo(f"[warn] {location}: {w.message}")
+        if w.hint:
+            click.echo(f"       hint: {w.hint}")
+
+
 def _echo_conflict_guidance(vault_dir: str, conflicts: list[str]) -> None:
     """Print the merge-conflict UX: files + the exact commands to finish."""
     click.echo(f"Merge conflicts in {len(conflicts)} file(s):")
@@ -4377,6 +4394,7 @@ def sync_push_cmd(ctx: click.Context, as_json: bool) -> None:
                     "head": outcome.head,
                     "server_head": outcome.server_head,
                     "ingest_status": _ingest_status_value(outcome.ingest),
+                    "warnings": [w.as_dict() for w in outcome.warnings],
                 },
                 indent=2,
             )
@@ -4384,6 +4402,7 @@ def sync_push_cmd(ctx: click.Context, as_json: bool) -> None:
         return
     if not outcome.pushed:
         click.echo(f"Already up to date with the server ({_short(outcome.head)}).")
+        _echo_warnings(outcome.warnings)
         return
     kind = "full bundle" if outcome.full_bundle else "thin bundle"
     if outcome.retried_full:
@@ -4393,6 +4412,7 @@ def sync_push_cmd(ctx: click.Context, as_json: bool) -> None:
         f"({_short(outcome.server_head)}, {kind})."
     )
     _echo_ingest(outcome.ingest)
+    _echo_warnings(outcome.warnings)
 
 
 @sync_group.command(name="pull")

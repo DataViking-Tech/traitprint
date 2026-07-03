@@ -38,13 +38,19 @@ Cheap state probe (powers `--dry-run` and status output).
       {"entity_id": "<uuid>", "file": "stories/foo.md",
        "reason": "dangling reference: skill_ids[1] does not resolve"}
     ]
-  }
+  },
+  "warnings": [                      // latest push's proposal warnings (may be [])
+    {"file": "proposals/add-skill-x.json", "pointer": "/payload/proficiency",
+     "message": "payload.proficiency is required for add_skill",
+     "hint": "add_skill needs a non-empty proficiency."}
+  ]
 }
 ```
 
 `pending` means commits are accepted but not yet projected (ingest is
 asynchronous); `quarantined` means the projection is built but some
-entities are flagged disputed (see Server behavior).
+entities are flagged disputed (see Server behavior). `warnings` echoes the
+non-blocking proposal contract warnings from the latest push (see below).
 
 ### `POST /vault-git/push`
 
@@ -55,7 +61,7 @@ Body: a git bundle. Headers:
 | `X-Traitprint-Head` | client HEAD sha — the tip the bundle advances `main` to |
 
 ```
-200 → {"head": "<sha>", "ingest": {…}}        // ref advanced; ingest report
+200 → {"head": "<sha>", "ingest": {…}, "warnings": […]}  // ref advanced; ingest report + proposal warnings
 401 → token missing/expired
 409 → {"error": {…}, "server_head": "<sha>"}  // non-fast-forward; see Conflicts
 422 → {"error": {…}, "violations": […]}       // schema violation; ref NOT advanced
@@ -65,6 +71,22 @@ The server verifies the bundle is self-contained against its repo (all
 prerequisites present), that the bundle tip equals `X-Traitprint-Head`,
 and that the update is a **fast-forward** of `main`. The server never
 rewrites or merges history.
+
+#### Proposal warnings (non-blocking)
+
+Alongside the ref advance, the server validates each staged
+`proposals/*.json` at **contract level** — the kind is known, its payload
+keys are allowed for that kind, required add keys are present, and an
+`update_*`'s `target_id` would resolve at approval time ("would this apply
+if approved?"). Problems are returned as `warnings`, each shaped
+`{file, pointer, message, hint}` (the same shape as a 422 `violation`), and
+**never fail the push**: a malformed staged proposal is a reviewable
+artifact, not vault corruption, so blocking an entire vault push over one
+would be disproportionate — the reviewer (and `traitprint proposals
+validate`) still backstops. `warnings` is `[]` when every proposal is
+clean, and is **additive** (older servers omit it; clients treat absence as
+`[]`). The `traitprint sync push` CLI prints them; `GET /info` echoes the
+latest push's warnings.
 
 ### `GET /vault-git/fetch?since=<sha>`
 
