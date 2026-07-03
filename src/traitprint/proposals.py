@@ -149,7 +149,17 @@ _REQUIRED_ADD_KEYS: dict[str, tuple[str, ...]] = {
 }
 
 #: profile.json ``basics`` keys (JSON Resume-compatible subset).
-_PROFILE_BASICS_KEYS = ("name", "label", "summary", "email", "location")
+#: ``phone``, ``url`` and ``profiles`` are contract revision 1.3 (additive).
+_PROFILE_BASICS_KEYS = (
+    "name",
+    "label",
+    "summary",
+    "email",
+    "location",
+    "phone",
+    "url",
+    "profiles",
+)
 
 #: basics key -> ProfileSchema field.
 _BASICS_TO_PROFILE = {
@@ -158,7 +168,42 @@ _BASICS_TO_PROFILE = {
     "summary": "summary",
     "email": "contact_email",
     "location": "location",
+    "phone": "phone",
+    "url": "url",
+    "profiles": "profiles",
 }
+
+#: keys of one ``basics.profiles[]`` entry (JSON Resume profile item).
+_PROFILE_LINK_KEYS = ("network", "username", "url")
+
+
+def _profile_links_problems(value: Any) -> list[str]:
+    """Shape problems for a ``basics.profiles`` value (empty when valid)."""
+    if not isinstance(value, list):
+        return ["payload.basics.profiles: must be a JSON array"]
+    problems: list[str] = []
+    for i, entry in enumerate(value):
+        if not isinstance(entry, dict):
+            problems.append(f"payload.basics.profiles[{i}]: must be a JSON object")
+            continue
+        bad = [k for k in entry if k not in _PROFILE_LINK_KEYS]
+        if bad:
+            problems.append(
+                f"payload.basics.profiles[{i}]: keys outside the profile "
+                f"link shape: {', '.join(sorted(bad))}. Allowed keys: "
+                f"{', '.join(_PROFILE_LINK_KEYS)}"
+            )
+        network = entry.get("network")
+        if not isinstance(network, str) or not network.strip():
+            problems.append(
+                f"payload.basics.profiles[{i}].network: required non-empty string"
+            )
+        for key in ("username", "url"):
+            if key in entry and not isinstance(entry[key], str):
+                problems.append(
+                    f"payload.basics.profiles[{i}].{key}: must be a string"
+                )
+    return problems
 
 #: kind suffix -> vault section name.
 _KIND_SECTION = {
@@ -295,6 +340,8 @@ def validate_proposal_fields(
                     f"{', '.join(sorted(bad))}. Allowed keys: "
                     f"{', '.join(_PROFILE_BASICS_KEYS)}"
                 )
+            if "profiles" in basics:
+                problems.extend(_profile_links_problems(basics["profiles"]))
 
     if is_update_kind(kind):
         if target_id is None:
@@ -625,11 +672,19 @@ def _apply_profile(vault: VaultSchema, proposal: ProposalSchema) -> str:
             "payload.basics has keys outside the profile shape: "
             f"{', '.join(sorted(bad))}"
         )
+    link_problems = (
+        _profile_links_problems(basics["profiles"]) if "profiles" in basics else []
+    )
+    if link_problems:
+        raise ProposalApplyError("; ".join(link_problems))
     current = vault.profile.model_dump()
     changed: list[str] = []
     for key, value in basics.items():
         field_name = _BASICS_TO_PROFILE[key]
-        current[field_name] = "" if value is None else str(value)
+        if key == "profiles":
+            current[field_name] = [] if value is None else value
+        else:
+            current[field_name] = "" if value is None else str(value)
         changed.append(key)
     try:
         vault.profile = ProfileSchema.model_validate(current)

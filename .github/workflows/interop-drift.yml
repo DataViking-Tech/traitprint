@@ -1,0 +1,81 @@
+# Weekly drift watch over the vendored career-ops interop fixtures.
+#
+# Diffs the three pinned contract files (tests/fixtures/careerops/<tag>/)
+# against the same paths at the upstream LATEST release. On drift it opens
+# a GitHub issue (deduped by title) and fails the run loudly; a human — or
+# a session-start agent — converts that into tracked work: re-vendor at
+# the new tag and adjust the exporter/importer if the contract moved.
+
+name: interop-drift
+
+on:
+  schedule:
+    - cron: "17 6 * * 1" # weekly, Monday 06:17 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  UPSTREAM: santifer/career-ops
+  PINNED_TAG: career-ops-v1.16.0
+  CONTRACT_FILES: "match-star.mjs config/profile.example.yml templates/states.yml"
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve upstream latest release
+        id: upstream
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          latest=$(gh api "repos/${UPSTREAM}/releases/latest" --jq .tag_name)
+          echo "latest=${latest}" >> "$GITHUB_OUTPUT"
+          echo "Upstream latest release: ${latest} (pinned: ${PINNED_TAG})"
+
+      - name: Diff pinned contract files against upstream latest
+        id: diff
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LATEST: ${{ steps.upstream.outputs.latest }}
+        run: |
+          set -u
+          drifted=""
+          for f in $CONTRACT_FILES; do
+            vendored="tests/fixtures/careerops/${PINNED_TAG}/${f}"
+            if ! gh api "repos/${UPSTREAM}/contents/${f}?ref=${LATEST}" \
+                --jq .content 2>/dev/null | base64 -d > /tmp/upstream-file; then
+              echo "::warning::${f} missing at upstream ${LATEST}"
+              drifted="${drifted} ${f}(missing)"
+              continue
+            fi
+            if ! diff -q "$vendored" /tmp/upstream-file > /dev/null; then
+              echo "::warning::${f} drifted between ${PINNED_TAG} and ${LATEST}"
+              drifted="${drifted} ${f}"
+            fi
+          done
+          echo "drifted=${drifted}" >> "$GITHUB_OUTPUT"
+
+      - name: Open (or find) a drift issue and fail
+        if: steps.diff.outputs.drifted != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LATEST: ${{ steps.upstream.outputs.latest }}
+          DRIFTED: ${{ steps.diff.outputs.drifted }}
+        run: |
+          title="Interop contract drift: upstream ${LATEST} vs pinned ${PINNED_TAG}"
+          existing=$(gh issue list --state open --search "in:title \"${LATEST}\"" \
+            --json number --jq '.[0].number // empty')
+          if [ -z "$existing" ]; then
+            gh issue create --title "$title" --body "$(printf \
+              'The weekly interop drift watch found the pinned contract files diverging from the upstream latest release.\n\n- Upstream: %s\n- Latest release: %s\n- Pinned tag: %s\n- Drifted files:%s\n\nNext step: review the upstream changes, re-vendor tests/fixtures/careerops/ at the new tag, and adjust the career-bundle exporter / story-bank importer if the contract surface moved. See tests/fixtures/careerops/README.md.' \
+              "$UPSTREAM" "$LATEST" "$PINNED_TAG" "$DRIFTED")"
+          else
+            echo "Drift issue already open: #$existing"
+          fi
+          echo "::error::Interop contract drift detected:${DRIFTED}"
+          exit 1

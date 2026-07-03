@@ -1,0 +1,17 @@
+# Working-dir profile (fixture: canonical shape)
+candidate:
+  name: "Jordan Vance"
+  email: "jordan@example.com"
+  location: "Portland, OR"
+  # phone: ""
+
+narrative:
+  headline: "Data Platform Engineer"
+  summary: "Eight years building boring, reliable data platforms."
+
+target_roles:
+  archetypes:
+    - name: "Data Platform Lead"
+      fit: primary
+    - name: "Senior Data Engineer"
+      fit: secondary
