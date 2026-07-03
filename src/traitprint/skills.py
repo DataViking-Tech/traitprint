@@ -38,6 +38,7 @@ SKILL_NAMES = (
     "traitprint-draft-star-story",
     "traitprint-audit-coherence",
     "traitprint-import-resume",
+    "traitprint-capture-story",
 )
 
 

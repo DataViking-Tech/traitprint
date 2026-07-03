@@ -1,0 +1,47 @@
+name: Bug report
+description: Something in the CLI, MCP server, or vault format misbehaved.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. A minimal reproduction against a scratch vault
+        (`TRAITPRINT_VAULT_DIR=/tmp/tp-repro traitprint init`) makes fixes much faster.
+  - type: input
+    id: version
+    attributes:
+      label: Traitprint version
+      description: "`traitprint --version` (and Python version if relevant)."
+      placeholder: "traitprint 0.11.0 / Python 3.12"
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you run, what did you expect, what did you get instead?
+      placeholder: |
+        1. traitprint vault add-story ...
+        2. Expected ...
+        3. Got ...
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Output / traceback
+      description: Paste the full command output. Redact anything personal — vault content is your career data.
+      render: shell
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Surface
+      options:
+        - CLI
+        - MCP server (Claude Desktop / Cursor / other client)
+        - Agent Skills (SKILL.md workflows)
+        - Cloud sync (traitprint sync)
+        - Vault file format / git history
+        - Other
+    validations:
+      required: true
