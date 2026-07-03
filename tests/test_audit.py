@@ -3,15 +3,19 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
 from click.testing import CliRunner
 
 from traitprint.audit import (
+    STALE_DAYS_DEFAULT,
     STRONG_PROFICIENCY,
     Finding,
     audit_vault,
+    compute_phase,
+    freshness_findings,
     severity_rank,
     summarize,
 )
@@ -20,6 +24,7 @@ from traitprint.git_ops import commit, init_repo
 from traitprint.schema import (
     EducationSchema,
     ExperienceSchema,
+    LensSchema,
     PhilosophyCategory,
     PhilosophySchema,
     ProfileSchema,
@@ -316,6 +321,289 @@ class TestAuditVault:
         assert ranks == sorted(ranks, reverse=True)
 
 
+class TestPhaseAndFreshness:
+    """traitprint doctor internals: compute_phase + freshness findings."""
+
+    NOW = datetime(2026, 7, 2, 12, 0, tzinfo=timezone.utc)
+
+    def _aged(self, days: int) -> datetime:
+        return self.NOW - timedelta(days=days)
+
+    def _established_vault(self, age_days: int = 0) -> VaultSchema:
+        stamp = self._aged(age_days)
+        skills = [
+            SkillSchema(
+                name=f"Skill{i}",
+                category="technical",
+                proficiency=3,
+                created_at=stamp,
+                updated_at=stamp,
+            )
+            for i in range(5)
+        ]
+        exp = ExperienceSchema(
+            title="Staff Engineer",
+            company="Acme",
+            start_date="2020-01",
+            description="d",
+            created_at=stamp,
+            updated_at=stamp,
+        )
+        stories = [
+            _strong_story(title=f"Story {i}", created_at=stamp, updated_at=stamp)
+            for i in range(3)
+        ]
+        return VaultSchema(
+            profile=ProfileSchema(headline="h", summary="s"),
+            skills=skills,
+            experiences=[exp],
+            stories=stories,
+        )
+
+    def test_first_run_phase(self) -> None:
+        report = compute_phase(VaultSchema(), now=self.NOW)
+        assert report.phase == "first-run"
+        assert report.days_since_activity is None
+
+    def test_growing_phase_below_bar(self) -> None:
+        v = VaultSchema(
+            skills=[SkillSchema(name="Go", category="x", proficiency=3)],
+        )
+        assert compute_phase(v, now=self.NOW).phase == "growing"
+
+    def test_established_phase(self) -> None:
+        report = compute_phase(self._established_vault(age_days=10), now=self.NOW)
+        assert report.phase == "established"
+        assert report.days_since_activity == 10
+
+    def test_stale_phase_past_threshold(self) -> None:
+        report = compute_phase(self._established_vault(age_days=120), now=self.NOW)
+        assert report.phase == "stale"
+
+    def test_stale_threshold_configurable(self) -> None:
+        v = self._established_vault(age_days=40)
+        assert compute_phase(v, now=self.NOW).phase == "established"
+        assert compute_phase(v, stale_days=30, now=self.NOW).phase == "stale"
+
+    def test_phase_report_to_dict(self) -> None:
+        d = compute_phase(self._established_vault(), now=self.NOW).to_dict()
+        assert d["phase"] == "established"
+        assert d["counts"] == {"skills": 5, "experiences": 1, "stories": 3}
+
+    def test_stale_story_bank_aggregate_finding(self) -> None:
+        v = self._established_vault(age_days=120)
+        found = freshness_findings(v, now=self.NOW)
+        codes = {f.code for f in found}
+        assert "vault.stale_stories" in codes
+        f = next(f for f in found if f.code == "vault.stale_stories")
+        assert f.severity == "minor"
+        assert f.fix_skill == "traitprint-capture-story"
+        # Aggregate: exactly one finding regardless of story count.
+        assert sum(1 for x in found if x.code == "vault.stale_stories") == 1
+
+    def test_current_experience_stale(self) -> None:
+        v = self._established_vault(age_days=120)
+        # end_date empty -> current role.
+        found = freshness_findings(v, now=self.NOW)
+        f = next(f for f in found if f.code == "experience.current_stale")
+        assert f.fix_skill == "traitprint-fill-vault"
+        assert f.item_id == str(v.experiences[0].id)
+
+    def test_ended_experience_not_flagged_stale(self) -> None:
+        v = self._established_vault(age_days=120)
+        v.experiences[0].end_date = "2024-06"
+        codes = {f.code for f in freshness_findings(v, now=self.NOW)}
+        assert "experience.current_stale" not in codes
+
+    def test_strong_skill_with_only_stale_evidence(self) -> None:
+        v = self._established_vault(age_days=120)
+        v.skills[0].proficiency = 5
+        v.stories[0].skill_ids = [v.skills[0].id]
+        found = freshness_findings(v, now=self.NOW)
+        f = next(f for f in found if f.code == "skill.stale_evidence")
+        assert f.fix_skill == "traitprint-mine-story-gaps"
+
+    def test_fresh_evidence_not_flagged(self) -> None:
+        v = self._established_vault(age_days=120)
+        v.skills[0].proficiency = 5
+        fresh_story = _strong_story(
+            title="Fresh",
+            skill_ids=[v.skills[0].id],
+            created_at=self._aged(5),
+            updated_at=self._aged(5),
+        )
+        v.stories.append(fresh_story)
+        codes = {f.code for f in freshness_findings(v, now=self.NOW)}
+        assert "skill.stale_evidence" not in codes
+
+    def test_skill_without_evidence_not_double_flagged(self) -> None:
+        # No evidence at all is skill.unsupported_strength's job.
+        v = self._established_vault(age_days=120)
+        v.skills[0].proficiency = 5
+        codes = {f.code for f in freshness_findings(v, now=self.NOW)}
+        assert "skill.stale_evidence" not in codes
+
+    def test_lens_draft_signature_story(self) -> None:
+        v = self._established_vault()
+        draft = StorySchema(title="Thin", situation="short one")
+        v.stories.append(draft)
+        v.lenses = [
+            LensSchema(
+                slug="data-lead",
+                name="Data Lead",
+                signature_story_ids=[draft.id],
+            )
+        ]
+        found = freshness_findings(v, now=self.NOW)
+        f = next(f for f in found if f.code == "lens.draft_signature")
+        assert f.fix_skill == "traitprint-draft-star-story"
+        assert f.related_id == str(draft.id)
+
+    def test_fresh_vault_has_no_freshness_findings(self) -> None:
+        assert freshness_findings(
+            self._established_vault(age_days=1), now=self.NOW
+        ) == []
+
+    def test_audit_vault_includes_freshness(self) -> None:
+        v = self._established_vault(age_days=120)
+        report = audit_vault(v, now=self.NOW)
+        codes = {f.code for f in report.findings}
+        assert "vault.stale_stories" in codes
+
+    def test_finding_to_dict_carries_fix_skill(self) -> None:
+        v = self._established_vault(age_days=120)
+        f = next(
+            x
+            for x in freshness_findings(v, now=self.NOW)
+            if x.code == "vault.stale_stories"
+        )
+        assert f.to_dict()["fix_skill"] == "traitprint-capture-story"
+        assert STALE_DAYS_DEFAULT == 90
+
+
+class TestStyleLint:
+    """Warning-only style findings (story.buzzword, experience.weak_bullet,
+    story.polished_no_lesson) — all at minor severity."""
+
+    def test_buzzword_flagged(self) -> None:
+        v = _coherent_vault()
+        v.stories[0].action = (
+            "I leveraged synergy as a rockstar thought leader to move the needle."
+        )
+        report = audit_vault(v)
+        found = [f for f in report.findings if f.code == "story.buzzword"]
+        assert len(found) == 1
+        assert found[0].severity == "minor"
+        assert "'leveraged'" in found[0].message
+        assert found[0].item_id == str(v.stories[0].id)
+
+    def test_clean_story_not_flagged_for_buzzwords(self) -> None:
+        assert "story.buzzword" not in _codes(_coherent_vault())
+
+    def test_weak_bullet_vague_phrasing(self) -> None:
+        v = _coherent_vault()
+        v.experiences[0].accomplishments = [
+            "Responsible for maintaining various stuff",
+            "Migrated 12 services to Kubernetes, cutting deploy time 40 percent",
+        ]
+        report = audit_vault(v)
+        found = [f for f in report.findings if f.code == "experience.weak_bullet"]
+        assert len(found) == 1
+        assert found[0].severity == "minor"
+        assert "1 of 2" in found[0].message
+        assert "vague phrasing" in found[0].message
+
+    def test_weak_bullet_no_lead_verb(self) -> None:
+        v = _coherent_vault()
+        v.experiences[0].accomplishments = ["Was part of the platform team"]
+        report = audit_vault(v)
+        found = [f for f in report.findings if f.code == "experience.weak_bullet"]
+        assert len(found) == 1
+        assert "active verb" in found[0].message
+
+    def test_weak_bullet_no_metric_or_tool(self) -> None:
+        v = _coherent_vault()
+        v.experiences[0].accomplishments = ["Improved the pipeline reliability"]
+        report = audit_vault(v)
+        found = [f for f in report.findings if f.code == "experience.weak_bullet"]
+        assert len(found) == 1
+        assert "no metric or concrete tool" in found[0].message
+
+    def test_strong_bullets_not_flagged(self) -> None:
+        v = _coherent_vault()
+        v.experiences[0].accomplishments = [
+            "Migrated 12 services to Kubernetes, cutting deploy time 40 percent",
+            "Cut warehouse spend 45 percent by moving to BigQuery",
+            "Led a team of 6 engineers",
+        ]
+        assert "experience.weak_bullet" not in _codes(v)
+
+    @staticmethod
+    def _polished_vault() -> VaultSchema:
+        """A vault whose story genuinely scores Polished (verified: strong
+        causal overlap, metrics, active language, substantial fields)."""
+        v = _coherent_vault()
+        story = v.stories[0]
+        story.situation = (
+            "Our Redshift warehouse costs were ballooning every month as "
+            "pipeline volume grew quickly."
+        )
+        story.task = (
+            "I needed to migrate the warehouse pipelines to BigQuery "
+            "without any downtime for analysts."
+        )
+        story.action = (
+            "I migrated the warehouse pipelines to BigQuery using "
+            "dual-writes and verified downtime stayed zero."
+        )
+        story.result = (
+            "The migrated warehouse pipelines cut BigQuery costs 45 percent "
+            "with zero downtime across six weeks."
+        )
+        return v
+
+    def test_polished_story_without_lesson_flagged(self) -> None:
+        v = self._polished_vault()
+        report = audit_vault(v)
+        labels = {s.story_id: s.label for s in report.story_scores}
+        assert labels[str(v.stories[0].id)] == "Polished"
+        found = [
+            f for f in report.findings if f.code == "story.polished_no_lesson"
+        ]
+        assert len(found) == 1
+        assert found[0].severity == "minor"
+
+    def test_polished_story_with_lesson_not_flagged(self) -> None:
+        v = self._polished_vault()
+        v.stories[0].lesson = "Dual-writes made the cutover boring — repeat that."
+        assert "story.polished_no_lesson" not in _codes(v)
+
+    def test_non_polished_story_without_lesson_not_flagged(self) -> None:
+        # The fixture story scores Strong, not Polished — no lesson nag.
+        assert "story.polished_no_lesson" not in _codes(_coherent_vault())
+
+    def test_style_findings_never_exceed_minor(self) -> None:
+        v = _coherent_vault()
+        v.stories[0].action = "I leveraged synergy to hit the ground running."
+        v.experiences[0].accomplishments = ["Responsible for stuff"]
+        report = audit_vault(v)
+        style_codes = {
+            "story.buzzword",
+            "experience.weak_bullet",
+            "story.polished_no_lesson",
+        }
+        for finding in report.findings:
+            if finding.code in style_codes:
+                assert finding.severity == "minor"
+
+    def test_no_brand_name_in_messages(self) -> None:
+        v = _coherent_vault()
+        v.stories[0].action = "I leveraged synergy."
+        v.experiences[0].accomplishments = ["Responsible for stuff"]
+        for finding in audit_vault(v).findings:
+            assert "career-ops" not in finding.message.lower()
+
+
 class TestSummarize:
     def test_counts(self) -> None:
         findings = [
@@ -346,6 +634,61 @@ def _seed(tmp_path: Path, vault: VaultSchema) -> Path:
     store.save(vault)
     commit(d, "seed")
     return d
+
+
+class TestDoctorCLI:
+    def test_no_vault(self, runner: CliRunner, tmp_path: Path) -> None:
+        result = runner.invoke(cli, ["--path", str(tmp_path / "x"), "doctor"])
+        assert result.exit_code == 0
+        assert "No vault found" in result.output
+
+    def test_reports_phase_and_next_step(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        d = _seed(tmp_path, _coherent_vault())
+        result = runner.invoke(cli, ["--path", str(d), "doctor"])
+        assert result.exit_code == 0, result.output
+        assert "Vault phase: growing" in result.output
+        assert "Next:" in result.output
+        assert "No staleness detected" in result.output
+
+    def test_json_shape(self, runner: CliRunner, tmp_path: Path) -> None:
+        d = _seed(tmp_path, _coherent_vault())
+        result = runner.invoke(cli, ["--path", str(d), "doctor", "--json"])
+        assert result.exit_code == 0
+        payload = json.loads(result.output)
+        assert payload["phase"]["phase"] == "growing"
+        assert payload["stale_days"] == STALE_DAYS_DEFAULT
+        assert payload["findings"] == []
+        assert "next" in payload
+
+    def test_stale_days_flag(self, runner: CliRunner, tmp_path: Path) -> None:
+        # With a 1-day threshold even a just-seeded vault's current role is
+        # fresh; use a story-less current-role vault aged by construction —
+        # simplest deterministic path: assert the flag is accepted and echoed
+        # through the JSON payload.
+        d = _seed(tmp_path, _coherent_vault())
+        result = runner.invoke(
+            cli, ["--path", str(d), "doctor", "--json", "--stale-days", "7"]
+        )
+        payload = json.loads(result.output)
+        assert payload["stale_days"] == 7
+
+    def test_first_run_phase_on_empty_vault(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        d = _seed(tmp_path, VaultSchema())
+        result = runner.invoke(cli, ["--path", str(d), "doctor"])
+        assert "Vault phase: first-run" in result.output
+        assert "import-resume" in result.output
+
+    def test_vault_show_surfaces_phase(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        d = _seed(tmp_path, _coherent_vault())
+        result = runner.invoke(cli, ["--path", str(d), "vault", "show"])
+        assert result.exit_code == 0
+        assert "Phase: growing" in result.output
 
 
 class TestAuditCLI:

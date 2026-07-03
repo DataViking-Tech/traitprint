@@ -21,7 +21,7 @@ from traitprint.proposals import (
     LoadedProposal,
     ProposalFileIssue,
 )
-from traitprint.schema import PhilosophyCategory, VaultSchema
+from traitprint.schema import PhilosophyCategory, ProfileLink, VaultSchema
 from traitprint.taxonomy import find_exact, suggest_matches
 from traitprint.vault import DuplicateSkillError, VaultStore
 
@@ -230,6 +230,8 @@ def vault_show(ctx: click.Context, verbose: bool, as_json: bool) -> None:
 
 def _render_vault_summary(v: VaultSchema) -> None:
     """Render a concise summary of the vault — git-status style."""
+    from traitprint.audit import compute_phase, freshness_findings
+
     # Profile header
     p = v.profile
     if p.display_name or p.headline:
@@ -241,6 +243,16 @@ def _render_vault_summary(v: VaultSchema) -> None:
         click.echo(f"Location: {p.location}")
     if p.display_name or p.headline or p.location:
         click.echo("")
+
+    # Phase + top staleness flags (see 'traitprint doctor' for the full view)
+    phase = compute_phase(v)
+    click.echo(f"Phase: {phase.phase} — {phase.reason}")
+    stale = freshness_findings(v)
+    for f in stale[:2]:
+        click.echo(f"  ! {f.message}")
+    if len(stale) > 2:
+        click.echo(f"  ... {len(stale) - 2} more — run 'traitprint doctor'.")
+    click.echo("")
 
     # Skills: top 5 by proficiency
     click.echo(f"Skills ({len(v.skills)}):")
@@ -507,6 +519,18 @@ def vault_list(ctx: click.Context, section: str, as_json: bool) -> None:
 @click.option("--summary", default=None, help="Longer professional summary.")
 @click.option("--location", default=None, help="Location (e.g. city, country).")
 @click.option("--email", "contact_email", default=None, help="Contact email.")
+@click.option("--phone", default=None, help="Contact phone number.")
+@click.option("--url", default=None, help="Personal website / portfolio URL.")
+@click.option(
+    "--link",
+    "links",
+    multiple=True,
+    help=(
+        "Profile link as NETWORK=URL (e.g. linkedin=https://linkedin.com/in/x). "
+        "Repeatable; passing any --link replaces the whole list. "
+        "A single --link '' clears it."
+    ),
+)
 @click.pass_context
 def vault_set_profile(
     ctx: click.Context,
@@ -515,6 +539,9 @@ def vault_set_profile(
     summary: str | None,
     location: str | None,
     contact_email: str | None,
+    phone: str | None,
+    url: str | None,
+    links: tuple[str, ...],
 ) -> None:
     """Set profile fields on the vault.
 
@@ -526,15 +553,45 @@ def vault_set_profile(
         click.echo("No vault found. Run 'traitprint init' first.")
         return
 
-    if all(
-        v is None for v in (display_name, headline, summary, location, contact_email)
+    if (
+        all(
+            v is None
+            for v in (
+                display_name,
+                headline,
+                summary,
+                location,
+                contact_email,
+                phone,
+                url,
+            )
+        )
+        and not links
     ):
         click.echo(
             "No fields provided. Pass at least one of "
-            "--name, --headline, --summary, --location, --email."
+            "--name, --headline, --summary, --location, --email, "
+            "--phone, --url, --link."
         )
         ctx.exit(1)
         return
+
+    profiles: list[ProfileLink] | None = None
+    if links:
+        profiles = []
+        if links != ("",):
+            for raw in links:
+                network, sep, link_url = raw.partition("=")
+                if not sep or not network.strip() or not link_url.strip():
+                    click.echo(
+                        f"Invalid --link {raw!r}: expected NETWORK=URL "
+                        "(e.g. github=https://github.com/x)."
+                    )
+                    ctx.exit(1)
+                    return
+                profiles.append(
+                    ProfileLink(network=network.strip(), url=link_url.strip())
+                )
 
     profile = store.set_profile(
         display_name=display_name,
@@ -542,6 +599,9 @@ def vault_set_profile(
         summary=summary,
         location=location,
         contact_email=contact_email,
+        phone=phone,
+        url=url,
+        profiles=profiles,
     )
     click.echo("Updated profile:")
     click.echo(f"  display_name:  {profile.display_name}")
@@ -549,6 +609,12 @@ def vault_set_profile(
     click.echo(f"  summary:       {profile.summary}")
     click.echo(f"  location:      {profile.location}")
     click.echo(f"  contact_email: {profile.contact_email}")
+    click.echo(f"  phone:         {profile.phone}")
+    click.echo(f"  url:           {profile.url}")
+    if profile.profiles:
+        click.echo("  links:")
+        for link in profile.profiles:
+            click.echo(f"    {link.network}: {link.url or link.username}")
 
 
 # --- vault add-skill ---
@@ -1556,6 +1622,7 @@ _EXPORT_FORMAT_CHOICES = [
     "jsonresume",
     "json-resume",
     "synthpanel-persona",
+    "career-bundle",
 ]
 
 
@@ -1599,18 +1666,53 @@ def _normalize_export_format(
     default=None,
     help="Override the pack name (synthpanel-persona only).",
 )
+@click.option(
+    "--lens",
+    "lens_ref",
+    default=None,
+    help=(
+        "Project cv.md through a positioning lens, by slug or id "
+        "(career-bundle only)."
+    ),
+)
+@click.option(
+    "--zip",
+    "as_zip",
+    is_flag=True,
+    default=False,
+    help=(
+        "Write the bundle as a single .zip archive instead of a directory "
+        "(career-bundle only; -o names the archive)."
+    ),
+)
 @click.pass_context
 def vault_export(
-    ctx: click.Context, fmt: str, output: str | None, pack_name: str | None
+    ctx: click.Context,
+    fmt: str,
+    output: str | None,
+    pack_name: str | None,
+    lens_ref: str | None,
+    as_zip: bool,
 ) -> None:
-    """Export the vault as JSON, Markdown, JSON Resume, or a SynthPanel persona."""
-    from traitprint.export import export_vault
+    """Export the vault as JSON, Markdown, JSON Resume, a SynthPanel
+    persona, or a multi-file career bundle (``-f career-bundle``,
+    requires ``-o DIR`` or ``--zip``)."""
+    from traitprint.export import BUNDLE_FORMATS, export_vault
 
     store = _get_store(ctx)
     if not store.exists():
         click.echo("No vault found. Run 'traitprint init' first.")
         return
     v = store.load()
+
+    if fmt in BUNDLE_FORMATS:
+        _export_bundle(ctx, v, fmt, output, lens_ref, as_zip)
+        return
+    if lens_ref is not None or as_zip:
+        click.echo("--lens and --zip are only supported with -f career-bundle.")
+        ctx.exit(2)
+        return
+
     rendered = export_vault(v, fmt, pack_name=pack_name)
     if output:
         from pathlib import Path
@@ -1619,6 +1721,194 @@ def vault_export(
         click.echo(f"Wrote {fmt} export to {output}")
     else:
         click.echo(rendered, nl=False)
+
+
+def _export_bundle(
+    ctx: click.Context,
+    v: VaultSchema,
+    fmt: str,
+    output: str | None,
+    lens_ref: str | None,
+    as_zip: bool,
+) -> None:
+    """Write a multi-file bundle to a directory or a .zip archive."""
+    import zipfile
+    from pathlib import Path
+
+    from traitprint.export import export_vault_bundle
+
+    if not output:
+        click.echo(
+            f"-f {fmt} writes multiple files — pass -o DIR "
+            "(or -o FILE.zip with --zip)."
+        )
+        ctx.exit(2)
+        return
+
+    lens = None
+    if lens_ref is not None:
+        ref = lens_ref.strip().lower()
+        lens = next(
+            (
+                lns
+                for lns in v.lenses
+                if lns.slug == ref or str(lns.id) == ref or lns.id.hex[:8] == ref
+            ),
+            None,
+        )
+        if lens is None:
+            available = ", ".join(lns.slug for lns in v.lenses) or "none"
+            click.echo(f"No lens matches {lens_ref!r}. Available: {available}.")
+            ctx.exit(1)
+            return
+
+    bundle = export_vault_bundle(v, fmt, lens=lens)
+
+    out = Path(output)
+    if as_zip or out.suffix == ".zip":
+        out.parent.mkdir(parents=True, exist_ok=True)
+        with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as zf:
+            for rel, content in bundle.items():
+                zf.writestr(rel, content)
+        click.echo(f"Wrote {fmt} bundle ({len(bundle)} files) to {out}")
+        return
+
+    for rel, content in bundle.items():
+        target = out / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content, encoding="utf-8")
+        click.echo(f"  {rel}")
+    click.echo(f"Wrote {fmt} bundle ({len(bundle)} files) to {out}/")
+
+
+# --- vault import-story-bank ---
+
+
+@vault.command(name="import-story-bank")
+@click.argument("directory", type=click.Path(exists=True, file_okay=False))
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    default=False,
+    help="Parse and report what would be staged without writing proposals.",
+)
+@click.option(
+    "--json",
+    "as_json",
+    is_flag=True,
+    default=False,
+    help="Emit the plan/result as JSON.",
+)
+@click.pass_context
+def vault_import_story_bank(
+    ctx: click.Context, directory: str, dry_run: bool, as_json: bool
+) -> None:
+    """Import a job-search working directory as pending proposals.
+
+    Detects the config/profile.yml + interview-prep/*.md layout by shape
+    and stages one add_story proposal per STAR block plus one
+    update_profile proposal — nothing is written to the vault until you
+    approve ('traitprint proposals list'). A cv.md is not parsed here:
+    run 'traitprint vault import-resume <dir>/cv.md --propose' for it.
+    """
+    from pathlib import Path
+
+    from traitprint.importers.story_bank import IMPORT_SOURCE, detect_and_plan
+    from traitprint.proposals import ProposalStore, ProposalValidationError
+
+    store = _get_store(ctx)
+    if not store.exists():
+        click.echo("No vault found. Run 'traitprint init' first.")
+        return
+    vault_doc = store.load()
+
+    try:
+        plan = detect_and_plan(Path(directory), vault_doc)
+    except ValueError as exc:
+        click.echo(str(exc))
+        ctx.exit(1)
+        return
+
+    if as_json and dry_run:
+        click.echo(
+            json.dumps(
+                {
+                    "stories": [payload for _, payload in plan.stories],
+                    "profile": plan.profile_payload,
+                    "has_cv": plan.has_cv,
+                },
+                indent=2,
+            )
+        )
+        return
+
+    staged = 0
+    errors = 0
+    results: list[dict[str, object]] = []
+    proposals_store = ProposalStore(store.directory)
+
+    for parsed, payload in plan.stories:
+        if dry_run:
+            click.echo(f"[plan] add_story: {parsed.title} (from {parsed.origin})")
+            continue
+        try:
+            lp = proposals_store.create(
+                "add_story",
+                payload,
+                rationale=f"Imported from {parsed.origin or 'story bank'}",
+                source=IMPORT_SOURCE,
+            )
+            staged += 1
+            results.append({"kind": "add_story", "id": str(lp.proposal.id)})
+            click.echo(f"[ok] add_story: {parsed.title} [{lp.proposal.id.hex[:8]}]")
+        except ProposalValidationError as exc:
+            errors += 1
+            click.echo(f"[err] add_story: {parsed.title}: {exc}")
+
+    if plan.profile_payload is not None:
+        if dry_run:
+            keys = ", ".join(sorted(plan.profile_payload["basics"]))
+            click.echo(f"[plan] update_profile: {keys}")
+        else:
+            try:
+                lp = proposals_store.create(
+                    "update_profile",
+                    plan.profile_payload,
+                    rationale=plan.profile_rationale,
+                    source=IMPORT_SOURCE,
+                )
+                staged += 1
+                results.append(
+                    {"kind": "update_profile", "id": str(lp.proposal.id)}
+                )
+                click.echo(f"[ok] update_profile [{lp.proposal.id.hex[:8]}]")
+            except ProposalValidationError as exc:
+                errors += 1
+                click.echo(f"[err] update_profile: {exc}")
+
+    if plan.has_cv:
+        click.echo(
+            "Found cv.md — import it with "
+            f"'traitprint vault import-resume {directory}/cv.md --propose'."
+        )
+
+    if dry_run:
+        click.echo(
+            f"Dry run: {len(plan.stories)} story proposal(s) and "
+            f"{1 if plan.profile_payload else 0} profile proposal(s) "
+            "would be staged."
+        )
+        return
+
+    if as_json:
+        click.echo(json.dumps({"staged": results, "errors": errors}, indent=2))
+    else:
+        click.echo(
+            f"Summary: staged {staged}, errors {errors}. Review with "
+            "'traitprint proposals list'."
+        )
+    if errors:
+        ctx.exit(1)
 
 
 # --- vault history ---
@@ -1929,6 +2219,102 @@ def vault_audit(
 
     if strict and (summary["critical"] or summary["major"]):
         ctx.exit(1)
+
+
+# --- doctor (vault phase + freshness) ---
+
+
+_PHASE_NEXT_STEP = {
+    "first-run": (
+        "Bootstrap the vault: 'traitprint vault import-resume <file>' or "
+        "the traitprint-fill-vault skill."
+    ),
+    "growing": (
+        "Round it out with the traitprint-fill-vault and "
+        "traitprint-mine-story-gaps skills."
+    ),
+    "established": (
+        "Keep it fresh opportunistically with the traitprint-capture-story "
+        "skill."
+    ),
+    "stale": (
+        "Refresh current roles with traitprint-fill-vault and capture "
+        "recent wins with traitprint-capture-story."
+    ),
+}
+
+
+@cli.command(name="doctor")
+@click.option(
+    "--json",
+    "as_json",
+    is_flag=True,
+    default=False,
+    help="Emit {phase, stale_days, findings, next} as JSON.",
+)
+@click.option(
+    "--stale-days",
+    type=click.IntRange(min=1),
+    default=None,
+    help="Days without a touch before content counts as stale (default 90).",
+)
+@click.pass_context
+def doctor(ctx: click.Context, as_json: bool, stale_days: int | None) -> None:
+    """Vault phase detection + freshness audit.
+
+    Classifies the vault (first-run | growing | established | stale) from
+    deterministic date math and reports what has gone stale — each finding
+    names the Agent Skill that fixes it. Read-only; for the full coherence
+    audit use 'traitprint vault audit'.
+    """
+    from traitprint.audit import (
+        STALE_DAYS_DEFAULT,
+        compute_phase,
+        freshness_findings,
+    )
+
+    store = _get_store(ctx)
+    if not store.exists():
+        click.echo("No vault found. Run 'traitprint init' first.")
+        return
+
+    days = stale_days if stale_days is not None else STALE_DAYS_DEFAULT
+    vault = store.load()
+    phase = compute_phase(vault, stale_days=days)
+    findings = freshness_findings(vault, stale_days=days)
+    next_step = _PHASE_NEXT_STEP[phase.phase]
+
+    if as_json:
+        click.echo(
+            json.dumps(
+                {
+                    "phase": phase.to_dict(),
+                    "stale_days": days,
+                    "findings": [f.to_dict() for f in findings],
+                    "next": next_step,
+                },
+                indent=2,
+            )
+        )
+        return
+
+    click.echo(f"Vault phase: {phase.phase}")
+    click.echo(f"  {phase.reason}")
+    click.echo(
+        f"  skills {phase.skills} · experiences {phase.experiences} · "
+        f"stories {phase.stories}"
+    )
+    click.echo("")
+    if findings:
+        click.echo("Freshness:")
+        for f in findings:
+            click.echo(f"  [{f.severity}] {f.section}: {f.message}")
+            if f.fix_skill:
+                click.echo(f"          fix: {f.fix_skill}")
+    else:
+        click.echo(f"No staleness detected (threshold {days} days). ✨")
+    click.echo("")
+    click.echo(f"Next: {next_step}")
 
 
 # --- vault extract-text ---
@@ -2658,14 +3044,30 @@ def proposals_add(
 @click.option(
     "--output",
     "-o",
-    type=click.Path(dir_okay=False, writable=True),
+    type=click.Path(),
     default=None,
-    help="Write to file instead of stdout.",
+    help="Write to file (or, for career-bundle, a directory) instead of stdout.",
 )
 @click.option(
     "--pack-name",
     default=None,
     help="Override the pack name (synthpanel-persona only).",
+)
+@click.option(
+    "--lens",
+    "lens_ref",
+    default=None,
+    help=(
+        "Project cv.md through a positioning lens, by slug or id "
+        "(career-bundle only)."
+    ),
+)
+@click.option(
+    "--zip",
+    "as_zip",
+    is_flag=True,
+    default=False,
+    help="Write the bundle as a single .zip archive (career-bundle only).",
 )
 @click.pass_context
 def export_cmd(
@@ -2673,6 +3075,8 @@ def export_cmd(
     fmt: str,
     output: str | None,
     pack_name: str | None,
+    lens_ref: str | None,
+    as_zip: bool,
 ) -> None:
     """Export the vault in a format consumable by other tools.
 
@@ -2680,7 +3084,14 @@ def export_cmd(
     emits a SynthPanel persona pack (YAML) that can be fed directly to
     ``synthpanel panel run --personas <file>``.
     """
-    ctx.invoke(vault_export, fmt=fmt, output=output, pack_name=pack_name)
+    ctx.invoke(
+        vault_export,
+        fmt=fmt,
+        output=output,
+        pack_name=pack_name,
+        lens_ref=lens_ref,
+        as_zip=as_zip,
+    )
 
 
 # --- mcp-serve ---

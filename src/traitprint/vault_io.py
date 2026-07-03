@@ -215,17 +215,22 @@ def _json_doc(payload: Any) -> str:
 
 
 def _profile_doc(profile: ProfileSchema) -> str:
-    return _json_doc(
-        {
-            "basics": {
-                "name": profile.display_name,
-                "label": profile.headline,
-                "summary": profile.summary,
-                "email": profile.contact_email,
-                "location": profile.location,
-            }
-        }
-    )
+    basics: dict[str, Any] = {
+        "name": profile.display_name,
+        "label": profile.headline,
+        "summary": profile.summary,
+        "email": profile.contact_email,
+        "location": profile.location,
+    }
+    # Revision 1.3 keys are omitted while empty so pre-1.3 vaults
+    # round-trip byte-identically (same rule as experience skill_links).
+    if profile.phone:
+        basics["phone"] = profile.phone
+    if profile.url:
+        basics["url"] = profile.url
+    if profile.profiles:
+        basics["profiles"] = [p.model_dump(mode="json") for p in profile.profiles]
+    return _json_doc({"basics": basics})
 
 
 def _frontmatter(item: Any, keys: tuple[str, ...]) -> dict[str, Any]:
@@ -430,6 +435,9 @@ def read_vault_tree(directory: Path) -> VaultSchema:
             summary=str(basics.get("summary") or ""),
             contact_email=str(basics.get("email") or ""),
             location=str(basics.get("location") or ""),
+            phone=str(basics.get("phone") or ""),
+            url=str(basics.get("url") or ""),
+            profiles=basics.get("profiles") or [],
         )
 
     skills: list[SkillSchema] = []
