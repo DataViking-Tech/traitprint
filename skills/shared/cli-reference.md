@@ -121,6 +121,39 @@ traitprint vault import-resume FILE       # resolution order: --provider flag ->
                                           # pending proposals instead of writing
 ```
 
+### Positioning lenses (`vault lens` — config-like, non-factual)
+
+A **lens** is a named, non-destructive projection over the one vault: it
+selects, orders, and re-weights existing content (plus optional
+headline/bio overrides) so the same grounded facts read differently for a
+target role. A lens never asserts a fact absent from the vault. The vault
+holds **at most 5 lenses**; the slug `none` is reserved (it is the
+canonical-rendering escape hatch on the read tools). Because lenses are
+config-like and non-factual, the CLI edits them directly (each write
+auto-commits) — over the hosted MCP server the same edits are staged with
+`vault_propose` (`add_lens`/`update_lens`) instead.
+
+```bash
+traitprint vault lens add --slug SLUG --name "..."          # slug: lowercase kebab-case
+  # optional: --headline-override "..." --bio-override "..."
+  #           --target-archetype "..."        (repeatable)
+  #           --signature-experience <UUID>   (repeatable, in display order)
+  #           --signature-story <UUID>        (repeatable, in display order)
+  #           --salience <SKILL_UUID>=LEVEL   (repeatable; LEVEL: core|supporting|suppressed)
+  #           --default                        (make it the default lens)
+traitprint vault lens update LENS [same optional flags]     # edit in place
+traitprint vault lens set-default LENS                      # make LENS the sole default
+traitprint vault lens remove LENS -y                        # delete
+```
+
+`LENS` resolves by slug, full UUID, or 8-hex id prefix (the prefix is
+CLI-only convenience; the MCP tools and store use the strict slug / full-id
+grammar). `vault lens add` and `vault lens update` also accept
+`--from-json` (a JSON array of lens objects; each `update` item carries a
+`ref`) for batch input. Read lenses with `traitprint vault show` (or the
+`vault_lens_list` / `vault_lens_get` MCP tools). Unspecified skills default
+to `supporting` salience — only name the exceptions.
+
 ### Proposals (staged writes — the user approves, never you)
 
 `proposals/*.json` are staged writes awaiting review. Stage changes with
@@ -231,3 +264,12 @@ Output is one `[ok]` / `[dup]` / `[err]` line per item plus
    batch of writes and address (or report) what it finds. The audit is the
    vault's CI: dangling references, unsupported strong skills, broken
    stories, and story-less roles all surface there.
+5. **A lens is emphasis, never invention.** A positioning lens may only
+   select, order, and re-weight facts already in the vault (plus reframe the
+   headline/bio) — it must never introduce a title, metric, skill, or story
+   the vault can't back. If a desired framing needs a missing fact, add that
+   fact first (as a proposal the user approves), then let the lens surface
+   it. The 5-lens cap and the reserved `none` slug are enforced at every
+   write surface (CLI, proposal apply, cloud ingest); a lens whose signature
+   or salience reference points at a deleted entity is not a parse error —
+   it surfaces as `disputed`, so repair or drop the stale reference.

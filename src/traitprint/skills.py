@@ -40,6 +40,7 @@ SKILL_NAMES = (
     "traitprint-import-resume",
     "traitprint-capture-story",
     "traitprint-agent-vault-sync",
+    "traitprint-position-lens",
 )
 
 

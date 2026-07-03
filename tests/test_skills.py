@@ -42,6 +42,7 @@ PROMPT_TO_SKILL = {
     "discover_skills": "traitprint-discover-skills",
     "draft_star_story": "traitprint-draft-star-story",
     "audit_coherence": "traitprint-audit-coherence",
+    "position_lens": "traitprint-position-lens",
 }
 
 
@@ -277,3 +278,47 @@ class TestExternalToolSyncDocsPage:
         text = SYNC_DOCS_PAGE.read_text(encoding="utf-8")
         assert "nominative" in text
         assert "MIT" in text
+
+
+# ── (f) The positioning-lens skill + MCP prompt (Phase 9 / Q9) ───────
+
+LENS_SKILL = "traitprint-position-lens"
+
+
+class TestPositionLensSkill:
+    """The lens-curation workflow pack and its MCP prompt wrapper."""
+
+    def test_registered_and_loadable(self) -> None:
+        assert LENS_SKILL in SKILL_NAMES
+        fm, body = load_skill(LENS_SKILL)
+        assert fm["name"] == LENS_SKILL
+        assert body.strip()
+
+    def test_prompt_serves_the_live_lens_body(self, store: VaultStore) -> None:
+        # The MCP `position_lens` prompt is a thin wrapper over the SKILL.md,
+        # so the served text must contain the canonical skill body verbatim.
+        server = create_server(store)
+        got = asyncio.run(server.get_prompt("position_lens", {}))
+        text = got.messages[0].content.text  # type: ignore[union-attr]
+        assert text.strip()
+        assert skill_body(LENS_SKILL) in text
+
+    def test_teaches_the_curation_workflow(self) -> None:
+        body = skill_body(LENS_SKILL)
+        # salience discipline (the 3-level vocabulary)
+        assert "core" in body
+        assert "supporting" in body
+        assert "suppressed" in body
+        # the cap and the reserved keyword
+        assert "5 lenses" in body or "five lenses" in body
+        # override rule — a lens never invents a fact
+        assert "never" in body.lower()
+        # the CLI write surface
+        assert "traitprint vault lens add" in body
+        assert "traitprint vault lens set-default" in body
+
+    def test_writes_route_through_staged_machinery(self) -> None:
+        body = skill_body(LENS_SKILL)
+        # local: direct CLI; cloud: staged via vault_propose (never direct)
+        assert "vault_propose" in body
+        assert "add_lens" in body

@@ -324,6 +324,31 @@ class TestCliBundleExport:
         cv = (out / "cv.md").read_text()
         assert "_Data Platform Lead_" in cv
 
+    def test_lens_flag_resolves_8hex_id_prefix(
+        self,
+        runner: CliRunner,
+        vault_dir: Path,
+        tmp_path: Path,
+        sample_vault: VaultSchema,
+    ) -> None:
+        # CLI-only sugar (Q11.1): --lens accepts the first 8 hex chars of a
+        # lens id, mirroring the strict slug / full-id grammar the MCP layer
+        # uses. The default lens here is "data-lead".
+        prefix = sample_vault.lenses[0].id.hex[:8]
+        out = tmp_path / "bundle"
+        result = runner.invoke(
+            cli,
+            [
+                "--path", str(vault_dir),
+                "vault", "export", "-f", "career-bundle",
+                "-o", str(out), "--lens", prefix,
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        cv = (out / "cv.md").read_text()
+        # The data-lead lens's headline override proves the prefix resolved.
+        assert "_Data Platform Lead_" in cv
+
     def test_unknown_lens_lists_available(
         self, runner: CliRunner, vault_dir: Path, tmp_path: Path
     ) -> None:

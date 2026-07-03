@@ -2,12 +2,15 @@
 
 Response schemas mirror the cloud MCP server
 (``supabase/functions/mcp-server/index.ts``) so switching an agent between
-local and cloud is a URL swap. Four tools are exposed:
+local and cloud is a URL swap. Seven tools are exposed:
 
 - ``get_profile_summary``
+- ``vault_lens_list``
+- ``vault_lens_get``
 - ``search_skills``
 - ``find_story``
 - ``get_philosophy``
+- ``doctor`` (local-only; no cloud counterpart)
 
 Every tool returns a ``{"result": <payload>, "meta": {...}}`` envelope.
 
@@ -19,13 +22,15 @@ referential integrity) recomputed locally from the same check
 ``get_profile_summary`` additionally rolls every disputed entity up into a
 vault-wide ``disputes`` inventory.
 
-It also exposes five *prompts* — ``fill_vault``, ``mine_story_gaps``,
-``discover_skills``, ``draft_star_story``, and ``audit_coherence``. They hand
-an agent a ready-made workflow for helping the user build out and tighten
-their vault. Their canonical text lives in the Agent Skills
-(``skills/<name>/SKILL.md``); each prompt is a thin wrapper that reads the
-skill body at serve time so prompt and skill cannot drift. Prompts are
-local-only (the cloud server mirrors the four tools, not these prompts).
+It also exposes six *prompts* — ``fill_vault``, ``mine_story_gaps``,
+``discover_skills``, ``draft_star_story``, ``audit_coherence``, and
+``position_lens``. They hand an agent a ready-made workflow for helping the
+user build out, tighten, and position their vault. Their canonical text
+lives in the Agent Skills (``skills/<name>/SKILL.md``); each prompt is a
+thin wrapper that reads the skill body at serve time so prompt and skill
+cannot drift. The cloud server mirrors six of the tools (all but the
+local-only ``doctor``) and maintains its own adapted prompt bodies that
+route writes through ``vault_propose``.
 """
 
 from __future__ import annotations
@@ -1300,6 +1305,10 @@ def _audit_coherence_prompt(vault_dir: Path | None = None) -> str:
     return _skill_prompt("traitprint-audit-coherence", vault_dir=vault_dir)
 
 
+def _position_lens_prompt(vault_dir: Path | None = None) -> str:
+    return _skill_prompt("traitprint-position-lens", vault_dir=vault_dir)
+
+
 # ── Server factory ──────────────────────────────────────────────────
 
 
@@ -1499,6 +1508,18 @@ def create_server(store: VaultStore) -> FastMCP:
     )
     def audit_coherence() -> str:
         return _audit_coherence_prompt(vault_dir=store.directory)
+
+    @mcp.prompt(
+        description=(
+            "POSITIONING mode: curate a lens — a named, non-destructive "
+            "projection that re-orders, re-weights, and optionally "
+            "re-headlines the one vault for a target role or archetype, "
+            "without inventing a fact. Covers salience discipline, override "
+            "rules, the 5-lens cap, and dispute repair."
+        )
+    )
+    def position_lens() -> str:
+        return _position_lens_prompt(vault_dir=store.directory)
 
     # Expose handles so tests can reach the raw logic without stdio.
     mcp._traitprint_store = store  # type: ignore[attr-defined]

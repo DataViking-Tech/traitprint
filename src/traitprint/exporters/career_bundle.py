@@ -15,6 +15,18 @@ is ``career-bundle``). Derivation is deterministic — no LLM, no network.
 (phone, links, compensation) for the consumer's own onboarding to fill:
 ``yaml.safe_dump`` cannot emit comments, so the file is string-templated;
 tests round-trip-parse it to keep it valid YAML.
+
+Lens projection is deliberately scoped to ``cv.md`` only — this is a
+decision, not a gap (Q11.2). A CV is an audience-facing artifact, exactly
+what a positioning lens exists to shape (headline/bio overrides, signature
+experiences first, core skills first, suppressed skills dropped). The other
+two files are *canonical interchange*, not audience renderings:
+``story-bank.md`` is the round-trippable source of truth an external tool
+re-imports, so projecting it through a lens (dropping or re-ordering
+stories) would corrupt that round trip; ``profile.yml``'s ``narrative``
+block mirrors the vault's own canonical headline/summary, which the
+consuming tool overrides per-application on its own. So a lens shapes the
+CV and leaves the interchange files whole.
 """
 
 from __future__ import annotations

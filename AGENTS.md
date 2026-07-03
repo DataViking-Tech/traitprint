@@ -308,9 +308,13 @@ Client config (Claude Desktop, Cursor, Zed, …):
   "env": {"TRAITPRINT_VAULT_DIR": "/home/you/.traitprint"}}}}
 ```
 
-Four read-only tools, response schemas mirroring the hosted cloud MCP
+Seven read-only tools, response schemas mirroring the hosted cloud MCP
 server (swap local ↔ cloud by changing a URL): `get_profile_summary`,
-`search_skills`, `find_story`, `get_philosophy`. Every tool returns a
+`vault_lens_list`, `vault_lens_get`, `search_skills`, `find_story`,
+`get_philosophy`, and the local-only `doctor` (the cloud mirrors the other
+six). `get_profile_summary` takes an optional `lens` (slug or id) to project
+the profile through a positioning lens; pass `lens="none"` to force the
+canonical rendering. Every tool returns a
 `{"result": ..., "meta": {...}}` envelope. Proficiency uses the full
 five-label vocabulary (`familiar`/`working`/`proficient`/`expert`/
 `authority`); `search_skills min_proficiency` accepts any label or an
@@ -319,13 +323,13 @@ text; `get_philosophy` filters by `topic` and/or `category`. (The cloud
 server still exposes a legacy 4-label proficiency enum; parity catch-up
 is tracked cloud-side.)
 
-Five prompts — `fill_vault(focus?)`, `mine_story_gaps`, `discover_skills`,
-`draft_star_story(experience?)`, `audit_coherence` — served verbatim from
-the Agent Skills below, so prompt and skill never drift.
+Six prompts — `fill_vault(focus?)`, `mine_story_gaps`, `discover_skills`,
+`draft_star_story(experience?)`, `audit_coherence`, `position_lens` — served
+verbatim from the Agent Skills below, so prompt and skill never drift.
 
 ## Agent Skills
 
-Seven SKILL.md workflow skills (agentskills.io format) live under
+Nine SKILL.md workflow skills (agentskills.io format) live under
 [`skills/`](skills/), with a shared CLI cheatsheet at
 [`skills/shared/cli-reference.md`](skills/shared/cli-reference.md). Install
 into any skills-aware agent with `npx skills add DataViking-Tech/traitprint`;
@@ -338,7 +342,7 @@ directory so agent CLIs pick up traitprint on first launch — a Node-free
 alternative to `npx skills add` that also wires MCP. It writes: a
 canonical copy of this manual as `AGENTS.md`; thin wrappers delegating to
 it (`CLAUDE.md`, `QWEN.md`, `.grok/GROK.md` — Codex CLI, OpenCode, and
-Kimi CLI read `AGENTS.md` natively); the six skills under
+Kimi CLI read `AGENTS.md` natively); the nine skills under
 `.agents/skills/` and `.claude/skills/`; and project-scoped MCP
 registration for `traitprint mcp-serve` (`.mcp.json`, `opencode.json`,
 `.qwen/settings.json`, `.grok/settings.json`). Home-directory configs

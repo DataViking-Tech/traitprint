@@ -1091,7 +1091,7 @@ class TestServerRegistration:
 
 
 class TestPrompts:
-    def test_five_prompts_registered(self, populated_store: VaultStore) -> None:
+    def test_prompts_registered(self, populated_store: VaultStore) -> None:
         server = create_server(populated_store)
         prompts = asyncio.run(server.list_prompts())
         names = {p.name for p in prompts}
@@ -1101,6 +1101,7 @@ class TestPrompts:
             "discover_skills",
             "draft_star_story",
             "audit_coherence",
+            "position_lens",
         }
 
     def test_fill_vault_focus_argument(self, populated_store: VaultStore) -> None:
