@@ -1781,6 +1781,136 @@ def _export_bundle(
     click.echo(f"Wrote {fmt} bundle ({len(bundle)} files) to {out}/")
 
 
+# --- vault import-story-bank ---
+
+
+@vault.command(name="import-story-bank")
+@click.argument("directory", type=click.Path(exists=True, file_okay=False))
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    default=False,
+    help="Parse and report what would be staged without writing proposals.",
+)
+@click.option(
+    "--json",
+    "as_json",
+    is_flag=True,
+    default=False,
+    help="Emit the plan/result as JSON.",
+)
+@click.pass_context
+def vault_import_story_bank(
+    ctx: click.Context, directory: str, dry_run: bool, as_json: bool
+) -> None:
+    """Import a job-search working directory as pending proposals.
+
+    Detects the config/profile.yml + interview-prep/*.md layout by shape
+    and stages one add_story proposal per STAR block plus one
+    update_profile proposal — nothing is written to the vault until you
+    approve ('traitprint proposals list'). A cv.md is not parsed here:
+    run 'traitprint vault import-resume <dir>/cv.md --propose' for it.
+    """
+    from pathlib import Path
+
+    from traitprint.importers.story_bank import IMPORT_SOURCE, detect_and_plan
+    from traitprint.proposals import ProposalStore, ProposalValidationError
+
+    store = _get_store(ctx)
+    if not store.exists():
+        click.echo("No vault found. Run 'traitprint init' first.")
+        return
+    vault_doc = store.load()
+
+    try:
+        plan = detect_and_plan(Path(directory), vault_doc)
+    except ValueError as exc:
+        click.echo(str(exc))
+        ctx.exit(1)
+        return
+
+    if as_json and dry_run:
+        click.echo(
+            json.dumps(
+                {
+                    "stories": [payload for _, payload in plan.stories],
+                    "profile": plan.profile_payload,
+                    "has_cv": plan.has_cv,
+                },
+                indent=2,
+            )
+        )
+        return
+
+    staged = 0
+    errors = 0
+    results: list[dict[str, object]] = []
+    proposals_store = ProposalStore(store.directory)
+
+    for parsed, payload in plan.stories:
+        if dry_run:
+            click.echo(f"[plan] add_story: {parsed.title} (from {parsed.origin})")
+            continue
+        try:
+            lp = proposals_store.create(
+                "add_story",
+                payload,
+                rationale=f"Imported from {parsed.origin or 'story bank'}",
+                source=IMPORT_SOURCE,
+            )
+            staged += 1
+            results.append({"kind": "add_story", "id": str(lp.proposal.id)})
+            click.echo(f"[ok] add_story: {parsed.title} [{lp.proposal.id.hex[:8]}]")
+        except ProposalValidationError as exc:
+            errors += 1
+            click.echo(f"[err] add_story: {parsed.title}: {exc}")
+
+    if plan.profile_payload is not None:
+        if dry_run:
+            keys = ", ".join(sorted(plan.profile_payload["basics"]))
+            click.echo(f"[plan] update_profile: {keys}")
+        else:
+            try:
+                lp = proposals_store.create(
+                    "update_profile",
+                    plan.profile_payload,
+                    rationale=plan.profile_rationale,
+                    source=IMPORT_SOURCE,
+                )
+                staged += 1
+                results.append(
+                    {"kind": "update_profile", "id": str(lp.proposal.id)}
+                )
+                click.echo(f"[ok] update_profile [{lp.proposal.id.hex[:8]}]")
+            except ProposalValidationError as exc:
+                errors += 1
+                click.echo(f"[err] update_profile: {exc}")
+
+    if plan.has_cv:
+        click.echo(
+            "Found cv.md — import it with "
+            f"'traitprint vault import-resume {directory}/cv.md --propose'."
+        )
+
+    if dry_run:
+        click.echo(
+            f"Dry run: {len(plan.stories)} story proposal(s) and "
+            f"{1 if plan.profile_payload else 0} profile proposal(s) "
+            "would be staged."
+        )
+        return
+
+    if as_json:
+        click.echo(json.dumps({"staged": results, "errors": errors}, indent=2))
+    else:
+        click.echo(
+            f"Summary: staged {staged}, errors {errors}. Review with "
+            "'traitprint proposals list'."
+        )
+    if errors:
+        ctx.exit(1)
+
+
 # --- vault history ---
 
 

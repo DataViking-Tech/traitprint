@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`vault import-story-bank`: deterministic working-dir importer.**
+  New CLI command that detects a job-search working directory
+  (`config/profile.yml` + `interview-prep/*.md`, matched by shape,
+  never by brand) and stages everything through the proposals
+  channel — one `add_story` proposal per `### [theme] Title` STAR
+  block (tolerant regex parse: bold/plain labels, list bullets,
+  Reflection→`## Lesson`, multi-line continuations) plus one
+  `update_profile` proposal from profile.yml (candidate/narrative →
+  JSON Resume basics; target-role archetypes are stashed in the
+  proposal rationale — no lens proposal kind exists yet). Tags
+  resolve to existing vault skill UUIDs by exact name/taxonomy match
+  (the rest become theme_tags); a `Source:` line matches a vault
+  experience; UUIDs are never invented. `--dry-run` and `--json`
+  supported; a `cv.md` is routed to the existing
+  `vault import-resume --propose` pipeline instead of re-parsed.
+  Ships with a fixture suite covering the canonical format and a
+  drift variant.
+
 - **`vault export -f career-bundle`: multi-file working-dir bundle.**
   New bundle exporter emitting three user-layer files an agent-CLI
   job-search tool can consume directly — `cv.md` (ATS-style resume:
