@@ -338,15 +338,16 @@ coaching workflows compose instead of starting from scratch each time.
 
 - **Local vault** — a plain JSON + markdown file tree on your laptop,
   versioned with git.
-- **MCP server (stdio)** — four query tools (`get_profile_summary`,
-  `search_skills`, `find_story`, `get_philosophy`) and five workflow prompts
+- **MCP server (stdio)** — seven query tools (`get_profile_summary`,
+  `search_skills`, `find_story`, `get_philosophy`, `vault_lens_list`,
+  `vault_lens_get`, and local-only `doctor`) and six workflow prompts
   (`fill_vault`, `mine_story_gaps`, `discover_skills`, `draft_star_story`,
-  `audit_coherence`).
-- **Agent Skills** — the same five workflows as SKILL.md skills under
+  `audit_coherence`, `position_lens`).
+- **Agent Skills** — the same workflows as SKILL.md skills under
   [`skills/`](skills/) for Claude Code, Codex CLI, Gemini CLI, Cursor, etc.
 - **CLI** — `traitprint init`, `traitprint vault set-profile`, `add-skill`,
-  `add-experience`, `add-story`, `add-philosophy`, `add-education`, `remove`,
-  `show`, `list`, `audit`, `history`, `diff`, `rollback`, `migrate`,
+  `add-experience`, `add-story`, `add-philosophy`, `add-education`, `lens`,
+  `remove`, `show`, `list`, `audit`, `history`, `diff`, `rollback`, `migrate`,
   `export`, `import-resume`.
 - **Coherence audit** — `traitprint vault audit` flags unsupported claims,
   unbacked philosophies, and broken stories (text, `--json`, or `--strict`).

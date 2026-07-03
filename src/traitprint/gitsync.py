@@ -110,6 +110,32 @@ class Violation:
         }
 
 
+@dataclass(frozen=True)
+class PushWarning:
+    """One entry of the additive ``warnings`` list on a push/info response.
+
+    A **non-blocking** contract-level problem the server found in a staged
+    ``proposals/*.json`` file (Q4 expansion): unknown kind, disallowed
+    payload key, missing required add key, or an ``update_*`` whose target
+    would not resolve at approval time. Same ``{file, pointer, message,
+    hint}`` shape as a :class:`Violation`, but it NEVER fails the push —
+    the reviewer (and ``proposals validate``) still backstops.
+    """
+
+    file: str
+    pointer: str
+    message: str
+    hint: str
+
+    def as_dict(self) -> dict[str, str]:
+        return {
+            "file": self.file,
+            "pointer": self.pointer,
+            "message": self.message,
+            "hint": self.hint,
+        }
+
+
 class SchemaViolationError(GitSyncError):
     """422 ``schema_violation`` — ref NOT advanced; per-file errors attached."""
 
@@ -151,6 +177,8 @@ class ServerInfo:
     head: str | None
     ingest: IngestReport
     taxonomy: ServerTaxonomy | None = None
+    #: Non-blocking proposal contract warnings echoed from the latest push.
+    warnings: list[PushWarning] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -159,6 +187,8 @@ class PushResponse:
 
     head: str
     ingest: IngestReport
+    #: Non-blocking contract warnings on staged proposals (Q4; may be empty).
+    warnings: list[PushWarning] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -186,6 +216,8 @@ class PushOutcome:
     commits: int = 0
     full_bundle: bool = False
     retried_full: bool = False
+    #: Non-blocking proposal contract warnings from the push response (Q4).
+    warnings: list[PushWarning] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -264,6 +296,23 @@ def _parse_violations(data: Any) -> list[Violation]:
         if isinstance(item, dict):
             out.append(
                 Violation(
+                    file=str(item.get("file") or ""),
+                    pointer=str(item.get("pointer") or ""),
+                    message=str(item.get("message") or ""),
+                    hint=str(item.get("hint") or ""),
+                )
+            )
+    return out
+
+
+def _parse_warnings(data: Any) -> list[PushWarning]:
+    """Parse the additive ``warnings`` array (absent on older servers → [])."""
+    out: list[PushWarning] = []
+    raw = data.get("warnings") if isinstance(data, dict) else None
+    for item in raw or []:
+        if isinstance(item, dict):
+            out.append(
+                PushWarning(
                     file=str(item.get("file") or ""),
                     pointer=str(item.get("pointer") or ""),
                     message=str(item.get("message") or ""),
@@ -566,6 +615,7 @@ class GitSyncClient:
             taxonomy=_parse_taxonomy(
                 data.get("taxonomy") if isinstance(data, dict) else None
             ),
+            warnings=_parse_warnings(data),
         )
 
     def download_taxonomy(
@@ -686,6 +736,7 @@ class GitSyncClient:
         return PushResponse(
             head=new_head,
             ingest=_parse_ingest(data.get("ingest") if isinstance(data, dict) else {}),
+            warnings=_parse_warnings(data),
         )
 
 
@@ -758,6 +809,7 @@ def sync_push(vault: Path, client: GitSyncClient) -> PushOutcome:
         commits=_commit_count(vault, None if full_bundle else basis, head),
         full_bundle=full_bundle,
         retried_full=retried_full,
+        warnings=response.warnings,
     )
 
 
@@ -859,6 +911,7 @@ __all__ = [
     "PullOutcome",
     "PushOutcome",
     "PushResponse",
+    "PushWarning",
     "SchemaViolationError",
     "ServerInfo",
     "ServerTaxonomy",

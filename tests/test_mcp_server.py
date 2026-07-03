@@ -22,6 +22,7 @@ from uuid import UUID, uuid4
 import pytest
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
+from pydantic import ValidationError
 
 from traitprint.git_ops import commit, init_repo
 from traitprint.mcp_server import (
@@ -50,6 +51,7 @@ from traitprint.mcp_server import (
     create_server,
 )
 from traitprint.schema import (
+    MAX_LENSES,
     ExperienceSchema,
     LensSchema,
     PhilosophyCategory,
@@ -1089,7 +1091,7 @@ class TestServerRegistration:
 
 
 class TestPrompts:
-    def test_five_prompts_registered(self, populated_store: VaultStore) -> None:
+    def test_prompts_registered(self, populated_store: VaultStore) -> None:
         server = create_server(populated_store)
         prompts = asyncio.run(server.list_prompts())
         names = {p.name for p in prompts}
@@ -1099,6 +1101,7 @@ class TestPrompts:
             "discover_skills",
             "draft_star_story",
             "audit_coherence",
+            "position_lens",
         }
 
     def test_fill_vault_focus_argument(self, populated_store: VaultStore) -> None:
@@ -1435,6 +1438,27 @@ class TestLenses:
         with pytest.raises(ValueError, match="lens not found"):
             _resolve_lens(vault, "nope")
 
+    def test_none_escape_hatch_forces_canonical_over_default(self) -> None:
+        # lens="none" is the reserved canonical-rendering escape hatch: even
+        # with a default lens present, it returns the un-lensed profile,
+        # byte-identical to the no-lens rendering. Shared verbatim with cloud.
+        vault, _sk = self._two_lens_vault()
+        assert _resolve_lens(vault, "none") is None
+        canonical = _handle_get_profile_summary(
+            vault, "detailed", _resolve_lens(vault, "none")
+        )
+        assert "lens" not in canonical
+        # The default (IC) lens suppresses Product Management; "none" restores it.
+        names = [s["name"] for s in canonical["top_skills"]]
+        assert "Product Management" in names
+        assert names[0] == "Product Management"  # canonical proficiency sort
+
+    def test_none_slug_cannot_be_claimed_by_a_user_lens(self) -> None:
+        # The reserved keyword can never shadow a real lens: the slug validator
+        # rejects it at construction.
+        with pytest.raises(ValidationError, match="reserved"):
+            LensSchema(slug="none", name="Nope")
+
     def test_lens_list_and_get_shapes(self) -> None:
         vault, sk = self._two_lens_vault()
         listing = _handle_vault_lens_list(vault)
@@ -1517,6 +1541,28 @@ class TestLenses:
         assert all(row["disputed"] is False for row in listing["lenses"])
         assert all(row["dispute"] is None for row in listing["lenses"])
 
+    def test_full_lens_vault_at_cap_loads_and_lists(self) -> None:
+        # Read-tool coverage over a vault filled to the 5-lens cap: MAX_LENSES
+        # lenses validate at load and all appear in the listing.
+        vault, _sk = self._two_lens_vault()
+        extra = [
+            LensSchema(slug=f"extra-{i}", name=f"Extra {i}")
+            for i in range(MAX_LENSES - len(vault.lenses))
+        ]
+        full = vault.model_copy(update={"lenses": [*vault.lenses, *extra]})
+        assert len(full.lenses) == MAX_LENSES
+        listing = _handle_vault_lens_list(full)
+        assert listing["total"] == MAX_LENSES
+
+    def test_over_cap_lens_vault_rejected(self) -> None:
+        vault, _sk = self._two_lens_vault()
+        overflow = [
+            LensSchema(slug=f"extra-{i}", name=f"Extra {i}")
+            for i in range(MAX_LENSES)
+        ]
+        with pytest.raises(ValidationError, match="at most 5 lenses"):
+            VaultSchema(lenses=[*vault.lenses, *overflow])
+
     def test_dangling_signature_story_flags_lens_disputed(self) -> None:
         # §11.6: a lens whose signature_story_id no longer resolves is disputed
         # via the same dangling_reference mechanism as records.
@@ -1555,3 +1601,62 @@ class TestLenses:
         assert entry["kind"] == "lens"
         assert entry["label"] == "IC Lens"
         assert entry["flag_types"] == ["dangling_reference"]
+
+
+class TestLensRenderGoldenFixture:
+    """The shared cross-server lens-render fixture (docs/schema/lens-v1/).
+
+    The local server must reproduce ``expected_render`` (overrides, salience-
+    ordered top-skill names, ordered signature-experience titles, the ``lens``
+    key) for the fixture lens, and ``expected_canonical`` under the ``"none"``
+    escape hatch. The cloud server carries the same fixture and asserts the same
+    projection through its shared rendering helpers, so the two cannot drift.
+    """
+
+    @staticmethod
+    def _load() -> dict[str, Any]:
+        path = (
+            Path(__file__).resolve().parent.parent
+            / "docs"
+            / "schema"
+            / "lens-v1"
+            / "golden-render-fixture.json"
+        )
+        return json.loads(path.read_text())
+
+    def _vault(self, inp: dict[str, Any]) -> VaultSchema:
+        return VaultSchema(
+            profile=ProfileSchema(**inp["profile"]),
+            skills=[SkillSchema(**s) for s in inp["skills"]],
+            experiences=[ExperienceSchema(**e) for e in inp["experiences"]],
+            lenses=[LensSchema(**inp["lens"])],
+        )
+
+    def test_lensed_render_matches_golden(self) -> None:
+        data = self._load()
+        vault = self._vault(data["input"])
+        exp = data["expected_render"]
+        lens = _resolve_lens(vault, data["input"]["lens"]["slug"])
+        out = _handle_get_profile_summary(vault, "detailed", lens)
+        assert out["lens"] == exp["lens"]
+        assert out["headline"] == exp["headline"]
+        assert out["bio"] == exp["bio"]
+        assert [s["name"] for s in out["top_skills"]] == exp["top_skill_names"]
+        assert [
+            e["title"] for e in out["signature_experiences"]
+        ] == exp["signature_experience_titles"]
+
+    def test_none_escape_hatch_matches_canonical(self) -> None:
+        data = self._load()
+        vault = self._vault(data["input"])
+        exp = data["expected_canonical"]
+        # "none" forces the canonical rendering even though the lens is default.
+        none_lens = _resolve_lens(vault, "none")
+        out = _handle_get_profile_summary(vault, "detailed", none_lens)
+        assert "lens" not in out
+        assert out["headline"] == exp["headline"]
+        assert out["bio"] == exp["bio"]
+        assert [s["name"] for s in out["top_skills"]] == exp["top_skill_names"]
+        assert [
+            e["title"] for e in out["signature_experiences"]
+        ] == exp["signature_experience_titles"]

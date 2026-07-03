@@ -34,8 +34,10 @@ from uuid import UUID, uuid4
 from pydantic import BaseModel, Field, ValidationError, field_validator
 
 from traitprint.schema import (
+    MAX_LENSES,
     EducationSchema,
     ExperienceSchema,
+    LensSchema,
     PhilosophySchema,
     ProfileSchema,
     SkillSchema,
@@ -59,6 +61,8 @@ PROPOSAL_KINDS = (
     "add_education",
     "update_education",
     "update_profile",
+    "add_lens",
+    "update_lens",
 )
 
 PROPOSAL_STATUSES = ("pending", "approved", "rejected", "withdrawn")
@@ -123,6 +127,22 @@ _EDUCATION_KEYS = (
     "end_date",
     "description",
 )
+# Straight from LensSchema — a lens only selects/orders/re-weights vault
+# content plus optional headline/bio overrides (never asserts a fact).
+_LENS_KEYS = (
+    "id",
+    "slug",
+    "name",
+    "target_archetypes",
+    "headline_override",
+    "bio_override",
+    "signature_experience_ids",
+    "signature_story_ids",
+    "skill_salience",
+    "is_default",
+    "created_at",
+    "updated_at",
+)
 
 PROPOSAL_PAYLOAD_KEYS: dict[str, tuple[str, ...]] = {
     "add_skill": _SKILL_KEYS,
@@ -136,6 +156,8 @@ PROPOSAL_PAYLOAD_KEYS: dict[str, tuple[str, ...]] = {
     "add_education": _EDUCATION_KEYS,
     "update_education": _EDUCATION_KEYS,
     "update_profile": ("basics",),
+    "add_lens": _LENS_KEYS,
+    "update_lens": _LENS_KEYS,
 }
 
 #: Minimum fields an add_* / update_profile payload must carry.
@@ -146,6 +168,7 @@ _REQUIRED_ADD_KEYS: dict[str, tuple[str, ...]] = {
     "add_philosophy": ("title",),
     "add_education": ("institution",),
     "update_profile": ("basics",),
+    "add_lens": ("slug", "name"),
 }
 
 #: profile.json ``basics`` keys (JSON Resume-compatible subset).
@@ -212,6 +235,7 @@ _KIND_SECTION = {
     "story": "stories",
     "philosophy": "philosophies",
     "education": "education",
+    "lens": "lenses",
 }
 
 
@@ -625,10 +649,95 @@ def _entity_fields(kind: str, payload: dict[str, Any]) -> dict[str, Any]:
     return fields
 
 
+def _apply_add_lens(vault: VaultSchema, proposal: ProposalSchema) -> str:
+    """Apply an ``add_lens`` proposal to the in-memory vault.
+
+    Re-checks the vault-level lens invariants at approval time (the vault
+    may have gained lenses since the proposal was staged): the 5-lens
+    :data:`~traitprint.schema.MAX_LENSES` cap, slug-uniqueness, and the
+    single-default rule (a new default clears every other lens's flag).
+
+    Dangling signature/salience references are **not** rejected here — per
+    Layer 1 they are warnings surfaced live by the dispute machinery, not
+    parse errors, so an ``add_lens`` that references a since-deleted skill
+    still applies and simply renders as ``disputed``.
+    """
+    if len(vault.lenses) >= MAX_LENSES:
+        raise ProposalApplyError(
+            f"a vault may hold at most {MAX_LENSES} lenses — remove one "
+            "before approving this add_lens, or reject it."
+        )
+    fields = _entity_fields("add_lens", proposal.payload)
+    slug = fields.get("slug")
+    if isinstance(slug, str):
+        for existing in vault.lenses:
+            if existing.slug == slug:
+                raise ProposalApplyError(
+                    f"lens slug already exists: {slug!r} ({existing.id}) — "
+                    "reject this proposal or remove the existing lens first"
+                )
+    try:
+        lens = LensSchema.model_validate(fields)
+    except ValidationError as exc:
+        raise ProposalApplyError(_problems(exc)) from exc
+    if lens.is_default:
+        for other in vault.lenses:
+            other.is_default = False
+    vault.lenses.append(lens)
+    return f"Added lens: {lens.name} ({lens.slug})"
+
+
+def _apply_update_lens(vault: VaultSchema, proposal: ProposalSchema) -> str:
+    """Apply an ``update_lens`` proposal (target resolved by ``target_id``).
+
+    Re-checks slug-uniqueness against the other lenses when the slug
+    changes and re-applies the single-default rule; dangling references
+    stay Layer-1 warnings (see :func:`_apply_add_lens`).
+    """
+    if proposal.target_id is None:
+        raise ProposalApplyError(
+            "update_lens proposal has no target_id — re-create it with "
+            "--target-id or reject it."
+        )
+    current = _find_item(vault.lenses, proposal.target_id)
+    if current is None:
+        raise ProposalApplyError(
+            f"target lens {proposal.target_id} does not exist in the vault "
+            "— the lens this proposal targets is gone. Reject the proposal, "
+            "or re-stage it against a current lens id."
+        )
+    fields = _entity_fields("update_lens", proposal.payload)
+    new_slug = fields.get("slug")
+    if isinstance(new_slug, str):
+        for other in vault.lenses:
+            if other.id != current.id and other.slug == new_slug:
+                raise ProposalApplyError(
+                    f"lens slug already exists: {new_slug!r} ({other.id}) — "
+                    "reject this proposal or choose a different slug"
+                )
+    updated = current.model_dump()
+    updated.update(fields)
+    if "updated_at" in updated:
+        updated["updated_at"] = _now()
+    try:
+        replacement = LensSchema.model_validate(updated)
+    except ValidationError as exc:
+        raise ProposalApplyError(_problems(exc)) from exc
+    if replacement.is_default:
+        for other in vault.lenses:
+            if other.id != replacement.id:
+                other.is_default = False
+    items = vault.lenses
+    items[items.index(current)] = replacement
+    return f"Updated lens: {replacement.slug}"
+
+
 def _apply_add(vault: VaultSchema, proposal: ProposalSchema) -> str:
     from traitprint.taxonomy import find_exact
 
     kind = proposal.kind
+    if kind == "add_lens":
+        return _apply_add_lens(vault, proposal)
     entity = kind_entity(kind)
     section = _KIND_SECTION[entity]
     fields = _entity_fields(kind, proposal.payload)
@@ -674,6 +783,8 @@ def _apply_update(vault: VaultSchema, proposal: ProposalSchema) -> str:
     from traitprint.taxonomy import find_exact
 
     kind = proposal.kind
+    if kind == "update_lens":
+        return _apply_update_lens(vault, proposal)
     entity = kind_entity(kind)
     section = _KIND_SECTION[entity]
     if proposal.target_id is None:

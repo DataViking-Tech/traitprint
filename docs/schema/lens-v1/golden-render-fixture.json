@@ -1,0 +1,94 @@
+{
+  "_comment": "Shared lens-render golden fixture (docs/schema/lens-v1/). Both MCP servers must reproduce `expected_render` for this input when the profile is rendered through the `lens` slug — the cross-server-portable projection: headline/bio overrides, the salience-ordered + suppression-filtered top-skill NAMES, the lens's ordered signature-experience TITLES, and the `lens` key. Scope-gating, `sections`, `scopes_granted`, dispute `since`/`sources`, and evidence fields are server-local and NOT compared. `expected_canonical` is the same input rendered with lens=\"none\" (the escape hatch), byte-identical to the un-lensed profile.",
+  "input": {
+    "profile": {
+      "display_name": "Wesley",
+      "headline": "Engineer",
+      "summary": "Canonical bio."
+    },
+    "skills": [
+      {
+        "id": "11111111-1111-1111-1111-111111110001",
+        "name": "Data Architecture",
+        "proficiency": 4,
+        "created_at": "2024-01-01T00:00:00Z"
+      },
+      {
+        "id": "11111111-1111-1111-1111-111111110002",
+        "name": "Product Management",
+        "proficiency": 5,
+        "created_at": "2024-01-02T00:00:00Z"
+      },
+      {
+        "id": "11111111-1111-1111-1111-111111110003",
+        "name": "Technical Leadership",
+        "proficiency": 4,
+        "created_at": "2024-01-03T00:00:00Z"
+      },
+      {
+        "id": "11111111-1111-1111-1111-111111110004",
+        "name": "Python",
+        "proficiency": 3,
+        "created_at": "2024-01-04T00:00:00Z"
+      }
+    ],
+    "experiences": [
+      {
+        "id": "22222222-2222-2222-2222-222222220001",
+        "title": "Staff Engineer",
+        "company": "Acme",
+        "start_date": "2021-01",
+        "created_at": "2021-01-01T00:00:00Z"
+      },
+      {
+        "id": "22222222-2222-2222-2222-222222220002",
+        "title": "Engineering Manager",
+        "company": "Acme",
+        "start_date": "2023-01",
+        "created_at": "2023-01-01T00:00:00Z"
+      }
+    ],
+    "lens": {
+      "id": "33333333-3333-3333-3333-333333330001",
+      "slug": "ic-architecture",
+      "name": "IC / Architecture",
+      "headline_override": "Staff/Principal Data & Platform Engineer",
+      "bio_override": "Deep systems bio.",
+      "signature_experience_ids": [
+        "22222222-2222-2222-2222-222222220001"
+      ],
+      "skill_salience": {
+        "11111111-1111-1111-1111-111111110001": "core",
+        "11111111-1111-1111-1111-111111110002": "suppressed"
+      },
+      "is_default": true
+    }
+  },
+  "expected_render": {
+    "lens": "ic-architecture",
+    "headline": "Staff/Principal Data & Platform Engineer",
+    "bio": "Deep systems bio.",
+    "top_skill_names": [
+      "Data Architecture",
+      "Technical Leadership",
+      "Python"
+    ],
+    "signature_experience_titles": [
+      "Staff Engineer"
+    ]
+  },
+  "expected_canonical": {
+    "headline": "Engineer",
+    "bio": "Canonical bio.",
+    "top_skill_names": [
+      "Product Management",
+      "Technical Leadership",
+      "Data Architecture",
+      "Python"
+    ],
+    "signature_experience_titles": [
+      "Engineering Manager",
+      "Staff Engineer"
+    ]
+  }
+}

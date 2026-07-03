@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Positioning lenses — a named, non-destructive projection over the one
+  vault.** A lens selects, orders, and re-weights existing vault content
+  (per-skill salience `core`/`supporting`/`suppressed`, signature
+  experiences/stories, optional headline/bio overrides) so the same
+  grounded facts read differently for a target role or archetype — it
+  never asserts a fact absent from the vault. Persisted as `lenses.json`
+  (omitted entirely when no lens exists, so an un-lensed vault is
+  byte-identical to pre-lens). A vault holds at most five lenses, and the
+  reserved slug `none` is the canonical-rendering escape hatch. Authored
+  through first-class validated surfaces: the `vault lens
+  add|update|set-default|remove` CLI group (with `--from-json` batch
+  parity), staged `add_lens`/`update_lens` proposal kinds, and — over the
+  hosted MCP server — `vault_propose`. Rendered by the lens-aware
+  `get_profile_summary` (new optional `lens` param) and the `vault_lens_list`
+  / `vault_lens_get` read tools on both the local and cloud servers, and
+  by `vault export -f career-bundle --lens`. Lenses that reference a
+  since-deleted entity surface as `disputed` via the live trust layer. New
+  `traitprint-position-lens` Agent Skill and matching MCP prompt teach the
+  curation workflow; the contract lives in `docs/schema/lens-v1/`.
 - **Proposal pre-flight surface for external tools**
   (`traitprint proposals validate`, `traitprint proposals contract`).
   Two read-only subcommands that need no vault: `validate` checks

@@ -22,9 +22,21 @@ from traitprint.proposals import (
     LoadedProposal,
     ProposalFileIssue,
 )
-from traitprint.schema import PhilosophyCategory, ProfileLink, VaultSchema
+from traitprint.schema import (
+    LensSchema,
+    PhilosophyCategory,
+    ProfileLink,
+    SalienceLevel,
+    VaultSchema,
+)
 from traitprint.taxonomy import find_exact, suggest_matches
-from traitprint.vault import DuplicateSkillError, VaultStore
+from traitprint.vault import (
+    DuplicateLensSlugError,
+    DuplicateSkillError,
+    LensCapError,
+    LensNotFoundError,
+    VaultStore,
+)
 
 if TYPE_CHECKING:
     from traitprint.credentials import Credentials
@@ -1614,6 +1626,484 @@ def vault_remove(ctx: click.Context, item_id: UUID, yes: bool) -> None:
     click.echo(f"Item not found: {uid}")
 
 
+# --- vault lens (positioning-lens command group) ---
+
+
+def _parse_salience_pairs(pairs: tuple[str, ...]) -> dict[UUID, SalienceLevel]:
+    """Parse repeated ``--salience SKILL_ID=LEVEL`` flags into a salience map.
+
+    LEVEL is one of ``core``/``supporting``/``suppressed``. Raises ValueError
+    with an actionable message on a malformed pair.
+    """
+    out: dict[UUID, SalienceLevel] = {}
+    for pair in pairs:
+        if "=" not in pair:
+            raise ValueError(f"--salience must be SKILL_ID=LEVEL, got {pair!r}")
+        raw_id, _, raw_level = pair.partition("=")
+        try:
+            sid = UUID(raw_id.strip())
+        except ValueError as exc:
+            raise ValueError(f"--salience: invalid UUID {raw_id.strip()!r}") from exc
+        out[sid] = _coerce_salience(raw_level, field="--salience")
+    return out
+
+
+def _parse_salience_map(raw: object) -> dict[UUID, SalienceLevel]:
+    """Parse a JSON ``{skill_id: level}`` object into a salience map."""
+    if not isinstance(raw, dict):
+        raise ValueError("skill_salience: must be an object of {skill_id: level}")
+    out: dict[UUID, SalienceLevel] = {}
+    for key, value in raw.items():
+        try:
+            sid = UUID(str(key))
+        except ValueError as exc:
+            raise ValueError(f"skill_salience: invalid UUID {key!r}") from exc
+        if not isinstance(value, str):
+            raise ValueError(f"skill_salience[{key}]: level must be a string")
+        out[sid] = _coerce_salience(value, field=f"skill_salience[{key}]")
+    return out
+
+
+def _coerce_salience(value: str, *, field: str) -> SalienceLevel:
+    """Coerce a level string into a :class:`SalienceLevel` (or raise)."""
+    try:
+        return SalienceLevel(value.strip().lower())
+    except ValueError as exc:
+        valid = ", ".join(level.value for level in SalienceLevel)
+        raise ValueError(
+            f"{field}: level must be one of {valid}, got {value.strip()!r}"
+        ) from exc
+
+
+def _resolve_lens_cli(vault: VaultSchema, ref: str) -> LensSchema | None:
+    """Resolve a lens by slug, full id, or 8-hex id prefix (CLI-only sugar).
+
+    Mirrors the ``vault export --lens`` resolution (``_export_bundle``). The
+    strict slug/full-id grammar is what the store and MCP layers use; the
+    8-hex prefix is documented CLI convenience only (Q11.1).
+    """
+    r = ref.strip()
+    rl = r.lower()
+    return next(
+        (
+            lns
+            for lns in vault.lenses
+            if lns.slug == rl or str(lns.id) == r or lns.id.hex[:8] == rl
+        ),
+        None,
+    )
+
+
+def _lens_kwargs_from_item(item: dict[str, Any]) -> dict[str, Any]:
+    """Build ``add_lens`` kwargs from a parsed JSON item (batch mode)."""
+    slug = item.get("slug")
+    if not isinstance(slug, str) or not slug.strip():
+        raise ValueError("slug: missing required non-empty string")
+    name = item.get("name")
+    if not isinstance(name, str) or not name.strip():
+        raise ValueError("name: missing required non-empty string")
+    kwargs: dict[str, Any] = {"slug": slug, "name": name}
+    _merge_lens_optional_kwargs(item, kwargs)
+    return kwargs
+
+
+def _merge_lens_optional_kwargs(item: dict[str, Any], kwargs: dict[str, Any]) -> None:
+    """Validate + copy the optional lens fields from ``item`` into ``kwargs``."""
+    archetypes = item.get("target_archetypes")
+    if archetypes is not None:
+        if not isinstance(archetypes, list) or not all(
+            isinstance(x, str) for x in archetypes
+        ):
+            raise ValueError("target_archetypes: must be a list of strings")
+        kwargs["target_archetypes"] = archetypes
+    for key in ("headline_override", "bio_override"):
+        value = item.get(key)
+        if value is not None:
+            if not isinstance(value, str):
+                raise ValueError(f"{key}: must be a string")
+            kwargs[key] = value
+    for key in ("signature_experience_ids", "signature_story_ids"):
+        raw = item.get(key)
+        if raw is not None:
+            kwargs[key] = _parse_uuid_list(raw, key, 0)
+    salience = item.get("skill_salience")
+    if salience is not None:
+        kwargs["skill_salience"] = _parse_salience_map(salience)
+    default = item.get("is_default")
+    if default is not None:
+        if not isinstance(default, bool):
+            raise ValueError("is_default: must be a boolean")
+        kwargs["is_default"] = default
+
+
+def _batch_add_lenses(store: VaultStore, items: list[dict[str, Any]]) -> int:
+    """Add lenses from parsed JSON items. Returns the number that failed."""
+    added = 0
+    errors = 0
+    for i, item in enumerate(items):
+        slug = item.get("slug")
+        label = slug if isinstance(slug, str) and slug.strip() else f"item {i}"
+        try:
+            kwargs = _lens_kwargs_from_item(item)
+        except ValueError as exc:
+            click.echo(f"[err] {label}: {exc}")
+            errors += 1
+            continue
+        try:
+            lens = store.add_lens(**kwargs)
+        except (LensCapError, DuplicateLensSlugError) as exc:
+            click.echo(f"[err] {label}: {exc}")
+            errors += 1
+            continue
+        except ValidationError as exc:
+            _report_item_problems(label, _validation_problems(exc))
+            errors += 1
+            continue
+        click.echo(f"[ok] {lens.name} ({lens.slug}) [{lens.id}]")
+        added += 1
+    click.echo(f"Summary: added {added}, errors {errors}")
+    return errors
+
+
+def _batch_update_lenses(store: VaultStore, items: list[dict[str, Any]]) -> int:
+    """Update lenses from parsed JSON items (each needs a ``ref``)."""
+    updated = 0
+    errors = 0
+    for i, item in enumerate(items):
+        ref = item.get("ref")
+        label = ref if isinstance(ref, str) and ref.strip() else f"item {i}"
+        if not isinstance(ref, str) or not ref.strip():
+            click.echo(f"[err] {label}: ref: missing required lens slug or id")
+            errors += 1
+            continue
+        try:
+            kwargs: dict[str, Any] = {}
+            _merge_lens_optional_kwargs(item, kwargs)
+            new_slug = item.get("slug")
+            if new_slug is not None:
+                if not isinstance(new_slug, str) or not new_slug.strip():
+                    raise ValueError("slug: must be a non-empty string")
+                kwargs["slug"] = new_slug
+            new_name = item.get("name")
+            if new_name is not None:
+                if not isinstance(new_name, str) or not new_name.strip():
+                    raise ValueError("name: must be a non-empty string")
+                kwargs["name"] = new_name
+        except ValueError as exc:
+            click.echo(f"[err] {label}: {exc}")
+            errors += 1
+            continue
+        try:
+            lens = store.update_lens(ref, **kwargs)
+        except LensNotFoundError as exc:
+            click.echo(f"[err] {label}: {exc}")
+            errors += 1
+            continue
+        except (DuplicateLensSlugError, LensCapError) as exc:
+            click.echo(f"[err] {label}: {exc}")
+            errors += 1
+            continue
+        except ValidationError as exc:
+            _report_item_problems(label, _validation_problems(exc))
+            errors += 1
+            continue
+        click.echo(f"[ok] {lens.name} ({lens.slug}) [{lens.id}]")
+        updated += 1
+    click.echo(f"Summary: updated {updated}, errors {errors}")
+    return errors
+
+
+@vault.group(name="lens")
+def vault_lens() -> None:
+    """Manage positioning lenses (create, edit, re-order, set-default, delete)."""
+
+
+_SALIENCE_HELP = (
+    "Per-skill emphasis as SKILL_ID=LEVEL "
+    "(level: core, supporting, suppressed). Repeatable."
+)
+
+
+@vault_lens.command(name="add")
+@click.option("--slug", default=None, help="Lens slug (lowercase kebab-case).")
+@click.option("--name", default=None, help="Human-readable lens name.")
+@click.option(
+    "--headline-override", default=None, help="Override the profile headline."
+)
+@click.option("--bio-override", default=None, help="Override the profile bio/summary.")
+@click.option(
+    "--target-archetype",
+    "target_archetypes",
+    multiple=True,
+    help="Target role archetype (repeatable).",
+)
+@click.option(
+    "--signature-experience",
+    "signature_experience_ids",
+    multiple=True,
+    type=UUID_PARAM,
+    help="Signature experience id, in display order (repeatable).",
+)
+@click.option(
+    "--signature-story",
+    "signature_story_ids",
+    multiple=True,
+    type=UUID_PARAM,
+    help="Signature story id, in display order (repeatable).",
+)
+@click.option("--salience", "salience", multiple=True, help=_SALIENCE_HELP)
+@click.option(
+    "--default",
+    "is_default",
+    is_flag=True,
+    default=False,
+    help="Make this the default lens (the bare profile renders it).",
+)
+@click.option(
+    "--from-json",
+    "from_json",
+    type=click.File("r"),
+    default=None,
+    help="Batch mode: load lenses from a JSON array (or '-' for stdin).",
+)
+@click.pass_context
+def vault_lens_add(
+    ctx: click.Context,
+    slug: str | None,
+    name: str | None,
+    headline_override: str | None,
+    bio_override: str | None,
+    target_archetypes: tuple[str, ...],
+    signature_experience_ids: tuple[UUID, ...],
+    signature_story_ids: tuple[UUID, ...],
+    salience: tuple[str, ...],
+    is_default: bool,
+    from_json: IO[str] | None,
+) -> None:
+    """Add a positioning lens (single or batch via --from-json)."""
+    store = _get_store(ctx)
+    if not store.exists():
+        click.echo("No vault found. Run 'traitprint init' first.")
+        return
+
+    if from_json is not None:
+        if slug is not None or name is not None or salience or is_default:
+            click.echo("--from-json cannot be combined with per-lens flags.")
+            ctx.exit(2)
+            return
+        items = _read_json_items(from_json)
+        errors = _batch_add_lenses(store, items)
+        if errors:
+            ctx.exit(1)
+        return
+
+    if slug is None or name is None:
+        click.echo(
+            "--slug and --name are required (or use --from-json for batch input)."
+        )
+        ctx.exit(2)
+        return
+
+    try:
+        skill_salience = _parse_salience_pairs(salience)
+    except ValueError as exc:
+        click.echo(str(exc))
+        ctx.exit(2)
+        return
+
+    try:
+        lens = store.add_lens(
+            slug=slug,
+            name=name,
+            target_archetypes=list(target_archetypes),
+            headline_override=headline_override or "",
+            bio_override=bio_override or "",
+            signature_experience_ids=list(signature_experience_ids),
+            signature_story_ids=list(signature_story_ids),
+            skill_salience=skill_salience,
+            is_default=is_default,
+        )
+    except (LensCapError, DuplicateLensSlugError) as exc:
+        click.echo(str(exc))
+        ctx.exit(1)
+        return
+    except ValidationError as exc:
+        for problem in _validation_problems(exc):
+            click.echo(f"[err] {slug}: {problem}")
+        ctx.exit(1)
+        return
+    click.echo(f"Added lens: {lens.name} ({lens.slug}) [{lens.id}]")
+
+
+@vault_lens.command(name="update")
+@click.argument("lens_ref", metavar="LENS", required=False)
+@click.option("--slug", default=None, help="New slug (lowercase kebab-case).")
+@click.option("--name", default=None, help="New lens name.")
+@click.option(
+    "--headline-override", default=None, help="Override the profile headline."
+)
+@click.option("--bio-override", default=None, help="Override the profile bio/summary.")
+@click.option(
+    "--target-archetype",
+    "target_archetypes",
+    multiple=True,
+    help="Replace target archetypes (repeatable).",
+)
+@click.option(
+    "--signature-experience",
+    "signature_experience_ids",
+    multiple=True,
+    type=UUID_PARAM,
+    help="Replace signature experiences, in display order (repeatable).",
+)
+@click.option(
+    "--signature-story",
+    "signature_story_ids",
+    multiple=True,
+    type=UUID_PARAM,
+    help="Replace signature stories, in display order (repeatable).",
+)
+@click.option("--salience", "salience", multiple=True, help=_SALIENCE_HELP)
+@click.option(
+    "--default",
+    "is_default",
+    is_flag=True,
+    default=False,
+    help="Make this the default lens.",
+)
+@click.option(
+    "--from-json",
+    "from_json",
+    type=click.File("r"),
+    default=None,
+    help="Batch mode: load lens updates from a JSON array (each with a 'ref').",
+)
+@click.pass_context
+def vault_lens_update(
+    ctx: click.Context,
+    lens_ref: str | None,
+    slug: str | None,
+    name: str | None,
+    headline_override: str | None,
+    bio_override: str | None,
+    target_archetypes: tuple[str, ...],
+    signature_experience_ids: tuple[UUID, ...],
+    signature_story_ids: tuple[UUID, ...],
+    salience: tuple[str, ...],
+    is_default: bool,
+    from_json: IO[str] | None,
+) -> None:
+    """Update an existing lens by slug or id (single or batch via --from-json)."""
+    store = _get_store(ctx)
+    if not store.exists():
+        click.echo("No vault found. Run 'traitprint init' first.")
+        return
+
+    if from_json is not None:
+        if lens_ref is not None or slug is not None or salience or is_default:
+            click.echo("--from-json cannot be combined with LENS or per-lens flags.")
+            ctx.exit(2)
+            return
+        items = _read_json_items(from_json)
+        errors = _batch_update_lenses(store, items)
+        if errors:
+            ctx.exit(1)
+        return
+
+    if lens_ref is None:
+        click.echo(
+            "LENS (slug or id) is required (or use --from-json for batch input)."
+        )
+        ctx.exit(2)
+        return
+
+    vault = store.load()
+    target = _resolve_lens_cli(vault, lens_ref)
+    if target is None:
+        available = ", ".join(lns.slug for lns in vault.lenses) or "none"
+        click.echo(f"No lens matches {lens_ref!r}. Available: {available}.")
+        ctx.exit(1)
+        return
+
+    try:
+        skill_salience = _parse_salience_pairs(salience) if salience else None
+    except ValueError as exc:
+        click.echo(str(exc))
+        ctx.exit(2)
+        return
+
+    try:
+        lens = store.update_lens(
+            str(target.id),
+            slug=slug,
+            name=name,
+            target_archetypes=list(target_archetypes) or None,
+            headline_override=headline_override,
+            bio_override=bio_override,
+            signature_experience_ids=list(signature_experience_ids) or None,
+            signature_story_ids=list(signature_story_ids) or None,
+            skill_salience=skill_salience,
+            is_default=True if is_default else None,
+        )
+    except (DuplicateLensSlugError, LensCapError) as exc:
+        click.echo(str(exc))
+        ctx.exit(1)
+        return
+    except ValidationError as exc:
+        for problem in _validation_problems(exc):
+            click.echo(f"[err] {target.slug}: {problem}")
+        ctx.exit(1)
+        return
+    click.echo(f"Updated lens: {lens.name} ({lens.slug}) [{lens.id}]")
+
+
+@vault_lens.command(name="set-default")
+@click.argument("lens_ref", metavar="LENS")
+@click.pass_context
+def vault_lens_set_default(ctx: click.Context, lens_ref: str) -> None:
+    """Make LENS (slug or id) the sole default lens."""
+    store = _get_store(ctx)
+    if not store.exists():
+        click.echo("No vault found. Run 'traitprint init' first.")
+        return
+    vault = store.load()
+    target = _resolve_lens_cli(vault, lens_ref)
+    if target is None:
+        available = ", ".join(lns.slug for lns in vault.lenses) or "none"
+        click.echo(f"No lens matches {lens_ref!r}. Available: {available}.")
+        ctx.exit(1)
+        return
+    lens = store.set_default_lens(str(target.id))
+    click.echo(f"Default lens: {lens.name} ({lens.slug}) [{lens.id}]")
+
+
+@vault_lens.command(name="remove")
+@click.argument("lens_ref", metavar="LENS")
+@click.option(
+    "--yes", "-y", is_flag=True, default=False, help="Skip confirmation prompt."
+)
+@click.pass_context
+def vault_lens_remove(ctx: click.Context, lens_ref: str, yes: bool) -> None:
+    """Remove a lens by slug or id."""
+    store = _get_store(ctx)
+    if not store.exists():
+        click.echo("No vault found. Run 'traitprint init' first.")
+        return
+    vault = store.load()
+    target = _resolve_lens_cli(vault, lens_ref)
+    if target is None:
+        available = ", ".join(lns.slug for lns in vault.lenses) or "none"
+        click.echo(f"No lens matches {lens_ref!r}. Available: {available}.")
+        ctx.exit(1)
+        return
+    if not yes and not click.confirm(f"Remove lens {target.slug} ({target.id})?"):
+        click.echo("Cancelled.")
+        return
+    removed = store.remove_lens(str(target.id))
+    assert removed is not None
+    click.echo(f"Removed lens: {removed.slug} [{removed.id}]")
+
+
 # --- vault export ---
 
 
@@ -1807,10 +2297,12 @@ def vault_import_story_bank(
     """Import a job-search working directory as pending proposals.
 
     Detects the config/profile.yml + interview-prep/*.md layout by shape
-    and stages one add_story proposal per STAR block plus one
-    update_profile proposal — nothing is written to the vault until you
-    approve ('traitprint proposals list'). A cv.md is not parsed here:
-    run 'traitprint vault import-resume <dir>/cv.md --propose' for it.
+    and stages one add_story proposal per STAR block, one update_profile
+    proposal, and — when config/profile.yml carries target_roles.archetypes
+    — one add_lens proposal for the target positioning. Nothing is written
+    to the vault until you approve ('traitprint proposals list'). A cv.md is
+    not parsed here: run 'traitprint vault import-resume <dir>/cv.md
+    --propose' for it.
     """
     from pathlib import Path
 
@@ -1836,6 +2328,7 @@ def vault_import_story_bank(
                 {
                     "stories": [payload for _, payload in plan.stories],
                     "profile": plan.profile_payload,
+                    "lens": plan.lens_payload,
                     "has_cv": plan.has_cv,
                 },
                 indent=2,
@@ -1887,6 +2380,30 @@ def vault_import_story_bank(
                 errors += 1
                 click.echo(f"[err] update_profile: {exc}")
 
+    if plan.lens_payload is not None:
+        if dry_run:
+            click.echo(
+                f"[plan] add_lens: {plan.lens_payload['name']} "
+                f"({plan.lens_payload['slug']})"
+            )
+        else:
+            try:
+                lp = proposals_store.create(
+                    "add_lens",
+                    plan.lens_payload,
+                    rationale="Target roles imported from config/profile.yml",
+                    source=IMPORT_SOURCE,
+                )
+                staged += 1
+                results.append({"kind": "add_lens", "id": str(lp.proposal.id)})
+                click.echo(
+                    f"[ok] add_lens: {plan.lens_payload['name']} "
+                    f"[{lp.proposal.id.hex[:8]}]"
+                )
+            except ProposalValidationError as exc:
+                errors += 1
+                click.echo(f"[err] add_lens: {exc}")
+
     if plan.has_cv:
         click.echo(
             "Found cv.md — import it with "
@@ -1895,8 +2412,9 @@ def vault_import_story_bank(
 
     if dry_run:
         click.echo(
-            f"Dry run: {len(plan.stories)} story proposal(s) and "
-            f"{1 if plan.profile_payload else 0} profile proposal(s) "
+            f"Dry run: {len(plan.stories)} story proposal(s), "
+            f"{1 if plan.profile_payload else 0} profile proposal(s) and "
+            f"{1 if plan.lens_payload else 0} lens proposal(s) "
             "would be staged."
         )
         return
@@ -3213,11 +3731,13 @@ def export_cmd(
 def mcp_serve(ctx: click.Context) -> None:
     """Run the Traitprint MCP server over stdio.
 
-    Exposes four tools (get_profile_summary, search_skills, find_story,
-    get_philosophy) with response schemas that mirror the cloud MCP
-    server so agents can swap local ↔ cloud by changing a URL, plus five
+    Exposes seven tools (get_profile_summary, vault_lens_list,
+    vault_lens_get, search_skills, find_story, get_philosophy, and the
+    local-only doctor) with response schemas that mirror the cloud MCP
+    server so agents can swap local ↔ cloud by changing a URL, plus six
     local-only prompts (fill_vault, mine_story_gaps, discover_skills,
-    draft_star_story, audit_coherence) adapted from the Cloud mining engine.
+    draft_star_story, audit_coherence, position_lens) adapted from the
+    Cloud mining engine.
     """
     from traitprint.mcp_server import run_stdio
 
@@ -3731,6 +4251,23 @@ def _ingest_status_value(ingest: IngestReport | None) -> str | None:
     return ingest.status if ingest is not None and ingest.status else None
 
 
+def _echo_warnings(warnings: list[Any]) -> None:
+    """Render non-blocking proposal contract warnings from a push (Q4).
+
+    Warnings never fail the push — a malformed staged proposal is a
+    reviewable artifact, not vault corruption — but committing agents see
+    them immediately instead of at review time.
+    """
+    if not warnings:
+        return
+    click.echo(f"Proposal warnings ({len(warnings)}):")
+    for w in warnings:
+        location = f"{w.file} @ {w.pointer}" if w.pointer else w.file
+        click.echo(f"[warn] {location}: {w.message}")
+        if w.hint:
+            click.echo(f"       hint: {w.hint}")
+
+
 def _echo_conflict_guidance(vault_dir: str, conflicts: list[str]) -> None:
     """Print the merge-conflict UX: files + the exact commands to finish."""
     click.echo(f"Merge conflicts in {len(conflicts)} file(s):")
@@ -3859,6 +4396,7 @@ def sync_push_cmd(ctx: click.Context, as_json: bool) -> None:
                     "head": outcome.head,
                     "server_head": outcome.server_head,
                     "ingest_status": _ingest_status_value(outcome.ingest),
+                    "warnings": [w.as_dict() for w in outcome.warnings],
                 },
                 indent=2,
             )
@@ -3866,6 +4404,7 @@ def sync_push_cmd(ctx: click.Context, as_json: bool) -> None:
         return
     if not outcome.pushed:
         click.echo(f"Already up to date with the server ({_short(outcome.head)}).")
+        _echo_warnings(outcome.warnings)
         return
     kind = "full bundle" if outcome.full_bundle else "thin bundle"
     if outcome.retried_full:
@@ -3875,6 +4414,7 @@ def sync_push_cmd(ctx: click.Context, as_json: bool) -> None:
         f"({_short(outcome.server_head)}, {kind})."
     )
     _echo_ingest(outcome.ingest)
+    _echo_warnings(outcome.warnings)
 
 
 @sync_group.command(name="pull")

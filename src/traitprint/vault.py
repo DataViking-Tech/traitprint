@@ -16,12 +16,15 @@ from typing import Any
 from uuid import UUID
 
 from traitprint.schema import (
+    MAX_LENSES,
     EducationSchema,
     ExperienceSchema,
+    LensSchema,
     PhilosophyCategory,
     PhilosophySchema,
     ProfileLink,
     ProfileSchema,
+    SalienceLevel,
     SkillLink,
     SkillSchema,
     StorySchema,
@@ -91,6 +94,32 @@ class DuplicateSkillError(ValueError):
         super().__init__(f"Skill already exists: {name!r} ({existing_id})")
         self.name = name
         self.existing_id = existing_id
+
+
+class LensNotFoundError(ValueError):
+    """Raised when a lens ref (slug or id) does not resolve in the vault."""
+
+    def __init__(self, ref: str) -> None:
+        super().__init__(f"lens not found: {ref!r}")
+        self.ref = ref
+
+
+class DuplicateLensSlugError(ValueError):
+    """Raised when a lens write would collide with an existing lens slug."""
+
+    def __init__(self, slug: str, existing_id: UUID) -> None:
+        super().__init__(f"lens slug already exists: {slug!r} ({existing_id})")
+        self.slug = slug
+        self.existing_id = existing_id
+
+
+class LensCapError(ValueError):
+    """Raised when adding a lens would exceed :data:`MAX_LENSES`."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            f"a vault may hold at most {MAX_LENSES} lenses; remove one first"
+        )
 
 
 class VaultStore:
@@ -369,6 +398,150 @@ class VaultStore:
                 self._save_and_commit(vault, f"Remove {section[:-1]}: {item_id}")
                 return True
         return False
+
+    # ------------------------------------------------------------------
+    # Lens mutation surface (Q2: the `vault lens` group owns lens writes;
+    # generic `vault remove`/SECTIONS deliberately excludes lenses).
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _find_lens(vault: VaultSchema, ref: str) -> LensSchema | None:
+        """Resolve a lens by exact slug or full id string (no prefix sugar).
+
+        CLI-only 8-hex-prefix resolution happens in the CLI layer before it
+        reaches the store; the store keeps the strict slug/full-id grammar.
+        """
+        needle = ref.strip()
+        for lens in vault.lenses:
+            if lens.slug == needle or str(lens.id) == needle:
+                return lens
+        return None
+
+    def add_lens(
+        self,
+        *,
+        slug: str,
+        name: str,
+        target_archetypes: list[str] | None = None,
+        headline_override: str = "",
+        bio_override: str = "",
+        signature_experience_ids: list[UUID] | None = None,
+        signature_story_ids: list[UUID] | None = None,
+        skill_salience: dict[UUID, SalienceLevel] | None = None,
+        is_default: bool = False,
+    ) -> LensSchema:
+        """Create a lens, save, and auto-commit.
+
+        Enforces the 5-lens cap and slug-uniqueness up front (the schema
+        re-checks both at load). When ``is_default`` is set, any previous
+        default is cleared so at most one lens is default.
+        """
+        vault = self.load()
+        if len(vault.lenses) >= MAX_LENSES:
+            raise LensCapError()
+        existing = self._find_lens(vault, slug)
+        if existing is not None and existing.slug == slug:
+            raise DuplicateLensSlugError(slug, existing.id)
+        lens = LensSchema(
+            slug=slug,
+            name=name,
+            target_archetypes=target_archetypes or [],
+            headline_override=headline_override,
+            bio_override=bio_override,
+            signature_experience_ids=signature_experience_ids or [],
+            signature_story_ids=signature_story_ids or [],
+            skill_salience=skill_salience or {},
+            is_default=is_default,
+        )
+        if is_default:
+            for other in vault.lenses:
+                other.is_default = False
+        vault.lenses.append(lens)
+        self._save_and_commit(vault, f"Add lens: {name} ({slug})")
+        return lens
+
+    def update_lens(
+        self,
+        ref: str,
+        *,
+        slug: str | None = None,
+        name: str | None = None,
+        target_archetypes: list[str] | None = None,
+        headline_override: str | None = None,
+        bio_override: str | None = None,
+        signature_experience_ids: list[UUID] | None = None,
+        signature_story_ids: list[UUID] | None = None,
+        skill_salience: dict[UUID, SalienceLevel] | None = None,
+        is_default: bool | None = None,
+    ) -> LensSchema:
+        """Update an existing lens, save, and auto-commit.
+
+        Only fields passed as non-None are changed. Renaming the slug
+        re-checks uniqueness; setting ``is_default`` True clears the flag on
+        every other lens.
+        """
+        vault = self.load()
+        lens = self._find_lens(vault, ref)
+        if lens is None:
+            raise LensNotFoundError(ref)
+        if slug is not None and slug != lens.slug:
+            clash = self._find_lens(vault, slug)
+            if clash is not None and clash.id != lens.id:
+                raise DuplicateLensSlugError(slug, clash.id)
+        updates: dict[str, Any] = {}
+        for key, value in (
+            ("slug", slug),
+            ("name", name),
+            ("target_archetypes", target_archetypes),
+            ("headline_override", headline_override),
+            ("bio_override", bio_override),
+            ("signature_experience_ids", signature_experience_ids),
+            ("signature_story_ids", signature_story_ids),
+            ("skill_salience", skill_salience),
+            ("is_default", is_default),
+        ):
+            if value is not None:
+                updates[key] = value
+        for field, value in updates.items():
+            setattr(lens, field, value)
+        lens.updated_at = datetime.now(timezone.utc)
+        # Re-validate the field values (slug regex etc.) after mutation.
+        lens = LensSchema.model_validate(lens.model_dump())
+        for i, other in enumerate(vault.lenses):
+            if other.id == lens.id:
+                vault.lenses[i] = lens
+        if is_default:
+            for other in vault.lenses:
+                if other.id != lens.id:
+                    other.is_default = False
+        self._save_and_commit(vault, f"Update lens: {lens.slug}")
+        return lens
+
+    def set_default_lens(self, ref: str) -> LensSchema:
+        """Make ``ref`` the sole default lens, save, and auto-commit."""
+        vault = self.load()
+        lens = self._find_lens(vault, ref)
+        if lens is None:
+            raise LensNotFoundError(ref)
+        for other in vault.lenses:
+            other.is_default = other.id == lens.id
+        self._save_and_commit(vault, f"Set default lens: {lens.slug}")
+        return lens
+
+    def remove_lens(self, ref: str) -> LensSchema | None:
+        """Remove a lens by slug or id. Returns the removed lens or None.
+
+        The generic ``vault remove`` excludes lenses (SECTIONS); the
+        ``vault lens remove`` command owns lens deletion (Q2). When the last
+        lens goes, ``lenses.json`` disappears (byte-identical invariant).
+        """
+        vault = self.load()
+        lens = self._find_lens(vault, ref)
+        if lens is None:
+            return None
+        vault.lenses = [x for x in vault.lenses if x.id != lens.id]
+        self._save_and_commit(vault, f"Remove lens: {lens.slug}")
+        return lens
 
     def import_from_draft(
         self,

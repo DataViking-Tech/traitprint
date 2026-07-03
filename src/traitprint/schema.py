@@ -236,6 +236,17 @@ class SalienceLevel(str, enum.Enum):
     SUPPRESSED = "suppressed"
 
 
+# Maximum number of lenses a single vault may hold (PR #56 decision "E").
+# Enforced at every write surface: vault load (below), proposal apply, cloud
+# ingest, and commit-through. A lens is a curation object, not bulk data — the
+# cap keeps the set small enough to reason about.
+MAX_LENSES = 5
+
+# Reserved lens slug: the canonical-rendering escape hatch. ``lens="none"`` on
+# the read tools requests the un-lensed (canonical) rendering even when a default
+# lens exists, so no user lens may claim it (Q6).
+RESERVED_LENS_SLUG = "none"
+
 _SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
 
@@ -269,6 +280,10 @@ class LensSchema(BaseModel):
         if not _SLUG_RE.match(value):
             raise ValueError(
                 f"slug must be lowercase kebab-case ([a-z0-9-]), got {value!r}"
+            )
+        if value == RESERVED_LENS_SLUG:
+            raise ValueError(
+                f"slug {RESERVED_LENS_SLUG!r} is reserved (canonical-rendering keyword)"
             )
         return value
 
@@ -305,8 +320,14 @@ class VaultSchema(BaseModel):
         A lens is resolved by slug (and the bare profile renders the default),
         so a duplicate slug would shadow other lenses and two defaults would make
         the bare rendering depend on list order. Enforce both at load time —
-        ``lenses.json`` can be hand-edited or synced.
+        ``lenses.json`` can be hand-edited or synced. The 5-lens cap
+        (``MAX_LENSES``) is enforced here too, so a vault carrying too many
+        lenses fails to load rather than silently rendering an over-cap set.
         """
+        if len(self.lenses) > MAX_LENSES:
+            raise ValueError(
+                f"a vault may hold at most {MAX_LENSES} lenses, got {len(self.lenses)}"
+            )
         slugs = [lens.slug for lens in self.lenses]
         duplicates = sorted({s for s in slugs if slugs.count(s) > 1})
         if duplicates:

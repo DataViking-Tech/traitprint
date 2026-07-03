@@ -68,6 +68,8 @@ class FakeGitServer:
         self.ingest: dict[str, object] = {"status": "clean", "last_ingested_sha": None}
         #: when set, every push is rejected 422 schema_violation with these.
         self.violations: list[dict[str, str]] | None = None
+        #: non-blocking proposal contract warnings echoed on push + info (Q4).
+        self.warnings: list[dict[str, str]] = []
         self.push_count = 0
         self._init_repo()
 
@@ -102,7 +104,12 @@ class FakeGitServer:
         path = request.url.path
         if path == "/functions/v1/vault-git/info" and request.method == "GET":
             return httpx.Response(
-                200, json={"head": self.head(), "ingest": self.ingest}
+                200,
+                json={
+                    "head": self.head(),
+                    "ingest": self.ingest,
+                    "warnings": self.warnings,
+                },
             )
         if path == "/functions/v1/vault-git/push" and request.method == "POST":
             return self._push(request)
@@ -188,7 +195,10 @@ class FakeGitServer:
                         },
                     )
             _run(["git", "update-ref", "refs/heads/main", tip], cwd=self.repo)
-            return httpx.Response(200, json={"head": tip, "ingest": self.ingest})
+            return httpx.Response(
+                200,
+                json={"head": tip, "ingest": self.ingest, "warnings": self.warnings},
+            )
 
     def _fetch(self, request: httpx.Request) -> httpx.Response:
         since = request.url.params.get("since")
@@ -326,6 +336,34 @@ class TestSyncPush:
         assert outcome.ingest is not None
         assert outcome.ingest.status == "quarantined"
         assert outcome.ingest.quarantined[0]["file"] == "stories/foo.md"
+
+    def test_push_carries_proposal_contract_warnings(
+        self, vault: Path, client: GitSyncClient, server: FakeGitServer
+    ) -> None:
+        # The push succeeds (warnings never fail a push); the outcome carries
+        # the server's non-blocking proposal contract warnings.
+        server.warnings = [
+            {
+                "file": "proposals/add-skill-bad.json",
+                "pointer": "/payload/proficiency",
+                "message": "payload.proficiency is required for add_skill",
+                "hint": "add_skill needs a non-empty proficiency.",
+            }
+        ]
+        outcome = sync_push(vault, client)
+        assert outcome.pushed is True
+        assert len(outcome.warnings) == 1
+        warning = outcome.warnings[0]
+        assert warning.file == "proposals/add-skill-bad.json"
+        assert warning.pointer == "/payload/proficiency"
+        assert "required for add_skill" in warning.message
+        assert server.head() == head_sha(vault, short=False)  # ref advanced
+
+    def test_push_without_warnings_reports_empty_list(
+        self, vault: Path, client: GitSyncClient, server: FakeGitServer
+    ) -> None:
+        outcome = sync_push(vault, client)
+        assert outcome.warnings == []
 
     def test_missing_prerequisites_retries_with_full_bundle(
         self, vault: Path, client: GitSyncClient, server: FakeGitServer
@@ -610,10 +648,17 @@ class TestSyncCli:
         result = runner.invoke(cli, ["--path", str(vault), "sync", "push", "--json"])
         assert result.exit_code == 0, result.output
         data = json.loads(result.output)
-        assert set(data) == {"pushed", "head", "server_head", "ingest_status"}
+        assert set(data) == {
+            "pushed",
+            "head",
+            "server_head",
+            "ingest_status",
+            "warnings",
+        }
         assert data["pushed"] is True
         assert data["head"] == data["server_head"] == patched_http.head()
         assert data["ingest_status"] == "clean"
+        assert data["warnings"] == []
 
     def test_push_human_output(
         self, runner: CliRunner, vault: Path, patched_http: FakeGitServer
@@ -624,6 +669,44 @@ class TestSyncCli:
         assert "Pushed" in result.output
         assert "full bundle" in result.output
         assert "Ingest: clean" in result.output
+
+    def test_push_renders_proposal_warnings(
+        self, runner: CliRunner, vault: Path, patched_http: FakeGitServer
+    ) -> None:
+        patched_http.warnings = [
+            {
+                "file": "proposals/add-lens-bad.json",
+                "pointer": "/payload",
+                "message": "payload keys outside the add_lens entity shape: color",
+                "hint": "Allowed keys for add_lens: id, slug, name, ….",
+            }
+        ]
+        _login(vault)
+        result = runner.invoke(cli, ["--path", str(vault), "sync", "push"])
+        assert result.exit_code == 0, result.output
+        assert "Proposal warnings (1)" in result.output
+        assert "proposals/add-lens-bad.json @ /payload" in result.output
+        assert "outside the add_lens entity shape" in result.output
+        assert "hint:" in result.output
+
+    def test_push_json_includes_warnings(
+        self, runner: CliRunner, vault: Path, patched_http: FakeGitServer
+    ) -> None:
+        patched_http.warnings = [
+            {
+                "file": "proposals/update-skill.json",
+                "pointer": "/target_id",
+                "message": "target_id abc does not resolve to an existing skill",
+                "hint": "Approving this proposal would fail — re-point target_id.",
+            }
+        ]
+        _login(vault)
+        result = runner.invoke(cli, ["--path", str(vault), "sync", "push", "--json"])
+        assert result.exit_code == 0, result.output
+        data = json.loads(result.output)
+        assert data["pushed"] is True
+        assert data["warnings"][0]["file"] == "proposals/update-skill.json"
+        assert data["warnings"][0]["pointer"] == "/target_id"
 
     def test_push_409_prints_pull_guidance(
         self,
