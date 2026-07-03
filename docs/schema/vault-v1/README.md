@@ -2,7 +2,7 @@
 
 **Status:** Stable contract (Phase 0 of the
 [agent-native architecture](../../agent-native-architecture.md))
-**Contract revision:** 1.2 (additive over 1.1 — see [Versioning](#versioning))
+**Contract revision:** 1.3 (additive over 1.2 — see [Versioning](#versioning))
 **Consumers:** the `traitprint` CLI/MCP server (read+write) and the
 traitprint-cloud ingest pipeline (validate+project).
 
@@ -68,9 +68,12 @@ meaning — no contract revision tracks it.
 5. **Proficiency is 1–5**: 1 familiar, 2 working, 3 proficient, 4 expert,
    5 authority. (v0 used 1–10; migration maps `ceil(x/2)`.)
 6. **`profile.json` is JSON Resume-compatible** for the keys that overlap
-   (`basics.name`, `basics.label`, `basics.summary`, `basics.email`).
+   (`basics.name`, `basics.label`, `basics.summary`, `basics.email`, and —
+   since revision 1.3 — `basics.phone`, `basics.url`, `basics.profiles[]`).
    Deviation: `basics.location` is a plain string, not the JSON Resume
-   location object.
+   location object. Each `profiles[]` entry is `{ network, username?, url? }`
+   with `network` required non-empty. The 1.3 keys are omitted while
+   empty/absent so pre-1.3 vaults round-trip byte-identically.
 7. **Proposals** (`proposals/*.json`) are staged writes awaiting review.
    They are synced but never applied until approved (CLI
    `traitprint proposals list|show|approve|reject` — shipped in 0.9.0;
@@ -96,6 +99,17 @@ they implement.
 
 ### Revision history
 
+- **1.3 (2026-07-02)** — additive: optional `basics.phone`, `basics.url`
+  and `basics.profiles[]` on the profile entity (`$defs/profile`,
+  `$defs/profileLink`), following the JSON Resume `basics` vocabulary:
+  `phone` and `url` (personal website/portfolio) are plain strings;
+  `profiles[]` entries are `{ network, username?, url? }` social links
+  with `network` required non-empty. All three keys are omitted from
+  `profile.json` while empty so pre-1.3 vaults round-trip
+  byte-identically. The jsonresume exporter now emits these fields
+  instead of a hardcoded empty `profiles` array. `update_profile`
+  proposal payloads accept the new keys under `payload.basics`. Older
+  vaults without the keys remain valid; `schema_version` stays `1`.
 - **1.2 (2026-06-13)** — additive: optional `skill_links[]` on the
   experience entity (`$defs/experienceFrontmatter`, `$defs/skillLink`) —
   an array of `{ skill_id, proficiency? }` objects annotating a per-skill

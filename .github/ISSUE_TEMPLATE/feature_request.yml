@@ -1,0 +1,30 @@
+name: Feature request
+description: Propose a new capability for the local vault, CLI, or MCP server.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What's the friction?
+      description: Describe the workflow that's awkward or impossible today — the problem, not the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like to happen?
+      description: Sketch the CLI command, MCP tool, or behavior you have in mind. Rough is fine.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Workarounds you've tried
+      description: Hand-editing vault files, custom.md rules, wrapping scripts…
+  - type: checkboxes
+    id: fit
+    attributes:
+      label: Product fit
+      description: Traitprint Local is local-first — zero accounts, zero required network calls.
+      options:
+        - label: This works without a server or account (or I've explained why it needs one — that may belong in traitprint-cloud instead).

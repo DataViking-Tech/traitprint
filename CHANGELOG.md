@@ -30,6 +30,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and top staleness flags. Threshold configurable via
   `doctor --stale-days` (default 90).
 
+- **Style-lint warnings in `vault audit`.** Three new warning-only
+  finding codes, all at minor severity so the pre-push gate and
+  `--severity` filtering are unchanged:
+  - `story.buzzword` — cliché/filler phrasing in story text ("synergy",
+    "leveraged", "rockstar", "move the needle", …), with the found
+    terms named in the message.
+  - `experience.weak_bullet` — accomplishment bullets that use vague
+    phrasing (including "responsible for"), don't lead with an active
+    verb, or lack both a metric and a concrete tool noun; one finding
+    per experience with an example and count.
+  - `story.polished_no_lesson` — stories scoring Polished with no
+    `lesson`, the one field that makes them interview-ready.
+  The lint lives entirely in audit.py, composing coherence.py's
+  helpers — coherence scoring is untouched, preserving the documented
+  lockstep with cloud's story-coherence.ts.
+
+- **Repo launch playbook.** GitHub issue forms (bug report, feature
+  request, and a "Share your story" testimonial template with explicit
+  quote-permission field), `SECURITY.md` (private reporting channels +
+  the local-first threat-model scope), `CONTRIBUTING.md` (dev setup, CI
+  gates, contract-revision and skill-registry rules), and
+  `CITATION.cff`. The README lead now surfaces the ethics invariant —
+  "the vault never asserts a fact you didn't put in it" — as the
+  quotable framing; it was already enforced by the schema, proposals
+  channel, and audit. GOVERNANCE.md, translations scaffolding, and an
+  outcome-narrative rewrite are deliberately deferred per #65.
+
+- **`traitprint-capture-story` skill.** New Agent Skill
+  (`skills/traitprint-capture-story/`) for opportunistic, background
+  STAR story capture: whenever the user recounts a work event in any
+  session (or right after job-application work that used vault
+  context), the wrapping agent drafts a STAR + Lesson story, runs a
+  deterministic dedup *pre-check* against the existing bank
+  (`vault list stories`; near-matches are surfaced to the user, never
+  silently skipped), confirms, and stages the result via
+  `traitprint proposals add --kind add_story` — never a direct write.
+  This intentionally diverges from the interactive story skills'
+  direct-write pattern: for side-effect capture the user approves
+  later through the proposals review queue. Ships in `SKILL_NAMES`
+  (wheel package data + `npx skills add`); no MCP prompt counterpart,
+  same as `traitprint-import-resume`.
+
+- **Profile phone + links (vault contract revision 1.3, additive).**
+  The profile gains optional `phone`, `url` (personal website/portfolio)
+  and `profiles[]` (social links, `{ network, username?, url? }`),
+  following the JSON Resume `basics` vocabulary. Older vaults remain
+  valid (`schema_version` stays 1); the new keys are omitted from
+  `profile.json` while empty, so pre-1.3 vaults round-trip
+  byte-identically. Shipped across the local product:
+  - `vault set-profile --phone`, `--url`, and repeatable
+    `--link NETWORK=URL` (passing any `--link` replaces the list; a
+    single `--link ''` clears it).
+  - The jsonresume exporter emits `basics.phone`, `basics.url` and real
+    `basics.profiles[]` entries instead of a hardcoded empty array.
+  - Proposals: `phone`, `url` and `profiles` allowlisted in
+    `update_profile` payloads, with shape validation for links.
+  - Job-search preference fields (target titles, compensation, work
+    authorization) are deliberately **not** part of this revision — they
+    are not JSON Resume basics and need their own design.
+
 - **User customization layer (`custom.md`).** An optional, user-owned
   `custom.md` at the vault root holds durable instructions for wrapping
   agents (suggested sections: House Rules, Output Preferences,

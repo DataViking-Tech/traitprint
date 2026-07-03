@@ -481,6 +481,129 @@ class TestPhaseAndFreshness:
         assert STALE_DAYS_DEFAULT == 90
 
 
+class TestStyleLint:
+    """Warning-only style findings (story.buzzword, experience.weak_bullet,
+    story.polished_no_lesson) — all at minor severity."""
+
+    def test_buzzword_flagged(self) -> None:
+        v = _coherent_vault()
+        v.stories[0].action = (
+            "I leveraged synergy as a rockstar thought leader to move the needle."
+        )
+        report = audit_vault(v)
+        found = [f for f in report.findings if f.code == "story.buzzword"]
+        assert len(found) == 1
+        assert found[0].severity == "minor"
+        assert "'leveraged'" in found[0].message
+        assert found[0].item_id == str(v.stories[0].id)
+
+    def test_clean_story_not_flagged_for_buzzwords(self) -> None:
+        assert "story.buzzword" not in _codes(_coherent_vault())
+
+    def test_weak_bullet_vague_phrasing(self) -> None:
+        v = _coherent_vault()
+        v.experiences[0].accomplishments = [
+            "Responsible for maintaining various stuff",
+            "Migrated 12 services to Kubernetes, cutting deploy time 40 percent",
+        ]
+        report = audit_vault(v)
+        found = [f for f in report.findings if f.code == "experience.weak_bullet"]
+        assert len(found) == 1
+        assert found[0].severity == "minor"
+        assert "1 of 2" in found[0].message
+        assert "vague phrasing" in found[0].message
+
+    def test_weak_bullet_no_lead_verb(self) -> None:
+        v = _coherent_vault()
+        v.experiences[0].accomplishments = ["Was part of the platform team"]
+        report = audit_vault(v)
+        found = [f for f in report.findings if f.code == "experience.weak_bullet"]
+        assert len(found) == 1
+        assert "active verb" in found[0].message
+
+    def test_weak_bullet_no_metric_or_tool(self) -> None:
+        v = _coherent_vault()
+        v.experiences[0].accomplishments = ["Improved the pipeline reliability"]
+        report = audit_vault(v)
+        found = [f for f in report.findings if f.code == "experience.weak_bullet"]
+        assert len(found) == 1
+        assert "no metric or concrete tool" in found[0].message
+
+    def test_strong_bullets_not_flagged(self) -> None:
+        v = _coherent_vault()
+        v.experiences[0].accomplishments = [
+            "Migrated 12 services to Kubernetes, cutting deploy time 40 percent",
+            "Cut warehouse spend 45 percent by moving to BigQuery",
+            "Led a team of 6 engineers",
+        ]
+        assert "experience.weak_bullet" not in _codes(v)
+
+    @staticmethod
+    def _polished_vault() -> VaultSchema:
+        """A vault whose story genuinely scores Polished (verified: strong
+        causal overlap, metrics, active language, substantial fields)."""
+        v = _coherent_vault()
+        story = v.stories[0]
+        story.situation = (
+            "Our Redshift warehouse costs were ballooning every month as "
+            "pipeline volume grew quickly."
+        )
+        story.task = (
+            "I needed to migrate the warehouse pipelines to BigQuery "
+            "without any downtime for analysts."
+        )
+        story.action = (
+            "I migrated the warehouse pipelines to BigQuery using "
+            "dual-writes and verified downtime stayed zero."
+        )
+        story.result = (
+            "The migrated warehouse pipelines cut BigQuery costs 45 percent "
+            "with zero downtime across six weeks."
+        )
+        return v
+
+    def test_polished_story_without_lesson_flagged(self) -> None:
+        v = self._polished_vault()
+        report = audit_vault(v)
+        labels = {s.story_id: s.label for s in report.story_scores}
+        assert labels[str(v.stories[0].id)] == "Polished"
+        found = [
+            f for f in report.findings if f.code == "story.polished_no_lesson"
+        ]
+        assert len(found) == 1
+        assert found[0].severity == "minor"
+
+    def test_polished_story_with_lesson_not_flagged(self) -> None:
+        v = self._polished_vault()
+        v.stories[0].lesson = "Dual-writes made the cutover boring — repeat that."
+        assert "story.polished_no_lesson" not in _codes(v)
+
+    def test_non_polished_story_without_lesson_not_flagged(self) -> None:
+        # The fixture story scores Strong, not Polished — no lesson nag.
+        assert "story.polished_no_lesson" not in _codes(_coherent_vault())
+
+    def test_style_findings_never_exceed_minor(self) -> None:
+        v = _coherent_vault()
+        v.stories[0].action = "I leveraged synergy to hit the ground running."
+        v.experiences[0].accomplishments = ["Responsible for stuff"]
+        report = audit_vault(v)
+        style_codes = {
+            "story.buzzword",
+            "experience.weak_bullet",
+            "story.polished_no_lesson",
+        }
+        for finding in report.findings:
+            if finding.code in style_codes:
+                assert finding.severity == "minor"
+
+    def test_no_brand_name_in_messages(self) -> None:
+        v = _coherent_vault()
+        v.stories[0].action = "I leveraged synergy."
+        v.experiences[0].accomplishments = ["Responsible for stuff"]
+        for finding in audit_vault(v).findings:
+            assert "career-ops" not in finding.message.lower()
+
+
 class TestSummarize:
     def test_counts(self) -> None:
         findings = [
