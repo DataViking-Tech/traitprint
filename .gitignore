@@ -50,3 +50,6 @@ mayor/
 polecats/
 witness/
 settings/
+
+# Riptide artifacts (cloud-synced)
+.humanlayer/tasks/

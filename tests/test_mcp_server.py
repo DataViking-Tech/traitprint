@@ -22,6 +22,7 @@ from uuid import UUID, uuid4
 import pytest
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
+from pydantic import ValidationError
 
 from traitprint.git_ops import commit, init_repo
 from traitprint.mcp_server import (
@@ -50,6 +51,7 @@ from traitprint.mcp_server import (
     create_server,
 )
 from traitprint.schema import (
+    MAX_LENSES,
     ExperienceSchema,
     LensSchema,
     PhilosophyCategory,
@@ -1516,6 +1518,28 @@ class TestLenses:
         listing = _handle_vault_lens_list(vault)
         assert all(row["disputed"] is False for row in listing["lenses"])
         assert all(row["dispute"] is None for row in listing["lenses"])
+
+    def test_full_lens_vault_at_cap_loads_and_lists(self) -> None:
+        # Read-tool coverage over a vault filled to the 5-lens cap: MAX_LENSES
+        # lenses validate at load and all appear in the listing.
+        vault, _sk = self._two_lens_vault()
+        extra = [
+            LensSchema(slug=f"extra-{i}", name=f"Extra {i}")
+            for i in range(MAX_LENSES - len(vault.lenses))
+        ]
+        full = vault.model_copy(update={"lenses": [*vault.lenses, *extra]})
+        assert len(full.lenses) == MAX_LENSES
+        listing = _handle_vault_lens_list(full)
+        assert listing["total"] == MAX_LENSES
+
+    def test_over_cap_lens_vault_rejected(self) -> None:
+        vault, _sk = self._two_lens_vault()
+        overflow = [
+            LensSchema(slug=f"extra-{i}", name=f"Extra {i}")
+            for i in range(MAX_LENSES)
+        ]
+        with pytest.raises(ValidationError, match="at most 5 lenses"):
+            VaultSchema(lenses=[*vault.lenses, *overflow])
 
     def test_dangling_signature_story_flags_lens_disputed(self) -> None:
         # §11.6: a lens whose signature_story_id no longer resolves is disputed

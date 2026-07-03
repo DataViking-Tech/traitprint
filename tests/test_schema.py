@@ -8,7 +8,9 @@ import pytest
 from pydantic import ValidationError
 
 from traitprint.schema import (
+    MAX_LENSES,
     ExperienceSchema,
+    LensSchema,
     PhilosophyCategory,
     PhilosophySchema,
     ProfileLink,
@@ -224,3 +226,39 @@ class TestPhilosophyCategory:
     def test_unknown_category_rejected(self) -> None:
         with pytest.raises(ValidationError):
             PhilosophySchema(title="T", category="vibes")
+
+
+class TestLensCap:
+    """The documented 5-lens cap is enforced at vault load (MAX_LENSES)."""
+
+    @staticmethod
+    def _lenses(count: int) -> list[LensSchema]:
+        return [LensSchema(slug=f"lens-{i}", name=f"Lens {i}") for i in range(count)]
+
+    def test_max_lenses_is_five(self) -> None:
+        assert MAX_LENSES == 5
+
+    def test_exactly_max_lenses_validates(self) -> None:
+        vault = VaultSchema(lenses=self._lenses(MAX_LENSES))
+        assert len(vault.lenses) == MAX_LENSES
+
+    def test_over_cap_rejected_at_load(self) -> None:
+        with pytest.raises(ValidationError, match="at most 5 lenses"):
+            VaultSchema(lenses=self._lenses(MAX_LENSES + 1))
+
+
+class TestReservedLensSlug:
+    """The 'none' slug is reserved as the canonical-rendering keyword (Q6)."""
+
+    def test_none_slug_rejected(self) -> None:
+        with pytest.raises(ValidationError, match="reserved"):
+            LensSchema(slug="none", name="Canonical")
+
+    def test_none_slug_rejected_in_vault(self) -> None:
+        with pytest.raises(ValidationError, match="reserved"):
+            VaultSchema(lenses=[{"slug": "none", "name": "X"}])
+
+    def test_other_slugs_still_allowed(self) -> None:
+        assert LensSchema(slug="none-of-your-business", name="X").slug == (
+            "none-of-your-business"
+        )

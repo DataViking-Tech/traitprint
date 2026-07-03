@@ -13,9 +13,21 @@ from pydantic import ValidationError
 
 from traitprint.cli import cli
 from traitprint.git_ops import commit, init_repo
-from traitprint.schema import PhilosophyCategory, ProfileLink, SkillSchema
+from traitprint.schema import (
+    MAX_LENSES,
+    PhilosophyCategory,
+    ProfileLink,
+    SalienceLevel,
+    SkillSchema,
+)
 from traitprint.taxonomy import find_exact, suggest_matches
-from traitprint.vault import DuplicateSkillError, VaultStore
+from traitprint.vault import (
+    DuplicateLensSlugError,
+    DuplicateSkillError,
+    LensCapError,
+    LensNotFoundError,
+    VaultStore,
+)
 
 # ------------------------------------------------------------------
 # Fixtures
@@ -2183,3 +2195,285 @@ class TestTaxonomyIntegration:
         # Should match JavaScript/TypeScript but not return exact
         names = [s.name for s in suggestions]
         assert any("Script" in n for n in names)
+
+
+# ------------------------------------------------------------------
+# VaultStore lens mutation surface (Phase 1)
+# ------------------------------------------------------------------
+
+
+class TestLensStore:
+    def test_add_lens_creates_and_persists(self, store: VaultStore) -> None:
+        lens = store.add_lens(slug="pm", name="Product")
+        assert lens.slug == "pm"
+        reloaded = store.load()
+        assert [x.slug for x in reloaded.lenses] == ["pm"]
+        assert (store.directory / "lenses.json").is_file()
+
+    def test_add_lens_with_salience_and_signatures(self, store: VaultStore) -> None:
+        skill = store.add_skill(name="Rust", proficiency=4, category="technical")
+        exp = store.add_experience(title="Staff Eng", company="Acme", start_date="2020")
+        lens = store.add_lens(
+            slug="ic",
+            name="IC",
+            skill_salience={skill.id: SalienceLevel.CORE},
+            signature_experience_ids=[exp.id],
+            headline_override="Principal Engineer",
+        )
+        assert lens.salience_for(skill.id) == SalienceLevel.CORE
+        assert lens.signature_experience_ids == [exp.id]
+        assert lens.headline_override == "Principal Engineer"
+
+    def test_add_lens_duplicate_slug_rejected(self, store: VaultStore) -> None:
+        store.add_lens(slug="pm", name="Product")
+        with pytest.raises(DuplicateLensSlugError):
+            store.add_lens(slug="pm", name="Product Again")
+
+    def test_add_lens_cap_enforced(self, store: VaultStore) -> None:
+        for i in range(MAX_LENSES):
+            store.add_lens(slug=f"lens-{i}", name=f"Lens {i}")
+        with pytest.raises(LensCapError):
+            store.add_lens(slug="one-too-many", name="Nope")
+        assert len(store.load().lenses) == MAX_LENSES
+
+    def test_add_default_flips_previous_default(self, store: VaultStore) -> None:
+        store.add_lens(slug="a", name="A", is_default=True)
+        store.add_lens(slug="b", name="B", is_default=True)
+        vault = store.load()
+        defaults = [x.slug for x in vault.lenses if x.is_default]
+        assert defaults == ["b"]
+
+    def test_update_lens_changes_fields(self, store: VaultStore) -> None:
+        store.add_lens(slug="pm", name="Product")
+        updated = store.update_lens("pm", name="Product Lead", bio_override="New bio")
+        assert updated.name == "Product Lead"
+        assert updated.bio_override == "New bio"
+        assert store.load().lenses[0].name == "Product Lead"
+
+    def test_update_lens_by_id(self, store: VaultStore) -> None:
+        lens = store.add_lens(slug="pm", name="Product")
+        store.update_lens(str(lens.id), name="Renamed")
+        assert store.load().lenses[0].name == "Renamed"
+
+    def test_update_lens_rename_slug_conflict_rejected(
+        self, store: VaultStore
+    ) -> None:
+        store.add_lens(slug="a", name="A")
+        store.add_lens(slug="b", name="B")
+        with pytest.raises(DuplicateLensSlugError):
+            store.update_lens("b", slug="a")
+
+    def test_update_lens_set_default_flips_others(self, store: VaultStore) -> None:
+        store.add_lens(slug="a", name="A", is_default=True)
+        store.add_lens(slug="b", name="B")
+        store.update_lens("b", is_default=True)
+        vault = store.load()
+        assert [x.slug for x in vault.lenses if x.is_default] == ["b"]
+
+    def test_update_lens_not_found(self, store: VaultStore) -> None:
+        with pytest.raises(LensNotFoundError):
+            store.update_lens("ghost", name="X")
+
+    def test_set_default_lens(self, store: VaultStore) -> None:
+        store.add_lens(slug="a", name="A")
+        store.add_lens(slug="b", name="B")
+        store.set_default_lens("b")
+        vault = store.load()
+        assert [x.slug for x in vault.lenses if x.is_default] == ["b"]
+
+    def test_remove_lens(self, store: VaultStore) -> None:
+        store.add_lens(slug="pm", name="Product")
+        removed = store.remove_lens("pm")
+        assert removed is not None
+        assert store.load().lenses == []
+
+    def test_remove_last_lens_deletes_lenses_json(self, store: VaultStore) -> None:
+        store.add_lens(slug="pm", name="Product")
+        assert (store.directory / "lenses.json").is_file()
+        store.remove_lens("pm")
+        assert not (store.directory / "lenses.json").exists()
+
+    def test_remove_lens_not_found_returns_none(self, store: VaultStore) -> None:
+        assert store.remove_lens("ghost") is None
+
+
+class TestLensCLI:
+    def _add(self, runner: CliRunner, vault_dir: Path, *args: str):  # type: ignore[no-untyped-def]
+        return runner.invoke(
+            cli, ["--path", str(vault_dir), "vault", "lens", "add", *args]
+        )
+
+    def test_add_and_persist(self, runner: CliRunner, vault_dir: Path) -> None:
+        result = self._add(runner, vault_dir, "--slug", "pm", "--name", "Product")
+        assert result.exit_code == 0, result.output
+        assert "Added lens: Product (pm)" in result.output
+        assert [x.slug for x in VaultStore(vault_dir).load().lenses] == ["pm"]
+
+    def test_add_requires_slug_and_name(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        result = self._add(runner, vault_dir, "--slug", "pm")
+        assert result.exit_code == 2
+        assert "--slug and --name are required" in result.output
+
+    def test_add_sixth_lens_errors(self, runner: CliRunner, vault_dir: Path) -> None:
+        for i in range(MAX_LENSES):
+            assert (
+                self._add(
+                    runner, vault_dir, "--slug", f"lens-{i}", "--name", f"L{i}"
+                ).exit_code
+                == 0
+            )
+        result = self._add(runner, vault_dir, "--slug", "sixth", "--name", "Sixth")
+        assert result.exit_code == 1
+        assert "at most 5 lenses" in result.output
+
+    def test_add_reserved_slug_rejected(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        result = self._add(runner, vault_dir, "--slug", "none", "--name", "Canonical")
+        assert result.exit_code == 1
+        assert "reserved" in result.output
+
+    def test_add_with_salience(self, runner: CliRunner, vault_dir: Path) -> None:
+        skill = VaultStore(vault_dir).add_skill(
+            name="Rust", proficiency=4, category="technical"
+        )
+        result = self._add(
+            runner,
+            vault_dir,
+            "--slug",
+            "ic",
+            "--name",
+            "IC",
+            "--salience",
+            f"{skill.id}=core",
+        )
+        assert result.exit_code == 0, result.output
+        lens = VaultStore(vault_dir).load().lenses[0]
+        assert lens.salience_for(skill.id) == SalienceLevel.CORE
+
+    def test_add_bad_salience_level(self, runner: CliRunner, vault_dir: Path) -> None:
+        result = self._add(
+            runner,
+            vault_dir,
+            "--slug",
+            "ic",
+            "--name",
+            "IC",
+            "--salience",
+            f"{uuid4()}=turbo",
+        )
+        assert result.exit_code == 2
+        assert "level must be one of" in result.output
+
+    def test_add_batch_from_json(self, runner: CliRunner, vault_dir: Path) -> None:
+        payload = json.dumps(
+            [
+                {"slug": "pm", "name": "Product"},
+                {"slug": "ic", "name": "IC", "is_default": True},
+            ]
+        )
+        result = runner.invoke(
+            cli,
+            ["--path", str(vault_dir), "vault", "lens", "add", "--from-json", "-"],
+            input=payload,
+        )
+        assert result.exit_code == 0, result.output
+        assert "Summary: added 2, errors 0" in result.output
+        vault = VaultStore(vault_dir).load()
+        assert {x.slug for x in vault.lenses} == {"pm", "ic"}
+        assert [x.slug for x in vault.lenses if x.is_default] == ["ic"]
+
+    def test_add_batch_reports_cap(self, runner: CliRunner, vault_dir: Path) -> None:
+        items = [{"slug": f"lens-{i}", "name": f"L{i}"} for i in range(MAX_LENSES + 1)]
+        result = runner.invoke(
+            cli,
+            ["--path", str(vault_dir), "vault", "lens", "add", "--from-json", "-"],
+            input=json.dumps(items),
+        )
+        assert result.exit_code == 1
+        assert "Summary: added 5, errors 1" in result.output
+
+    def test_update(self, runner: CliRunner, vault_dir: Path) -> None:
+        self._add(runner, vault_dir, "--slug", "pm", "--name", "Product")
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "lens",
+                "update",
+                "pm",
+                "--name",
+                "Product Lead",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        assert VaultStore(vault_dir).load().lenses[0].name == "Product Lead"
+
+    def test_update_by_hex_prefix(self, runner: CliRunner, vault_dir: Path) -> None:
+        lens = VaultStore(vault_dir).add_lens(slug="pm", name="Product")
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "lens",
+                "update",
+                lens.id.hex[:8],
+                "--name",
+                "Prefixed",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        assert VaultStore(vault_dir).load().lenses[0].name == "Prefixed"
+
+    def test_update_unknown_lens(self, runner: CliRunner, vault_dir: Path) -> None:
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "lens",
+                "update",
+                "ghost",
+                "--name",
+                "X",
+            ],
+        )
+        assert result.exit_code == 1
+        assert "No lens matches" in result.output
+
+    def test_set_default(self, runner: CliRunner, vault_dir: Path) -> None:
+        self._add(runner, vault_dir, "--slug", "a", "--name", "A")
+        self._add(runner, vault_dir, "--slug", "b", "--name", "B")
+        result = runner.invoke(
+            cli,
+            ["--path", str(vault_dir), "vault", "lens", "set-default", "b"],
+        )
+        assert result.exit_code == 0, result.output
+        vault = VaultStore(vault_dir).load()
+        assert [x.slug for x in vault.lenses if x.is_default] == ["b"]
+
+    def test_remove_with_confirm(self, runner: CliRunner, vault_dir: Path) -> None:
+        self._add(runner, vault_dir, "--slug", "pm", "--name", "Product")
+        result = runner.invoke(
+            cli,
+            ["--path", str(vault_dir), "vault", "lens", "remove", "pm", "--yes"],
+        )
+        assert result.exit_code == 0, result.output
+        assert "Removed lens: pm" in result.output
+        assert VaultStore(vault_dir).load().lenses == []
+        assert not (vault_dir / "lenses.json").exists()
+
+    def test_remove_unknown(self, runner: CliRunner, vault_dir: Path) -> None:
+        result = runner.invoke(
+            cli,
+            ["--path", str(vault_dir), "vault", "lens", "remove", "ghost", "--yes"],
+        )
+        assert result.exit_code == 1
+        assert "No lens matches" in result.output
