@@ -3,7 +3,7 @@
   "$id": "https://traitprint.com/schema/vault-v1.schema.json",
   "title": "Traitprint Vault v1",
   "description": "Contract for the vault v1 file tree. Each $defs entry validates one file type; see README.md for layout and markdown-body conventions.",
-  "$comment": "Contract revision 1.1 — adds optional experienceFrontmatter.skill_ids (additive; vaults written against 1.0 remain valid, schema_version stays 1). Revision 1.2 — adds optional experienceFrontmatter.skill_links (additive; vaults written against 1.0/1.1 remain valid). Revision history in README.md.",
+  "$comment": "Contract revision 1.1 — adds optional experienceFrontmatter.skill_ids (additive; vaults written against 1.0 remain valid, schema_version stays 1). Revision 1.2 — adds optional experienceFrontmatter.skill_links (additive; vaults written against 1.0/1.1 remain valid). Revision 1.3 — adds optional profile basics.phone, basics.url and basics.profiles (additive; vaults written against 1.0-1.2 remain valid). Revision history in README.md.",
   "$defs": {
     "uuid": {
       "type": "string",
@@ -35,6 +35,17 @@
       },
       "additionalProperties": false
     },
+    "profileLink": {
+      "type": "object",
+      "description": "Revision 1.3: one basics.profiles[] entry — a JSON Resume profile item (social/professional link).",
+      "required": ["network"],
+      "properties": {
+        "network": { "type": "string", "minLength": 1, "description": "Site identifier, e.g. linkedin, github." },
+        "username": { "type": "string" },
+        "url": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
     "manifest": {
       "type": "object",
       "description": "traitprint.json",
@@ -58,7 +69,10 @@
             "label": { "type": "string", "description": "Headline." },
             "summary": { "type": "string" },
             "email": { "type": "string" },
-            "location": { "type": "string", "description": "Plain string (deviation from JSON Resume's location object)." }
+            "location": { "type": "string", "description": "Plain string (deviation from JSON Resume's location object)." },
+            "phone": { "type": "string", "description": "Revision 1.3: contact phone (omitted while empty)." },
+            "url": { "type": "string", "description": "Revision 1.3: personal website/portfolio URL (omitted while empty)." },
+            "profiles": { "type": "array", "items": { "$ref": "#/$defs/profileLink" }, "description": "Revision 1.3: social/professional links (omitted while empty)." }
           },
           "additionalProperties": false
         }

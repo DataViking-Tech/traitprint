@@ -12,6 +12,7 @@ from typing import Literal
 
 from traitprint.schema import (
     ExperienceSchema,
+    LensSchema,
     SkillSchema,
     VaultSchema,
 )
@@ -24,6 +25,10 @@ SUPPORTED_FORMATS: tuple[str, ...] = (
     "jsonresume",
     "synthpanel-persona",
 )
+
+#: Multi-file formats served by :func:`export_vault_bundle` (the CLI
+#: requires ``-o DIR`` or ``--zip`` for these).
+BUNDLE_FORMATS: tuple[str, ...] = ("career-bundle",)
 
 
 def export_vault(vault: VaultSchema, fmt: str, *, pack_name: str | None = None) -> str:
@@ -40,8 +45,30 @@ def export_vault(vault: VaultSchema, fmt: str, *, pack_name: str | None = None) 
         return _export_jsonresume(vault)
     if fmt == "synthpanel-persona":
         return _export_synthpanel_persona(vault, pack_name=pack_name)
+    if fmt in BUNDLE_FORMATS:
+        raise ValueError(
+            f"{fmt!r} is a multi-file bundle format — use export_vault_bundle() "
+            "(CLI: pass -o DIR or --zip)."
+        )
     raise ValueError(
         f"Unknown export format: {fmt!r}. Supported: {', '.join(SUPPORTED_FORMATS)}"
+    )
+
+
+def export_vault_bundle(
+    vault: VaultSchema, fmt: str, *, lens: LensSchema | None = None
+) -> dict[str, str]:
+    """Render a multi-file bundle as ``{relative_path: content}``.
+
+    ``lens`` (career-bundle only) projects cv.md through a positioning
+    lens; the other bundle files always render the full vault.
+    """
+    if fmt == "career-bundle":
+        from traitprint.exporters.career_bundle import vault_to_career_bundle
+
+        return vault_to_career_bundle(vault, lens=lens)
+    raise ValueError(
+        f"Unknown bundle format: {fmt!r}. Supported: {', '.join(BUNDLE_FORMATS)}"
     )
 
 
@@ -193,9 +220,18 @@ def _export_jsonresume(vault: VaultSchema) -> str:
         "name": profile.display_name,
         "label": profile.headline,
         "email": profile.contact_email,
+        "phone": profile.phone,
+        "url": profile.url,
         "summary": profile.summary,
         "location": {"address": profile.location} if profile.location else {},
-        "profiles": [],
+        "profiles": [
+            {
+                "network": link.network,
+                **({"username": link.username} if link.username else {}),
+                **({"url": link.url} if link.url else {}),
+            }
+            for link in profile.profiles
+        ],
     }
 
     work = [_exp_to_jsonresume(e) for e in vault.experiences]

@@ -20,6 +20,7 @@ from traitprint.schema import (
     ExperienceSchema,
     PhilosophyCategory,
     PhilosophySchema,
+    ProfileLink,
     ProfileSchema,
     SkillLink,
     SkillSchema,
@@ -168,27 +169,34 @@ class VaultStore:
         summary: str | None = None,
         location: str | None = None,
         contact_email: str | None = None,
+        phone: str | None = None,
+        url: str | None = None,
+        profiles: list[ProfileLink] | None = None,
     ) -> ProfileSchema:
         """Update profile fields, save, and auto-commit.
 
         Only fields passed as non-None are updated; existing values are
         preserved for fields left as None. Pass an empty string to clear
-        a field explicitly.
+        a field explicitly. ``profiles`` replaces the whole link list
+        when passed (an empty list clears it).
         """
         vault = self.load()
         current = vault.profile.model_dump()
-        updates: dict[str, str] = {}
+        updates: dict[str, Any] = {}
         for key, value in (
             ("display_name", display_name),
             ("headline", headline),
             ("summary", summary),
             ("location", location),
             ("contact_email", contact_email),
+            ("phone", phone),
+            ("url", url),
+            ("profiles", profiles),
         ):
             if value is not None:
                 updates[key] = value
         current.update(updates)
-        vault.profile = ProfileSchema(**current)
+        vault.profile = ProfileSchema.model_validate(current)
         self._save_and_commit(vault, "Update profile")
         return vault.profile
 

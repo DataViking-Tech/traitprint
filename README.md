@@ -7,6 +7,13 @@ can help you build.**
 > of your skills, experience, stories, and philosophy — kept on your laptop,
 > shared on your terms.
 
+One rule holds everywhere: **the vault never asserts a fact you didn't put in
+it.** Lenses re-order and re-weight what's true for a given audience — they
+cannot invent. Agents stage what they extract as proposals *you* approve, and
+they never fabricate a skill, an ID, or a link. Presentation flexes; facts
+don't. (This isn't a promise in a README — it's enforced by the schema, the
+proposals channel, and the audit.)
+
 Traitprint ships as **two products**:
 
 - **Traitprint Local** (`pip install traitprint`) — a local-first vault and
@@ -127,6 +134,28 @@ Add Traitprint to your Claude Desktop config file
 The same snippet works for any MCP client that accepts an `mcpServers` block
 (Cursor, Zed, Continue, etc.).
 
+### Bootstrap any agent CLI (`traitprint agents init`)
+
+```
+traitprint agents init ~/my-project
+```
+
+One command scaffolds a project directory for agent CLIs: thin entrypoint
+wrappers (`CLAUDE.md`, `QWEN.md`, `.grok/GROK.md`) that all delegate to a
+single canonical `AGENTS.md` (Codex CLI, OpenCode, and Kimi CLI read it
+natively), the six [Agent Skills](skills/) copied to `.agents/skills/` and
+`.claude/skills/`, and project-scoped MCP registration for
+`traitprint mcp-serve` (`.mcp.json`, `opencode.json`, `.qwen/settings.json`,
+`.grok/settings.json`) — plus copy-paste snippets for home-directory configs
+(Codex CLI, Kimi CLI). Existing files are never overwritten, and re-running
+is safe.
+
+Honest positioning: if you already use
+`npx skills add DataViking-Tech/traitprint` (skills) or the Gemini CLI
+extension (which this command deliberately skips — `gemini-extension.json`
+covers it), much of this is covered. `agents init` earns its keep for
+pip-only setups without Node and for the per-runtime MCP wiring.
+
 ## Working with an AI agent
 
 Traitprint is designed so an AI agent does most of the heavy lifting — both
@@ -159,9 +188,12 @@ shell access so the agent can run the CLI directly:
 
 ### Agent Skills
 
-The same five workflows ship as [SKILL.md Agent Skills](skills/)
+The same workflows ship as [SKILL.md Agent Skills](skills/)
 (agentskills.io open standard) for filesystem agents like Claude Code,
-Codex CLI, Gemini CLI, and Cursor:
+Codex CLI, Gemini CLI, and Cursor — plus two skills with no prompt
+counterpart: `traitprint-import-resume` (agent-assisted resume import)
+and `traitprint-capture-story` (background STAR capture that stages a
+story proposal whenever a work anecdote surfaces mid-session):
 
 ```
 npx skills add DataViking-Tech/traitprint

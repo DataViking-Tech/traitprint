@@ -11,6 +11,8 @@ from traitprint.schema import (
     ExperienceSchema,
     PhilosophyCategory,
     PhilosophySchema,
+    ProfileLink,
+    ProfileSchema,
     SkillLink,
     SkillSchema,
     StorySchema,
@@ -36,6 +38,49 @@ class TestEmptyVault:
 
     def test_vault_ids_are_unique(self) -> None:
         assert VaultSchema().vault_id != VaultSchema().vault_id
+
+
+class TestProfileSchema:
+    def test_rev_1_3_fields_default_empty(self) -> None:
+        profile = ProfileSchema()
+        assert profile.phone == ""
+        assert profile.url == ""
+        assert profile.profiles == []
+
+    def test_rev_1_3_fields_round_trip(self) -> None:
+        profile = ProfileSchema(
+            phone="+44 20 7946 0000",
+            url="https://ada.example.com",
+            profiles=[
+                ProfileLink(
+                    network="github",
+                    username="ada",
+                    url="https://github.com/ada",
+                )
+            ],
+        )
+        dumped = profile.model_dump(mode="json")
+        assert ProfileSchema.model_validate(dumped) == profile
+
+    def test_profiles_accept_plain_dicts(self) -> None:
+        profile = ProfileSchema.model_validate(
+            {"profiles": [{"network": "linkedin", "url": "https://l.example"}]}
+        )
+        assert profile.profiles[0].network == "linkedin"
+        assert profile.profiles[0].username == ""
+
+    def test_profile_link_username_and_url_optional(self) -> None:
+        link = ProfileLink(network="mastodon")
+        assert link.username == ""
+        assert link.url == ""
+
+    def test_profile_link_requires_network(self) -> None:
+        with pytest.raises(ValidationError):
+            ProfileLink.model_validate({"url": "https://example.com"})
+
+    def test_profile_link_rejects_blank_network(self) -> None:
+        with pytest.raises(ValidationError):
+            ProfileLink(network="   ")
 
 
 class TestSkillValidation:

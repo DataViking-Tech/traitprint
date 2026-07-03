@@ -26,6 +26,7 @@ from traitprint.proposals import (
     PROPOSAL_KINDS,
     PROPOSAL_PAYLOAD_KEYS,
     PROPOSAL_STATUSES,
+    ProposalApplyError,
     ProposalLookupError,
     ProposalSchema,
     ProposalStore,
@@ -446,6 +447,102 @@ class TestApplyProposal:
         assert vault.profile.display_name == "Ada"
         assert vault.profile.headline == "Engineer"
         assert vault.profile.summary == ""  # untouched
+
+    def test_update_profile_rev_1_3_keys_validate(self) -> None:
+        # phone/url/profiles are contract rev 1.3 basics keys.
+        problems = validate_proposal_fields(
+            "update_profile",
+            None,
+            {
+                "basics": {
+                    "phone": "+1 555 0100",
+                    "url": "https://ada.example.com",
+                    "profiles": [
+                        {"network": "github", "url": "https://github.com/ada"}
+                    ],
+                }
+            },
+        )
+        assert problems == []
+
+    def test_update_profile_applies_rev_1_3_keys(self) -> None:
+        vault = VaultSchema()
+        apply_proposal(
+            vault,
+            ProposalSchema(
+                kind="update_profile",
+                payload={
+                    "basics": {
+                        "phone": "+1 555 0100",
+                        "url": "https://ada.example.com",
+                        "profiles": [
+                            {
+                                "network": "github",
+                                "username": "ada",
+                                "url": "https://github.com/ada",
+                            }
+                        ],
+                    }
+                },
+            ),
+        )
+        assert vault.profile.phone == "+1 555 0100"
+        assert vault.profile.url == "https://ada.example.com"
+        assert vault.profile.profiles[0].network == "github"
+        assert vault.profile.profiles[0].username == "ada"
+
+    def test_update_profile_profiles_replace_and_clear(self) -> None:
+        vault = VaultSchema()
+        apply_proposal(
+            vault,
+            ProposalSchema(
+                kind="update_profile",
+                payload={"basics": {"profiles": [{"network": "github"}]}},
+            ),
+        )
+        assert len(vault.profile.profiles) == 1
+        apply_proposal(
+            vault,
+            ProposalSchema(
+                kind="update_profile",
+                payload={"basics": {"profiles": []}},
+            ),
+        )
+        assert vault.profile.profiles == []
+
+    def test_update_profile_bad_profiles_shape_rejected(self) -> None:
+        problems = validate_proposal_fields(
+            "update_profile",
+            None,
+            {"basics": {"profiles": [{"url": "https://no-network.example"}]}},
+        )
+        assert any("network" in p for p in problems)
+
+        problems = validate_proposal_fields(
+            "update_profile",
+            None,
+            {"basics": {"profiles": [{"network": "github", "site": "x"}]}},
+        )
+        assert any("site" in p for p in problems)
+
+        problems = validate_proposal_fields(
+            "update_profile",
+            None,
+            {"basics": {"profiles": "github"}},
+        )
+        assert any("must be a JSON array" in p for p in problems)
+
+    def test_update_profile_apply_rejects_bad_profiles(self) -> None:
+        vault = VaultSchema()
+        with pytest.raises(ProposalApplyError):
+            apply_proposal(
+                vault,
+                ProposalSchema(
+                    kind="update_profile",
+                    payload={"basics": {"profiles": [{"network": ""}]}},
+                ),
+            )
+        assert vault.profile.profiles == []  # nothing mutated
 
     def test_skill_rename_reresolves_taxonomy(self) -> None:
         from traitprint.taxonomy import find_exact
