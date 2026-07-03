@@ -1,0 +1,34 @@
+name: "Share your story — got hired (or leveled up) using Traitprint?"
+description: Tell us how your vault helped — an interview answer that landed, an agent workflow that clicked, an offer you accepted.
+title: "[Story] "
+labels: ["testimonial"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        We read every one of these. Share only what you're comfortable making
+        public — this issue is visible to everyone. With your permission we may
+        quote it (credited or anonymous, your choice) in the README or release notes.
+  - type: textarea
+    id: story
+    attributes:
+      label: What happened?
+      description: The short version — what you were trying to do, how Traitprint fit in, how it turned out.
+      placeholder: "I pointed Claude at my vault before a panel interview, and…"
+    validations:
+      required: true
+  - type: textarea
+    id: setup
+    attributes:
+      label: Your setup (optional)
+      description: Which pieces you used — CLI, MCP server + which client, Agent Skills, import-resume, sync…
+  - type: dropdown
+    id: quote-permission
+    attributes:
+      label: May we quote this?
+      options:
+        - Yes, with my name/handle
+        - Yes, anonymously
+        - No — just for the team to read
+    validations:
+      required: true
