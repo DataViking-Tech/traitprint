@@ -1410,6 +1410,32 @@ def create_server(store: VaultStore) -> FastMCP:
             _handle_get_philosophy(vault, topic or "", limit, category=category)
         )
 
+    @mcp.tool(
+        description=(
+            "Vault health check for session start: deterministic phase "
+            "(first-run | growing | established | stale) plus freshness "
+            "findings, each naming the fix skill "
+            "(traitprint-fill-vault / -mine-story-gaps / -capture-story / "
+            "-draft-star-story) so a wrapping agent can self-orient on "
+            "what the vault needs next. Local-only tool (no cloud "
+            "counterpart); read-only."
+        )
+    )
+    def doctor(stale_days: int = 90) -> dict[str, Any]:
+        from traitprint.audit import compute_phase, freshness_findings
+
+        stale_days = max(1, stale_days)
+        vault = store.load()
+        phase = compute_phase(vault, stale_days=stale_days)
+        findings = freshness_findings(vault, stale_days=stale_days)
+        return _envelope(
+            {
+                "phase": phase.to_dict(),
+                "stale_days": stale_days,
+                "findings": [f.to_dict() for f in findings],
+            }
+        )
+
     @mcp.prompt(
         description=(
             "Socratic interview that populates the vault (skills, experiences, "
