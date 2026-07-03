@@ -23,6 +23,7 @@ from traitprint.schema import (
     EducationSchema,
     ExperienceSchema,
     PhilosophySchema,
+    ProfileLink,
     ProfileSchema,
     SkillSchema,
     StorySchema,
@@ -167,6 +168,8 @@ class TestV1RoundTrip:
         assert manifest["updated_at"].endswith("Z")
 
     def test_profile_json_resume_basics(self, vault_dir: Path) -> None:
+        # No rev-1.3 fields set: profile.json stays byte-compatible with
+        # pre-1.3 output (phone/url/profiles keys omitted while empty).
         store = VaultStore(vault_dir)
         store.save(_full_vault())
         profile = json.loads((vault_dir / "profile.json").read_text())
@@ -179,6 +182,64 @@ class TestV1RoundTrip:
                 "location": "London",
             }
         }
+
+    def test_profile_rev_1_3_fields_round_trip(self, vault_dir: Path) -> None:
+        store = VaultStore(vault_dir)
+        vault = _full_vault()
+        vault.profile.phone = "+44 20 7946 0000"
+        vault.profile.url = "https://ada.example.com"
+        vault.profile.profiles = [
+            ProfileLink(
+                network="github", username="ada", url="https://github.com/ada"
+            ),
+            ProfileLink(network="linkedin", url="https://linkedin.com/in/ada"),
+        ]
+        store.save(vault)
+
+        on_disk = json.loads((vault_dir / "profile.json").read_text())
+        assert on_disk["basics"]["phone"] == "+44 20 7946 0000"
+        assert on_disk["basics"]["url"] == "https://ada.example.com"
+        assert on_disk["basics"]["profiles"] == [
+            {
+                "network": "github",
+                "username": "ada",
+                "url": "https://github.com/ada",
+            },
+            {
+                "network": "linkedin",
+                "username": "",
+                "url": "https://linkedin.com/in/ada",
+            },
+        ]
+
+        loaded = store.load()
+        assert loaded.profile == vault.profile
+
+    def test_pre_1_3_profile_json_reads_with_defaults(
+        self, vault_dir: Path
+    ) -> None:
+        store = VaultStore(vault_dir)
+        store.save(_full_vault())
+        # Rewrite profile.json exactly as a pre-1.3 writer would emit it.
+        (vault_dir / "profile.json").write_text(
+            json.dumps(
+                {
+                    "basics": {
+                        "name": "Ada Lovelace",
+                        "label": "Engineer",
+                        "summary": "A decade of data.",
+                        "email": "ada@example.com",
+                        "location": "London",
+                    }
+                },
+                indent=2,
+            )
+            + "\n"
+        )
+        profile = store.load().profile
+        assert profile.phone == ""
+        assert profile.url == ""
+        assert profile.profiles == []
 
     def test_deleting_entity_deletes_its_file(self, vault_dir: Path) -> None:
         store = VaultStore(vault_dir)
