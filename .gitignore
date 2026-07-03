@@ -37,10 +37,16 @@ Thumbs.db
 *.db
 .beads-credential-key
 
-# Gas Town (added by gt)
+# Gas Town (added by gt) — rig-managed local state, never source content.
+# Committed gt/bd state collides with `gt rig add` init logic (issue #30);
+# .beads/ was untracked in #31 and the remaining rig dirs in the follow-up.
 .runtime/
 .claude/
 .logs/
 state.json
 CLAUDE.md
 CLAUDE.local.md
+mayor/
+polecats/
+witness/
+settings/
