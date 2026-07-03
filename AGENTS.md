@@ -154,6 +154,8 @@ until approval.
 | `traitprint proposals approve --all [-y]` | D9 one-step approve-all: applies every pending proposal in ONE batch commit (`Approve N proposals`); failures print `[err]` lines, those proposals stay pending, exit 1 |
 | `traitprint proposals reject ID [-y]` | Sets `status: rejected` + `resolved_at`; the file is kept (and committed) |
 | `traitprint proposals add --kind K [--target-id UUID] [--rationale R] [--source S] --payload-json -` | Stage a new pending proposal from a JSON object (file or stdin). Same validation as the hosted MCP `vault_propose`: kind enum, per-kind allowed payload keys, `target_id` required for `update_*` kinds (forbidden otherwise). Exit 1 with `[err] proposal: ...` lines on violations |
+| `traitprint proposals validate PATH... [--json]` | Read-only, needs no vault: contract-validate proposal `.json` files (or every `*.json` in a directory) with the exact checks `add`/review run, without staging anything. `[ok]`/`[err]` lines + `Summary:`; exit 0 all valid, 1 otherwise. For pre-flighting files produced by external tools — see `docs/external-exporters.md` |
+| `traitprint proposals contract [--json]` | Print the proposal contract (kinds, per-kind allowed/required payload keys, statuses, profile `basics` keys, which kinds take `target_id`). `--json` emits a machine-readable document external proposers can vendor/diff to catch contract drift. Needs no vault |
 
 Payload rules (contract): full entity for `add_*`, only the changed fields
 for `update_*`; narrative text travels in `payload.body` for experiences,
@@ -323,11 +325,28 @@ the Agent Skills below, so prompt and skill never drift.
 
 ## Agent Skills
 
-Six SKILL.md workflow skills (agentskills.io format) live under
+Seven SKILL.md workflow skills (agentskills.io format) live under
 [`skills/`](skills/), with a shared CLI cheatsheet at
 [`skills/shared/cli-reference.md`](skills/shared/cli-reference.md). Install
 into any skills-aware agent with `npx skills add DataViking-Tech/traitprint`;
 they also ship inside the wheel as `traitprint/data/skills/`.
+
+### Scaffolding a project for agent CLIs
+
+`traitprint agents init [DIR] [--json]` (default: cwd) bootstraps a
+directory so agent CLIs pick up traitprint on first launch — a Node-free
+alternative to `npx skills add` that also wires MCP. It writes: a
+canonical copy of this manual as `AGENTS.md`; thin wrappers delegating to
+it (`CLAUDE.md`, `QWEN.md`, `.grok/GROK.md` — Codex CLI, OpenCode, and
+Kimi CLI read `AGENTS.md` natively); the six skills under
+`.agents/skills/` and `.claude/skills/`; and project-scoped MCP
+registration for `traitprint mcp-serve` (`.mcp.json`, `opencode.json`,
+`.qwen/settings.json`, `.grok/settings.json`). Home-directory configs
+(Codex `~/.codex/config.toml`, Kimi `~/.kimi/mcp.json`) are printed as
+snippets — nothing outside DIR is ever touched, existing files are never
+overwritten (re-runs are idempotent), and Gemini CLI is skipped because
+the published extension (`gemini-extension.json`) already covers it.
+`--json` emits `{directory, written, skipped, mcp, next_steps}`.
 
 ## Gotchas
 

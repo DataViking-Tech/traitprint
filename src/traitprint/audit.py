@@ -13,12 +13,17 @@ they are nuance, not bugs.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Any, Literal
 
 from traitprint.coherence import (
+    _ACTIVE_VERBS,
     CoherenceScore,
     StoryInput,
+    _has_metrics,
+    _has_vague_language,
     cross_validate_stories,
     score_story_coherence,
 )
@@ -46,11 +51,26 @@ STRONG_PROFICIENCY = 4
 # warnings/major too). Cloud ingest accepts and quarantines them.
 DANGLING_REFERENCE_SEVERITY: Severity = "major"
 
+# Days without a touch before an entity (or the vault as a whole) counts as
+# stale. Overridable per call (audit_vault/compute_phase) and via
+# ``traitprint doctor --stale-days``.
+STALE_DAYS_DEFAULT = 90
+
+# Vault phases (deterministic date math + counts; see compute_phase).
+Phase = Literal["first-run", "growing", "established", "stale"]
+
+# Content bar for "established": below any of these the vault is "growing".
+_ESTABLISHED_MIN_SKILLS = 5
+_ESTABLISHED_MIN_EXPERIENCES = 1
+_ESTABLISHED_MIN_STORIES = 3
+
 
 @dataclass(frozen=True)
 class Finding:
     """A single coherence issue. ``related_id`` links a second item (e.g. the
-    other story in a contradiction)."""
+    other story in a contradiction). ``fix_skill`` optionally names the
+    shipped Agent Skill that addresses the finding, extending the existing
+    remediation-message pattern with a structured field agents can route on."""
 
     severity: Severity
     code: str
@@ -58,6 +78,7 @@ class Finding:
     message: str
     item_id: str | None = None
     related_id: str | None = None
+    fix_skill: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -67,6 +88,7 @@ class Finding:
             "message": self.message,
             "item_id": self.item_id,
             "related_id": self.related_id,
+            "fix_skill": self.fix_skill,
         }
 
 
@@ -123,6 +145,211 @@ class AuditReport:
 def severity_rank(severity: Severity) -> int:
     """Return the numeric rank of a severity (higher = more severe)."""
     return _SEVERITY_RANK.get(severity, 0)
+
+
+# ── Vault phase + freshness (traitprint doctor) ─────────────────────
+#
+# Phase detection and recheck-after-days aging adapted from career-ops's
+# doctor state model (MIT); attribution lives in this comment only. All
+# math runs over the entities' own created_at/updated_at datetimes —
+# loose display dates (start_date/end_date strings) are used solely for
+# the "is current role" determination.
+
+
+@dataclass(frozen=True)
+class PhaseReport:
+    """Deterministic vault phase + the numbers behind it."""
+
+    phase: Phase
+    reason: str
+    skills: int
+    experiences: int
+    stories: int
+    days_since_activity: int | None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "phase": self.phase,
+            "reason": self.reason,
+            "counts": {
+                "skills": self.skills,
+                "experiences": self.experiences,
+                "stories": self.stories,
+            },
+            "days_since_activity": self.days_since_activity,
+        }
+
+
+def _now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _days_since(moment: datetime, now: datetime) -> int:
+    return max(0, int((now - moment).total_seconds() // 86400))
+
+
+def _latest_activity(vault: VaultSchema) -> datetime | None:
+    """Most recent entity touch (skills/experiences/stories/philosophies)."""
+    stamps = [
+        item.updated_at
+        for section in (
+            vault.skills,
+            vault.experiences,
+            vault.stories,
+            vault.philosophies,
+        )
+        for item in section
+    ]
+    return max(stamps) if stamps else None
+
+
+def compute_phase(
+    vault: VaultSchema,
+    *,
+    stale_days: int = STALE_DAYS_DEFAULT,
+    now: datetime | None = None,
+) -> PhaseReport:
+    """Classify the vault: first-run | growing | established | stale.
+
+    - **first-run** — nothing to work with yet (no skills, experiences,
+      or stories).
+    - **growing** — has content but below the established bar
+      (>= 5 skills, >= 1 experience, >= 3 stories).
+    - **established** — bar met and touched within ``stale_days``.
+    - **stale** — bar met but untouched for more than ``stale_days``.
+    """
+    now = now or _now()
+    n_skills = len(vault.skills)
+    n_exp = len(vault.experiences)
+    n_stories = len(vault.stories)
+
+    if not n_skills and not n_exp and not n_stories:
+        return PhaseReport(
+            "first-run", "The vault has no skills, experiences, or stories yet.",
+            0, 0, 0, None,
+        )
+
+    latest = _latest_activity(vault)
+    days = _days_since(latest, now) if latest else None
+
+    established = (
+        n_skills >= _ESTABLISHED_MIN_SKILLS
+        and n_exp >= _ESTABLISHED_MIN_EXPERIENCES
+        and n_stories >= _ESTABLISHED_MIN_STORIES
+    )
+    if not established:
+        return PhaseReport(
+            "growing",
+            f"Below the established bar (>= {_ESTABLISHED_MIN_SKILLS} skills, "
+            f">= {_ESTABLISHED_MIN_EXPERIENCES} experience, "
+            f">= {_ESTABLISHED_MIN_STORIES} stories).",
+            n_skills, n_exp, n_stories, days,
+        )
+    if days is not None and days > stale_days:
+        return PhaseReport(
+            "stale",
+            f"No entity has been touched in {days} days "
+            f"(threshold {stale_days}).",
+            n_skills, n_exp, n_stories, days,
+        )
+    return PhaseReport(
+        "established",
+        f"Content bar met; last activity {days} day(s) ago."
+        if days is not None
+        else "Content bar met.",
+        n_skills, n_exp, n_stories, days,
+    )
+
+
+def _audit_freshness(
+    vault: VaultSchema,
+    story_scores: list[StoryScore],
+    out: list[Finding],
+    *,
+    stale_days: int,
+    now: datetime,
+) -> None:
+    """Date-based staleness findings (all minor; each names its fix skill)."""
+    # Story bank as a whole aging out — aggregate, not per-story, so a
+    # long-lived vault full of (legitimately) old stories isn't spammed.
+    if vault.stories:
+        newest = max(s.updated_at for s in vault.stories)
+        days = _days_since(newest, now)
+        if days > stale_days:
+            out.append(
+                Finding(
+                    "minor",
+                    "vault.stale_stories",
+                    "stories",
+                    f"No story has been added or touched in {days} days. "
+                    "Recent work is going uncaptured.",
+                    fix_skill="traitprint-capture-story",
+                )
+            )
+
+    # A current role (no end_date) that hasn't been edited in a while —
+    # ongoing work should be accruing accomplishments.
+    for exp in vault.experiences:
+        if exp.end_date:
+            continue
+        days = _days_since(exp.updated_at, now)
+        if days > stale_days:
+            out.append(
+                Finding(
+                    "minor",
+                    "experience.current_stale",
+                    "experiences",
+                    f"Current role {exp.title!r} hasn't been updated in "
+                    f"{days} days — recent accomplishments are likely missing.",
+                    str(exp.id),
+                    fix_skill="traitprint-fill-vault",
+                )
+            )
+
+    # Strong skills whose ONLY evidence is stale (skills with NO evidence
+    # already surface as skill.unsupported_strength).
+    stories_by_skill: dict[str, list[datetime]] = {}
+    for story in vault.stories:
+        for ref in story.skill_ids:
+            stories_by_skill.setdefault(str(ref), []).append(story.updated_at)
+    for skill in vault.skills:
+        stamps = stories_by_skill.get(str(skill.id))
+        if not stamps or skill.proficiency < STRONG_PROFICIENCY:
+            continue
+        freshest = _days_since(max(stamps), now)
+        if freshest > stale_days:
+            out.append(
+                Finding(
+                    "minor",
+                    "skill.stale_evidence",
+                    "skills",
+                    f"Skill {skill.name!r} ({skill.proficiency}/5) is backed "
+                    f"only by stories untouched for {freshest}+ days — fresh "
+                    "evidence keeps strong claims credible.",
+                    str(skill.id),
+                    fix_skill="traitprint-mine-story-gaps",
+                )
+            )
+
+    # Lens signature stories are the showcased ones — a Draft there is a
+    # front-window problem, not a back-catalog one.
+    labels = {s.story_id: s.label for s in story_scores}
+    for lens in vault.lenses:
+        for ref in lens.signature_story_ids:
+            if labels.get(str(ref)) == "Draft":
+                out.append(
+                    Finding(
+                        "minor",
+                        "lens.draft_signature",
+                        "lenses",
+                        f"Lens {lens.slug!r} showcases a story that scores "
+                        "only Draft — polish it before pointing anyone at "
+                        "this lens.",
+                        str(lens.id),
+                        str(ref),
+                        fix_skill="traitprint-draft-star-story",
+                    )
+                )
 
 
 def _audit_profile(vault: VaultSchema, out: list[Finding]) -> None:
@@ -311,6 +538,153 @@ def _audit_experiences(
             )
 
 
+# ── Style lint (warning-only findings) ──────────────────────────────
+#
+# Cliché/buzzword blacklist and weak-bullet heuristics adapted from
+# career-ops's style lint (MIT). Attribution lives in this comment only —
+# that brand name must never appear in finding messages. These checks
+# live HERE rather than in coherence.py on purpose: coherence.py is a
+# faithful port of cloud's story-coherence.ts and must stay in lockstep,
+# so the audit-side lint composes its helpers without changing its
+# scoring. All style findings ship at "minor" severity so the pre-push
+# audit gate and --severity filtering are untouched.
+
+_BUZZWORD_PATTERN = re.compile(
+    r"\b(synerg(?:y|ies|ize[ds]?|izing)|leverag(?:e[ds]?|ing)|passionate|"
+    r"results?-driven|detail-oriented|team player|go-getter|"
+    r"thought leader(?:ship)?|self-starter|dynamic individual|"
+    r"guru|ninja|rockstar|wheelhouse|paradigm shift|best-in-class|"
+    r"cutting-edge|world-class|state-of-the-art|low-hanging fruit|"
+    r"move[d]? the needle|think(?:ing)? outside the box|"
+    r"hit the ground running|w(?:ear|ore)(?:ing)? many hats|"
+    r"value[- ]add(?:ed)?|game[- ]chang(?:er|ing))\b",
+    re.IGNORECASE,
+)
+
+#: The one weak-verb addition on top of coherence.py's _VAGUE_PATTERNS
+#: (kept out of coherence.py to preserve cloud lockstep).
+_RESPONSIBLE_FOR = re.compile(r"\bresponsible for\b", re.IGNORECASE)
+
+#: Resume-bullet lead verbs beyond coherence.py's _ACTIVE_VERBS (which is
+#: tuned for story prose, not bullets). Audit-side only, same lockstep
+#: rule as _RESPONSIBLE_FOR.
+_EXTRA_LEAD_VERBS = (
+    "cut|reduced|grew|increased|decreased|improved|saved|scaled|"
+    "streamlined|negotiated|mentored|hired|trained|presented|authored|"
+    "published|owned|founded|rebuilt|consolidated|eliminated|accelerated"
+)
+
+#: A bullet that *leads* with an active verb ("Migrated …", "I led …").
+_LEADS_WITH_ACTIVE_VERB = re.compile(
+    rf"^(?:i\s+)?(?:{_ACTIVE_VERBS}|{_EXTRA_LEAD_VERBS})\b", re.IGNORECASE
+)
+
+#: Tokens that are capitalized mid-line but are not concrete nouns.
+_PRONOUN_TOKENS = frozenset({"i", "i'm", "i'd", "i've", "i'll"})
+
+
+def _found_buzzwords(text: str) -> list[str]:
+    return sorted({m.group(0).lower() for m in _BUZZWORD_PATTERN.finditer(text)})
+
+
+def _is_vague_bullet(text: str) -> bool:
+    return _has_vague_language(text) or bool(_RESPONSIBLE_FOR.search(text))
+
+
+def _has_concrete_noun(line: str) -> bool:
+    """True when the line names something specific after its lead verb —
+    a capitalized tool/product/company, an acronym, or a token with a
+    digit (Postgres, AWS, v2, GPT-4). Deliberately forgiving: this backs
+    a warning-only finding."""
+    for token in line.split()[1:]:
+        t = token.strip(".,;:()[]'\"")
+        if not t or t.lower() in _PRONOUN_TOKENS:
+            continue
+        if any(ch.isdigit() for ch in t) or t[0].isupper():
+            return True
+    return False
+
+
+def _weak_bullet_reason(line: str) -> str | None:
+    """Why an accomplishment bullet reads weak, or None if it passes.
+
+    A strong bullet leads with an active verb and contains a metric or a
+    concrete tool noun; vague phrasing fails it outright.
+    """
+    stripped = line.strip().lstrip("-*• ").strip()
+    if not stripped:
+        return None
+    if _is_vague_bullet(stripped):
+        return "vague phrasing"
+    if not _LEADS_WITH_ACTIVE_VERB.search(stripped):
+        return "doesn't lead with an active verb"
+    if not (_has_metrics(stripped) or _has_concrete_noun(stripped)):
+        return "no metric or concrete tool"
+    return None
+
+
+def _audit_style(
+    vault: VaultSchema, story_scores: list[StoryScore], out: list[Finding]
+) -> None:
+    """Warning-only style lint: buzzwords in stories, weak experience
+    bullets, and Polished stories missing a lesson."""
+    for story in vault.stories:
+        text = "\n".join(
+            (story.situation, story.task, story.action, story.result, story.lesson)
+        )
+        buzzwords = _found_buzzwords(text)
+        if buzzwords:
+            listed = ", ".join(repr(b) for b in buzzwords[:3])
+            out.append(
+                Finding(
+                    "minor",
+                    "story.buzzword",
+                    "stories",
+                    f"Story {story.title!r} uses filler phrasing ({listed}) — "
+                    "replace with what you concretely did and measured.",
+                    str(story.id),
+                )
+            )
+
+    labels = {s.story_id: s.label for s in story_scores}
+    for story in vault.stories:
+        if labels.get(str(story.id)) == "Polished" and not story.lesson.strip():
+            out.append(
+                Finding(
+                    "minor",
+                    "story.polished_no_lesson",
+                    "stories",
+                    f"Story {story.title!r} scores Polished but has no lesson — "
+                    "capture what you'd repeat or do differently to make it "
+                    "interview-ready.",
+                    str(story.id),
+                )
+            )
+
+    for exp in vault.experiences:
+        weak: list[tuple[str, str]] = []
+        for line in exp.accomplishments:
+            reason = _weak_bullet_reason(line)
+            if reason is not None:
+                weak.append((line, reason))
+        if not weak:
+            continue
+        example, reason = weak[0]
+        excerpt = example if len(example) <= 60 else example[:59] + "…"
+        out.append(
+            Finding(
+                "minor",
+                "experience.weak_bullet",
+                "experiences",
+                f"Experience {exp.title!r}: {len(weak)} of "
+                f"{len(exp.accomplishments)} accomplishment bullets read weak — "
+                f"e.g. {excerpt!r} ({reason}). Lead with an active verb and "
+                "include a metric or a concrete tool.",
+                str(exp.id),
+            )
+        )
+
+
 def _score_stories(vault: VaultSchema, out: list[Finding]) -> list[StoryScore]:
     """Score each story and fold its coherence issues into findings."""
     scores: list[StoryScore] = []
@@ -364,11 +738,31 @@ def _contradiction_findings(vault: VaultSchema, out: list[Finding]) -> None:
             )
 
 
+def freshness_findings(
+    vault: VaultSchema,
+    *,
+    stale_days: int = STALE_DAYS_DEFAULT,
+    now: datetime | None = None,
+) -> list[Finding]:
+    """Just the doctor's date-math findings, without the full audit.
+
+    Story coherence is only computed when lenses exist (the one freshness
+    check that needs labels); coherence findings are discarded.
+    """
+    scratch: list[Finding] = []
+    scores = _score_stories(vault, scratch) if vault.lenses else []
+    out: list[Finding] = []
+    _audit_freshness(vault, scores, out, stale_days=stale_days, now=now or _now())
+    return out
+
+
 def audit_vault(
     vault: VaultSchema,
     *,
     pending_proposals: int = 0,
     proposal_issues: list[str] | None = None,
+    stale_days: int = STALE_DAYS_DEFAULT,
+    now: datetime | None = None,
 ) -> AuditReport:
     """Run every coherence check and return a full report.
 
@@ -432,6 +826,10 @@ def audit_vault(
 
     story_scores = _score_stories(vault, findings)
     _contradiction_findings(vault, findings)
+    _audit_freshness(
+        vault, story_scores, findings, stale_days=stale_days, now=now or _now()
+    )
+    _audit_style(vault, story_scores, findings)
 
     tensions = detect_all_tensions(vault.philosophies)
 
@@ -463,12 +861,17 @@ def summarize(findings: list[Finding]) -> dict[str, int]:
 
 __all__ = [
     "DANGLING_REFERENCE_SEVERITY",
+    "STALE_DAYS_DEFAULT",
     "STRONG_PROFICIENCY",
     "AuditReport",
     "Finding",
+    "Phase",
+    "PhaseReport",
     "Severity",
     "StoryScore",
     "audit_vault",
+    "compute_phase",
+    "freshness_findings",
     "severity_rank",
     "summarize",
 ]

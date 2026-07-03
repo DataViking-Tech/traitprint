@@ -149,7 +149,17 @@ _REQUIRED_ADD_KEYS: dict[str, tuple[str, ...]] = {
 }
 
 #: profile.json ``basics`` keys (JSON Resume-compatible subset).
-_PROFILE_BASICS_KEYS = ("name", "label", "summary", "email", "location")
+#: ``phone``, ``url`` and ``profiles`` are contract revision 1.3 (additive).
+_PROFILE_BASICS_KEYS = (
+    "name",
+    "label",
+    "summary",
+    "email",
+    "location",
+    "phone",
+    "url",
+    "profiles",
+)
 
 #: basics key -> ProfileSchema field.
 _BASICS_TO_PROFILE = {
@@ -158,7 +168,42 @@ _BASICS_TO_PROFILE = {
     "summary": "summary",
     "email": "contact_email",
     "location": "location",
+    "phone": "phone",
+    "url": "url",
+    "profiles": "profiles",
 }
+
+#: keys of one ``basics.profiles[]`` entry (JSON Resume profile item).
+_PROFILE_LINK_KEYS = ("network", "username", "url")
+
+
+def _profile_links_problems(value: Any) -> list[str]:
+    """Shape problems for a ``basics.profiles`` value (empty when valid)."""
+    if not isinstance(value, list):
+        return ["payload.basics.profiles: must be a JSON array"]
+    problems: list[str] = []
+    for i, entry in enumerate(value):
+        if not isinstance(entry, dict):
+            problems.append(f"payload.basics.profiles[{i}]: must be a JSON object")
+            continue
+        bad = [k for k in entry if k not in _PROFILE_LINK_KEYS]
+        if bad:
+            problems.append(
+                f"payload.basics.profiles[{i}]: keys outside the profile "
+                f"link shape: {', '.join(sorted(bad))}. Allowed keys: "
+                f"{', '.join(_PROFILE_LINK_KEYS)}"
+            )
+        network = entry.get("network")
+        if not isinstance(network, str) or not network.strip():
+            problems.append(
+                f"payload.basics.profiles[{i}].network: required non-empty string"
+            )
+        for key in ("username", "url"):
+            if key in entry and not isinstance(entry[key], str):
+                problems.append(
+                    f"payload.basics.profiles[{i}].{key}: must be a string"
+                )
+    return problems
 
 #: kind suffix -> vault section name.
 _KIND_SECTION = {
@@ -295,6 +340,8 @@ def validate_proposal_fields(
                     f"{', '.join(sorted(bad))}. Allowed keys: "
                     f"{', '.join(_PROFILE_BASICS_KEYS)}"
                 )
+            if "profiles" in basics:
+                problems.extend(_profile_links_problems(basics["profiles"]))
 
     if is_update_kind(kind):
         if target_id is None:
@@ -309,6 +356,73 @@ def validate_proposal_fields(
         problems.append("rationale: must be a string")
 
     return problems
+
+
+def _error_lines(exc: ValidationError) -> list[str]:
+    """Normalize a pydantic error into ``field: message`` lines."""
+    lines = []
+    for err in exc.errors(include_url=False):
+        loc = ".".join(str(p) for p in err.get("loc", ())) or "value"
+        msg = str(err.get("msg", "invalid value")).removeprefix("Value error, ")
+        lines.append(f"{loc}: {msg}")
+    return lines
+
+
+def validate_proposal_document(data: Any) -> list[str]:
+    """Contract-validate one full proposal document (parsed JSON).
+
+    The same two checks :meth:`ProposalStore.load_all` runs on every
+    ``proposals/*.json`` file before it enters the review queue: the
+    ``$defs/proposal`` shape (:class:`ProposalSchema`) first, then the
+    kind/target/payload-key rules (:func:`validate_proposal_fields`).
+    Returns a list of problems — empty when the document would load and
+    review cleanly. Read-only and vault-independent: external proposers
+    (exporters, importers, plugins in any language) can pre-flight
+    their emitted files with this before staging them.
+    """
+    if not isinstance(data, dict):
+        return ["proposal must be a JSON object"]
+    try:
+        proposal = ProposalSchema.model_validate(data)
+    except ValidationError as exc:
+        return _error_lines(exc)
+    return validate_proposal_fields(
+        proposal.kind,
+        str(proposal.target_id) if proposal.target_id else None,
+        proposal.payload,
+        proposal.rationale,
+    )
+
+
+def proposal_contract() -> dict[str, Any]:
+    """Machine-readable statement of the proposal contract.
+
+    One JSON-serializable document naming the kinds, statuses, per-kind
+    allowed/required payload keys, profile ``basics`` keys, and the
+    kinds that require a ``target_id`` — exactly the validation that
+    ``proposals add``, the review queue, and the hosted
+    ``vault_propose`` all enforce. External tools that mirror this
+    validation in another language can vendor the document (or diff it
+    against a live install via ``traitprint proposals contract
+    --json``) to catch contract drift instead of re-reading this
+    module.
+    """
+    return {
+        "contract": "vault-v1",
+        "definition": "$defs/proposal",
+        "kinds": list(PROPOSAL_KINDS),
+        "statuses": list(PROPOSAL_STATUSES),
+        "payload_keys": {
+            kind: list(keys) for kind, keys in PROPOSAL_PAYLOAD_KEYS.items()
+        },
+        "required_payload_keys": {
+            kind: list(keys) for kind, keys in _REQUIRED_ADD_KEYS.items()
+        },
+        "profile_basics_keys": list(_PROFILE_BASICS_KEYS),
+        "target_id_required_for": [
+            kind for kind in PROPOSAL_KINDS if is_update_kind(kind)
+        ],
+    }
 
 
 # ── store ───────────────────────────────────────────────────────────
@@ -473,12 +587,7 @@ class ProposalStore:
 
 
 def _problems(exc: ValidationError) -> str:
-    parts = []
-    for err in exc.errors(include_url=False):
-        loc = ".".join(str(p) for p in err.get("loc", ())) or "value"
-        msg = str(err.get("msg", "invalid value")).removeprefix("Value error, ")
-        parts.append(f"{loc}: {msg}")
-    return "; ".join(parts) or "invalid value"
+    return "; ".join(_error_lines(exc)) or "invalid value"
 
 
 def _find_item(items: list[Any], target_id: UUID) -> Any | None:
@@ -625,11 +734,19 @@ def _apply_profile(vault: VaultSchema, proposal: ProposalSchema) -> str:
             "payload.basics has keys outside the profile shape: "
             f"{', '.join(sorted(bad))}"
         )
+    link_problems = (
+        _profile_links_problems(basics["profiles"]) if "profiles" in basics else []
+    )
+    if link_problems:
+        raise ProposalApplyError("; ".join(link_problems))
     current = vault.profile.model_dump()
     changed: list[str] = []
     for key, value in basics.items():
         field_name = _BASICS_TO_PROFILE[key]
-        current[field_name] = "" if value is None else str(value)
+        if key == "profiles":
+            current[field_name] = [] if value is None else value
+        else:
+            current[field_name] = "" if value is None else str(value)
         changed.append(key)
     try:
         vault.profile = ProfileSchema.model_validate(current)
@@ -720,6 +837,8 @@ __all__ = [
     "apply_proposal",
     "is_update_kind",
     "kind_entity",
+    "proposal_contract",
     "proposal_diff",
+    "validate_proposal_document",
     "validate_proposal_fields",
 ]

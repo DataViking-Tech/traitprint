@@ -16,6 +16,7 @@ from traitprint.schema import (
     ExperienceSchema,
     PhilosophyCategory,
     PhilosophySchema,
+    ProfileLink,
     ProfileSchema,
     SkillSchema,
     StorySchema,
@@ -181,6 +182,39 @@ class TestExportJsonResume:
         payload = json.loads(export_vault(vault, "jsonresume"))
         assert payload["work"][0]["startDate"] == "2020-03-01"
         assert payload["work"][0]["endDate"] == "2022-11-01"
+
+    def test_emits_phone_url_and_profiles(
+        self, sample_vault: VaultSchema
+    ) -> None:
+        # Contract rev 1.3: basics.phone/url/profiles come from the vault
+        # instead of the pre-1.3 hardcoded empty profiles array.
+        sample_vault.profile.phone = "+44 20 7946 0000"
+        sample_vault.profile.url = "https://ada.example.com"
+        sample_vault.profile.profiles = [
+            ProfileLink(
+                network="github", username="ada", url="https://github.com/ada"
+            ),
+            ProfileLink(network="mastodon", username="ada"),
+        ]
+        basics = json.loads(export_vault(sample_vault, "jsonresume"))["basics"]
+        assert basics["phone"] == "+44 20 7946 0000"
+        assert basics["url"] == "https://ada.example.com"
+        assert basics["profiles"] == [
+            {
+                "network": "github",
+                "username": "ada",
+                "url": "https://github.com/ada",
+            },
+            {"network": "mastodon", "username": "ada"},
+        ]
+
+    def test_profiles_empty_without_links(
+        self, sample_vault: VaultSchema
+    ) -> None:
+        basics = json.loads(export_vault(sample_vault, "jsonresume"))["basics"]
+        assert basics["profiles"] == []
+        assert basics["phone"] == ""
+        assert basics["url"] == ""
 
 
 class TestExportSynthpanelPersona:

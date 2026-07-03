@@ -24,12 +24,18 @@ from traitprint.git_ops import commit, init_repo
 from traitprint.git_ops import log as git_log
 from traitprint.proposals import (
     PROPOSAL_KINDS,
+    PROPOSAL_PAYLOAD_KEYS,
+    PROPOSAL_STATUSES,
+    ProposalApplyError,
     ProposalLookupError,
     ProposalSchema,
     ProposalStore,
     ProposalValidationError,
     apply_proposal,
+    is_update_kind,
+    proposal_contract,
     proposal_diff,
+    validate_proposal_document,
     validate_proposal_fields,
 )
 from traitprint.schema import VaultSchema
@@ -441,6 +447,102 @@ class TestApplyProposal:
         assert vault.profile.display_name == "Ada"
         assert vault.profile.headline == "Engineer"
         assert vault.profile.summary == ""  # untouched
+
+    def test_update_profile_rev_1_3_keys_validate(self) -> None:
+        # phone/url/profiles are contract rev 1.3 basics keys.
+        problems = validate_proposal_fields(
+            "update_profile",
+            None,
+            {
+                "basics": {
+                    "phone": "+1 555 0100",
+                    "url": "https://ada.example.com",
+                    "profiles": [
+                        {"network": "github", "url": "https://github.com/ada"}
+                    ],
+                }
+            },
+        )
+        assert problems == []
+
+    def test_update_profile_applies_rev_1_3_keys(self) -> None:
+        vault = VaultSchema()
+        apply_proposal(
+            vault,
+            ProposalSchema(
+                kind="update_profile",
+                payload={
+                    "basics": {
+                        "phone": "+1 555 0100",
+                        "url": "https://ada.example.com",
+                        "profiles": [
+                            {
+                                "network": "github",
+                                "username": "ada",
+                                "url": "https://github.com/ada",
+                            }
+                        ],
+                    }
+                },
+            ),
+        )
+        assert vault.profile.phone == "+1 555 0100"
+        assert vault.profile.url == "https://ada.example.com"
+        assert vault.profile.profiles[0].network == "github"
+        assert vault.profile.profiles[0].username == "ada"
+
+    def test_update_profile_profiles_replace_and_clear(self) -> None:
+        vault = VaultSchema()
+        apply_proposal(
+            vault,
+            ProposalSchema(
+                kind="update_profile",
+                payload={"basics": {"profiles": [{"network": "github"}]}},
+            ),
+        )
+        assert len(vault.profile.profiles) == 1
+        apply_proposal(
+            vault,
+            ProposalSchema(
+                kind="update_profile",
+                payload={"basics": {"profiles": []}},
+            ),
+        )
+        assert vault.profile.profiles == []
+
+    def test_update_profile_bad_profiles_shape_rejected(self) -> None:
+        problems = validate_proposal_fields(
+            "update_profile",
+            None,
+            {"basics": {"profiles": [{"url": "https://no-network.example"}]}},
+        )
+        assert any("network" in p for p in problems)
+
+        problems = validate_proposal_fields(
+            "update_profile",
+            None,
+            {"basics": {"profiles": [{"network": "github", "site": "x"}]}},
+        )
+        assert any("site" in p for p in problems)
+
+        problems = validate_proposal_fields(
+            "update_profile",
+            None,
+            {"basics": {"profiles": "github"}},
+        )
+        assert any("must be a JSON array" in p for p in problems)
+
+    def test_update_profile_apply_rejects_bad_profiles(self) -> None:
+        vault = VaultSchema()
+        with pytest.raises(ProposalApplyError):
+            apply_proposal(
+                vault,
+                ProposalSchema(
+                    kind="update_profile",
+                    payload={"basics": {"profiles": [{"network": ""}]}},
+                ),
+            )
+        assert vault.profile.profiles == []  # nothing mutated
 
     def test_skill_rename_reresolves_taxonomy(self) -> None:
         from traitprint.taxonomy import find_exact
@@ -1235,3 +1337,234 @@ class TestDraftToProposals:
         from traitprint.mining import draft_from_dict, draft_to_proposals
 
         assert draft_to_proposals(draft_from_dict({})) == []
+
+
+# ── document validation + contract dump (external-proposer surface) ─
+
+
+class TestValidateProposalDocument:
+    def test_round_trip_document_is_valid(self) -> None:
+        doc = ProposalSchema(
+            kind="add_skill",
+            payload={"name": "Rust", "proficiency": 2},
+            source="my-exporter",
+        ).model_dump(mode="json")
+        assert validate_proposal_document(doc) == []
+
+    def test_not_an_object(self) -> None:
+        assert validate_proposal_document([1, 2]) == [
+            "proposal must be a JSON object"
+        ]
+        assert validate_proposal_document("nope") == [
+            "proposal must be a JSON object"
+        ]
+
+    def test_schema_shape_error_reported_with_location(self) -> None:
+        problems = validate_proposal_document(
+            {
+                "id": "not-a-uuid",
+                "kind": "add_skill",
+                "payload": {"name": "Rust", "proficiency": 2},
+            }
+        )
+        assert problems
+        assert any(p.startswith("id:") for p in problems)
+
+    def test_unknown_kind(self) -> None:
+        problems = validate_proposal_document(
+            {"kind": "add_lens", "payload": {"name": "x"}}
+        )
+        assert problems
+        assert "kind" in problems[0]
+
+    def test_field_rules_collected(self) -> None:
+        problems = validate_proposal_document(
+            {"kind": "add_skill", "payload": {"name": "Rust", "bogus": 1}}
+        )
+        assert any("bogus" in p for p in problems)
+        assert any("payload.proficiency" in p for p in problems)
+
+    def test_update_kind_requires_target_id(self) -> None:
+        problems = validate_proposal_document(
+            {"kind": "update_skill", "payload": {"proficiency": 4}}
+        )
+        assert any("target_id" in p for p in problems)
+
+    def test_agrees_with_load_all(self, vault_dir: Path) -> None:
+        # The pre-flight verdict must match the review queue's: a file
+        # load_all accepts validates clean, a file load_all flags fails.
+        store = ProposalStore(vault_dir)
+        lp = store.create(
+            "add_skill", {"name": "Rust", "proficiency": 2}, source="test"
+        )
+        good = json.loads(lp.path.read_text(encoding="utf-8"))
+        assert validate_proposal_document(good) == []
+
+        bad = dict(good)
+        bad["payload"] = {"name": "Go", "bogus": True}
+        bad_file = store.proposals_dir / "add-skill-deadbeef.json"
+        bad_file.write_text(json.dumps(bad), encoding="utf-8")
+        loaded, issues = store.load_all()
+        assert len(loaded) == 1 and len(issues) == 1
+        assert validate_proposal_document(bad) != []
+
+
+class TestProposalContract:
+    def test_matches_module_constants(self) -> None:
+        doc = proposal_contract()
+        assert doc["contract"] == "vault-v1"
+        assert doc["definition"] == "$defs/proposal"
+        assert doc["kinds"] == list(PROPOSAL_KINDS)
+        assert doc["statuses"] == list(PROPOSAL_STATUSES)
+        assert set(doc["payload_keys"]) == set(PROPOSAL_KINDS)
+        for kind, keys in doc["payload_keys"].items():
+            assert keys == list(PROPOSAL_PAYLOAD_KEYS[kind])
+        assert doc["target_id_required_for"] == [
+            k for k in PROPOSAL_KINDS if is_update_kind(k)
+        ]
+        # update_profile targets the singleton profile — never a target_id.
+        assert "update_profile" not in doc["target_id_required_for"]
+
+    def test_required_keys_are_a_subset_of_allowed(self) -> None:
+        doc = proposal_contract()
+        for kind, required in doc["required_payload_keys"].items():
+            assert set(required) <= set(doc["payload_keys"][kind]), kind
+
+    def test_json_serializable(self) -> None:
+        json.dumps(proposal_contract())
+
+
+class TestProposalsValidateCLI:
+    """`traitprint proposals validate` — read-only, vault-independent."""
+
+    def _write(self, directory: Path, name: str, doc: Any) -> Path:
+        file = directory / name
+        file.write_text(json.dumps(doc), encoding="utf-8")
+        return file
+
+    def _valid_doc(self) -> dict[str, Any]:
+        return {"kind": "add_skill", "payload": {"name": "Rust", "proficiency": 2}}
+
+    def test_valid_file_without_any_vault(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        file = self._write(tmp_path, "add-skill-1.json", self._valid_doc())
+        result = runner.invoke(
+            cli,
+            [
+                "--vault-dir",
+                str(tmp_path / "does-not-exist"),
+                "proposals",
+                "validate",
+                str(file),
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        assert f"[ok] {file}" in result.output
+        assert "Summary: 1 valid, 0 invalid" in result.output
+
+    def test_invalid_file_exits_one_with_err_lines(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        file = self._write(
+            tmp_path,
+            "add-skill-1.json",
+            {"kind": "add_skill", "payload": {"name": "Rust", "bogus": 1}},
+        )
+        result = runner.invoke(cli, ["proposals", "validate", str(file)])
+        assert result.exit_code == 1
+        assert f"[err] {file}: " in result.output
+        assert "bogus" in result.output
+        assert "Summary: 0 valid, 1 invalid" in result.output
+
+    def test_invalid_json_is_a_finding_not_a_crash(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        file = tmp_path / "broken.json"
+        file.write_text("{not json", encoding="utf-8")
+        result = runner.invoke(cli, ["proposals", "validate", str(file)])
+        assert result.exit_code == 1
+        assert "invalid JSON" in result.output
+
+    def test_directory_expands_to_json_files(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        self._write(tmp_path, "a.json", self._valid_doc())
+        self._write(
+            tmp_path, "b.json", {"kind": "update_skill", "payload": {"name": "Go"}}
+        )
+        (tmp_path / "notes.txt").write_text("ignored", encoding="utf-8")
+        result = runner.invoke(cli, ["proposals", "validate", str(tmp_path)])
+        assert result.exit_code == 1
+        assert "Summary: 1 valid, 1 invalid" in result.output
+
+    def test_no_paths_is_a_usage_error(self, runner: CliRunner) -> None:
+        result = runner.invoke(cli, ["proposals", "validate"])
+        assert result.exit_code == 2
+
+    def test_empty_directory_is_a_usage_error(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        result = runner.invoke(cli, ["proposals", "validate", str(tmp_path)])
+        assert result.exit_code == 2
+
+    def test_json_report(self, runner: CliRunner, tmp_path: Path) -> None:
+        good = self._write(tmp_path, "good.json", self._valid_doc())
+        bad = self._write(
+            tmp_path, "bad.json", {"kind": "add_skill", "payload": {"name": "Go"}}
+        )
+        result = runner.invoke(
+            cli, ["proposals", "validate", "--json", str(bad), str(good)]
+        )
+        assert result.exit_code == 1
+        report = json.loads(result.output)
+        assert report["valid"] is False
+        assert report["checked"] == 2
+        by_file = {row["file"]: row for row in report["results"]}
+        assert by_file[str(good)]["valid"] is True
+        assert by_file[str(good)]["problems"] == []
+        assert by_file[str(bad)]["valid"] is False
+        assert by_file[str(bad)]["problems"]
+
+    def test_validates_files_the_store_wrote(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        add_proposal(vault_dir, "add_skill", {"name": "Rust", "proficiency": 2})
+        result = runner.invoke(
+            cli, ["proposals", "validate", str(vault_dir / "proposals")]
+        )
+        assert result.exit_code == 0, result.output
+        assert "Summary: 1 valid, 0 invalid" in result.output
+
+    def test_writes_nothing(self, runner: CliRunner, tmp_path: Path) -> None:
+        file = self._write(tmp_path, "a.json", self._valid_doc())
+        before = sorted(p.name for p in tmp_path.iterdir())
+        result = runner.invoke(cli, ["proposals", "validate", str(file)])
+        assert result.exit_code == 0
+        assert sorted(p.name for p in tmp_path.iterdir()) == before
+
+
+class TestProposalsContractCLI:
+    def test_json_matches_library_document(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        result = runner.invoke(
+            cli,
+            [
+                "--vault-dir",
+                str(tmp_path / "does-not-exist"),
+                "proposals",
+                "contract",
+                "--json",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        assert json.loads(result.output) == proposal_contract()
+
+    def test_human_output_lists_every_kind(self, runner: CliRunner) -> None:
+        result = runner.invoke(cli, ["proposals", "contract"])
+        assert result.exit_code == 0
+        for kind in PROPOSAL_KINDS:
+            assert kind in result.output
+        assert "target_id required" in result.output
+        assert "target_id forbidden" in result.output

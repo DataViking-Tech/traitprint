@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Traitprint Cloud issues
+    url: https://github.com/DataViking-Tech/traitprint-cloud/issues
+    about: The hosted product (web app, sync server, hosted MCP) is a separate repo — file cloud issues there.

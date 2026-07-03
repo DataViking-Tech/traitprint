@@ -220,9 +220,18 @@ def _export_jsonresume(vault: VaultSchema) -> str:
         "name": profile.display_name,
         "label": profile.headline,
         "email": profile.contact_email,
+        "phone": profile.phone,
+        "url": profile.url,
         "summary": profile.summary,
         "location": {"address": profile.location} if profile.location else {},
-        "profiles": [],
+        "profiles": [
+            {
+                "network": link.network,
+                **({"username": link.username} if link.username else {}),
+                **({"url": link.url} if link.url else {}),
+            }
+            for link in profile.profiles
+        ],
     }
 
     work = [_exp_to_jsonresume(e) for e in vault.experiences]
