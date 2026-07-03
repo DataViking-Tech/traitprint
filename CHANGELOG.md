@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Style-lint warnings in `vault audit`.** Three new warning-only
+  finding codes, all at minor severity so the pre-push gate and
+  `--severity` filtering are unchanged:
+  - `story.buzzword` — cliché/filler phrasing in story text ("synergy",
+    "leveraged", "rockstar", "move the needle", …), with the found
+    terms named in the message.
+  - `experience.weak_bullet` — accomplishment bullets that use vague
+    phrasing (including "responsible for"), don't lead with an active
+    verb, or lack both a metric and a concrete tool noun; one finding
+    per experience with an example and count.
+  - `story.polished_no_lesson` — stories scoring Polished with no
+    `lesson`, the one field that makes them interview-ready.
+  The lint lives entirely in audit.py, composing coherence.py's
+  helpers — coherence scoring is untouched, preserving the documented
+  lockstep with cloud's story-coherence.ts.
+
 - **Repo launch playbook.** GitHub issue forms (bug report, feature
   request, and a "Share your story" testimonial template with explicit
   quote-permission field), `SECURITY.md` (private reporting channels +

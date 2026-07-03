@@ -13,12 +13,16 @@ they are nuance, not bugs.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
 from traitprint.coherence import (
+    _ACTIVE_VERBS,
     CoherenceScore,
     StoryInput,
+    _has_metrics,
+    _has_vague_language,
     cross_validate_stories,
     score_story_coherence,
 )
@@ -311,6 +315,153 @@ def _audit_experiences(
             )
 
 
+# ── Style lint (warning-only findings) ──────────────────────────────
+#
+# Cliché/buzzword blacklist and weak-bullet heuristics adapted from
+# career-ops's style lint (MIT). Attribution lives in this comment only —
+# that brand name must never appear in finding messages. These checks
+# live HERE rather than in coherence.py on purpose: coherence.py is a
+# faithful port of cloud's story-coherence.ts and must stay in lockstep,
+# so the audit-side lint composes its helpers without changing its
+# scoring. All style findings ship at "minor" severity so the pre-push
+# audit gate and --severity filtering are untouched.
+
+_BUZZWORD_PATTERN = re.compile(
+    r"\b(synerg(?:y|ies|ize[ds]?|izing)|leverag(?:e[ds]?|ing)|passionate|"
+    r"results?-driven|detail-oriented|team player|go-getter|"
+    r"thought leader(?:ship)?|self-starter|dynamic individual|"
+    r"guru|ninja|rockstar|wheelhouse|paradigm shift|best-in-class|"
+    r"cutting-edge|world-class|state-of-the-art|low-hanging fruit|"
+    r"move[d]? the needle|think(?:ing)? outside the box|"
+    r"hit the ground running|w(?:ear|ore)(?:ing)? many hats|"
+    r"value[- ]add(?:ed)?|game[- ]chang(?:er|ing))\b",
+    re.IGNORECASE,
+)
+
+#: The one weak-verb addition on top of coherence.py's _VAGUE_PATTERNS
+#: (kept out of coherence.py to preserve cloud lockstep).
+_RESPONSIBLE_FOR = re.compile(r"\bresponsible for\b", re.IGNORECASE)
+
+#: Resume-bullet lead verbs beyond coherence.py's _ACTIVE_VERBS (which is
+#: tuned for story prose, not bullets). Audit-side only, same lockstep
+#: rule as _RESPONSIBLE_FOR.
+_EXTRA_LEAD_VERBS = (
+    "cut|reduced|grew|increased|decreased|improved|saved|scaled|"
+    "streamlined|negotiated|mentored|hired|trained|presented|authored|"
+    "published|owned|founded|rebuilt|consolidated|eliminated|accelerated"
+)
+
+#: A bullet that *leads* with an active verb ("Migrated …", "I led …").
+_LEADS_WITH_ACTIVE_VERB = re.compile(
+    rf"^(?:i\s+)?(?:{_ACTIVE_VERBS}|{_EXTRA_LEAD_VERBS})\b", re.IGNORECASE
+)
+
+#: Tokens that are capitalized mid-line but are not concrete nouns.
+_PRONOUN_TOKENS = frozenset({"i", "i'm", "i'd", "i've", "i'll"})
+
+
+def _found_buzzwords(text: str) -> list[str]:
+    return sorted({m.group(0).lower() for m in _BUZZWORD_PATTERN.finditer(text)})
+
+
+def _is_vague_bullet(text: str) -> bool:
+    return _has_vague_language(text) or bool(_RESPONSIBLE_FOR.search(text))
+
+
+def _has_concrete_noun(line: str) -> bool:
+    """True when the line names something specific after its lead verb —
+    a capitalized tool/product/company, an acronym, or a token with a
+    digit (Postgres, AWS, v2, GPT-4). Deliberately forgiving: this backs
+    a warning-only finding."""
+    for token in line.split()[1:]:
+        t = token.strip(".,;:()[]'\"")
+        if not t or t.lower() in _PRONOUN_TOKENS:
+            continue
+        if any(ch.isdigit() for ch in t) or t[0].isupper():
+            return True
+    return False
+
+
+def _weak_bullet_reason(line: str) -> str | None:
+    """Why an accomplishment bullet reads weak, or None if it passes.
+
+    A strong bullet leads with an active verb and contains a metric or a
+    concrete tool noun; vague phrasing fails it outright.
+    """
+    stripped = line.strip().lstrip("-*• ").strip()
+    if not stripped:
+        return None
+    if _is_vague_bullet(stripped):
+        return "vague phrasing"
+    if not _LEADS_WITH_ACTIVE_VERB.search(stripped):
+        return "doesn't lead with an active verb"
+    if not (_has_metrics(stripped) or _has_concrete_noun(stripped)):
+        return "no metric or concrete tool"
+    return None
+
+
+def _audit_style(
+    vault: VaultSchema, story_scores: list[StoryScore], out: list[Finding]
+) -> None:
+    """Warning-only style lint: buzzwords in stories, weak experience
+    bullets, and Polished stories missing a lesson."""
+    for story in vault.stories:
+        text = "\n".join(
+            (story.situation, story.task, story.action, story.result, story.lesson)
+        )
+        buzzwords = _found_buzzwords(text)
+        if buzzwords:
+            listed = ", ".join(repr(b) for b in buzzwords[:3])
+            out.append(
+                Finding(
+                    "minor",
+                    "story.buzzword",
+                    "stories",
+                    f"Story {story.title!r} uses filler phrasing ({listed}) — "
+                    "replace with what you concretely did and measured.",
+                    str(story.id),
+                )
+            )
+
+    labels = {s.story_id: s.label for s in story_scores}
+    for story in vault.stories:
+        if labels.get(str(story.id)) == "Polished" and not story.lesson.strip():
+            out.append(
+                Finding(
+                    "minor",
+                    "story.polished_no_lesson",
+                    "stories",
+                    f"Story {story.title!r} scores Polished but has no lesson — "
+                    "capture what you'd repeat or do differently to make it "
+                    "interview-ready.",
+                    str(story.id),
+                )
+            )
+
+    for exp in vault.experiences:
+        weak: list[tuple[str, str]] = []
+        for line in exp.accomplishments:
+            reason = _weak_bullet_reason(line)
+            if reason is not None:
+                weak.append((line, reason))
+        if not weak:
+            continue
+        example, reason = weak[0]
+        excerpt = example if len(example) <= 60 else example[:59] + "…"
+        out.append(
+            Finding(
+                "minor",
+                "experience.weak_bullet",
+                "experiences",
+                f"Experience {exp.title!r}: {len(weak)} of "
+                f"{len(exp.accomplishments)} accomplishment bullets read weak — "
+                f"e.g. {excerpt!r} ({reason}). Lead with an active verb and "
+                "include a metric or a concrete tool.",
+                str(exp.id),
+            )
+        )
+
+
 def _score_stories(vault: VaultSchema, out: list[Finding]) -> list[StoryScore]:
     """Score each story and fold its coherence issues into findings."""
     scores: list[StoryScore] = []
@@ -432,6 +583,7 @@ def audit_vault(
 
     story_scores = _score_stories(vault, findings)
     _contradiction_findings(vault, findings)
+    _audit_style(vault, story_scores, findings)
 
     tensions = detect_all_tensions(vault.philosophies)
 
