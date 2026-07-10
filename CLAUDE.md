@@ -7,8 +7,9 @@ developing it.
 
 ## Dev setup
 
-System python is 3.9 — too old; the package requires >= 3.10. Use
-homebrew 3.12:
+The package requires Python >= 3.10. If your system python is older
+(macOS ships 3.9), use a newer interpreter — e.g. homebrew's
+python3.12:
 
 ```bash
 /opt/homebrew/bin/python3.12 -m venv .venv
@@ -18,7 +19,8 @@ homebrew 3.12:
 ## Quality gates
 
 All three must pass before any PR. CI (`.github/workflows/ci.yml`) runs
-them on Python 3.10–3.13:
+the same three checks on each Python version in its matrix (currently
+3.10–3.13), with `pytest -v` instead of `-q`:
 
 ```bash
 .venv/bin/pytest -q
