@@ -172,6 +172,43 @@ _CODEX_TOML = (
     'args = ["mcp-serve"]\n'
 )
 
+
+def mcp_entry_registered(reg: McpRegistration, target: Path) -> bool:
+    """True if ``reg``'s config file already registers a traitprint server.
+
+    Looks at the real config file — ``target/reg.path`` for project-scoped
+    registrations, the expanded home path otherwise (read-only; the
+    scaffolder still never *writes* outside the target directory) — and
+    checks for a ``traitprint`` entry in that runtime's format: a
+    ``traitprint`` key under ``mcpServers`` (Claude/Qwen/Grok/Kimi) or
+    ``mcp`` (OpenCode), or an ``[mcp_servers.traitprint]`` table (Codex
+    TOML). A missing, unreadable, or unparsable file counts as
+    unregistered, so the caller keeps emitting the snippet for it.
+    """
+    config = target / reg.path if reg.in_project else Path(reg.path).expanduser()
+    if not config.is_file():
+        return False
+    try:
+        text = config.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return False
+    if config.suffix == ".toml":
+        return any(
+            line.strip().startswith("[mcp_servers.traitprint]")
+            for line in text.splitlines()
+        )
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError:
+        return False
+    if not isinstance(payload, dict):
+        return False
+    return any(
+        isinstance(servers := payload.get(key), dict) and "traitprint" in servers
+        for key in ("mcpServers", "mcp")
+    )
+
+
 MCP_REGISTRATIONS: tuple[McpRegistration, ...] = (
     McpRegistration(
         runtime="claude",
@@ -348,5 +385,6 @@ __all__ = [
     "ScaffoldedFile",
     "Wrapper",
     "agents_manual",
+    "mcp_entry_registered",
     "scaffold",
 ]

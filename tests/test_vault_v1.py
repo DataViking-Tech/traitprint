@@ -585,6 +585,26 @@ class TestMigrateCommand:
         assert second.exit_code == 0, second.output
         assert "already schema v1" in second.output
 
+    def test_migrate_json_already_v1_keeps_full_contract(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        # The documented payload always carries all four keys, so
+        # consumers can read payload["files"] without a KeyError even
+        # when there was nothing to migrate.
+        _seed_v0(vault_dir)
+        first = runner.invoke(cli, ["--path", str(vault_dir), "vault", "migrate"])
+        assert first.exit_code == 0, first.output
+        second = runner.invoke(
+            cli, ["--path", str(vault_dir), "vault", "migrate", "--json"]
+        )
+        assert second.exit_code == 0, second.output
+        payload = json.loads(second.output)
+        assert set(payload) == {"status", "migrated", "files", "proficiency_remaps"}
+        assert payload["status"] == "already-v1"
+        assert payload["migrated"] is False
+        assert payload["files"] == []
+        assert payload["proficiency_remaps"] == []
+
     def test_dry_run_json_reports_plan(
         self, runner: CliRunner, vault_dir: Path
     ) -> None:

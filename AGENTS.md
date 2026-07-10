@@ -290,8 +290,10 @@ Agent rules (D9, non-negotiable):
 - **Extracted skills enter at modest proficiency (2-3)** pending the user
   confirming stronger demonstrated evidence.
 - **Never invent taxonomy IDs.** Pass skill *names*; a deterministic
-  resolver maps them. If `add-skill` answers "Did you mean: …?", relay the
-  suggestion instead of guessing.
+  resolver maps them. If `add-skill` prints `[note] added as a custom
+  skill (no taxonomy match)` with suggestions, the skill is already
+  saved — relay the suggestions instead of guessing, and use the note's
+  remove/re-add command if the user meant one of them.
 - **Run `traitprint vault audit --json` after a batch of writes** and
   close (or report) the gaps before declaring the work done.
 

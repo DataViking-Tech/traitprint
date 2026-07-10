@@ -11,13 +11,18 @@ Covers:
   written outside the target directory, no reserved branding in output.
 - The ``--json`` report contract and the post-scaffold checklist that
   replaces the (nonexistent) doctor step.
+- Registration detection: re-runs only list genuinely unregistered MCP
+  configs (existing traitprint entries count as registered), and the
+  venv-only PATH warning fires with a resolved absolute entrypoint.
 """
 
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path, PurePosixPath
 
+import pytest
 from click.testing import CliRunner, Result
 
 from tests.test_skills import _CLI_MENTION, _FORBIDDEN
@@ -26,6 +31,7 @@ from traitprint.agents_scaffold import (
     SKILL_DESTINATIONS,
     WRAPPERS,
     agents_manual,
+    mcp_entry_registered,
     scaffold,
 )
 from traitprint.cli import cli
@@ -34,6 +40,46 @@ from traitprint.skills import SKILL_NAMES
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 EXPECTED_RUNTIMES = {"claude", "codex", "opencode", "qwen", "grok", "kimi"}
+
+PROJECT_RUNTIMES = {"claude", "opencode", "qwen", "grok"}
+
+
+@pytest.fixture(autouse=True)
+def _hermetic_environment(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Keep scaffold tests independent of the developer's machine.
+
+    - HOME points at an empty temp dir, so the registration check never
+      reads a real ``~/.codex/config.toml`` / ``~/.kimi/mcp.json`` and
+      the default vault lookup never finds a real vault.
+    - ``shutil.which('traitprint')`` resolves, so the venv-only PATH
+      warning stays opt-in (its tests monkeypatch which() to None).
+    """
+    home = tmp_path / "home"
+    home.mkdir(exist_ok=True)
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.delenv("TRAITPRINT_VAULT_DIR", raising=False)
+    monkeypatch.setattr(
+        "traitprint.cli.shutil.which",
+        lambda cmd: "/usr/bin/traitprint" if cmd == "traitprint" else None,
+    )
+
+
+def _register_home_configs(home: Path) -> None:
+    """Write registered Codex + Kimi configs into a fake home directory."""
+    codex = home / ".codex" / "config.toml"
+    codex.parent.mkdir(parents=True, exist_ok=True)
+    codex.write_text(
+        '[mcp_servers.traitprint]\ncommand = "traitprint"\nargs = ["mcp-serve"]\n',
+        encoding="utf-8",
+    )
+    kimi = home / ".kimi" / "mcp.json"
+    kimi.parent.mkdir(parents=True, exist_ok=True)
+    kimi.write_text(
+        json.dumps(
+            {"mcpServers": {"traitprint": {"command": "traitprint"}}}
+        ),
+        encoding="utf-8",
+    )
 
 #: Every non-skill file a fresh scaffold writes.
 EXPECTED_FILES = (
@@ -329,3 +375,136 @@ class TestNextSteps:
         payload = json.loads(result.output)
         assert payload["next_steps"]
         assert "traitprint-fill-vault" in payload["next_steps"][-1]
+
+
+# ── Registration detection (idempotent re-runs, foreign configs) ─────
+
+
+def _register_step(payload: dict[str, list[str]]) -> str | None:
+    return next(
+        (
+            s
+            for s in payload["next_steps"]
+            if s.startswith("Register 'traitprint mcp-serve'")
+        ),
+        None,
+    )
+
+
+class TestRegistrationDetection:
+    def test_rerun_does_not_relist_written_registrations(
+        self, tmp_path: Path
+    ) -> None:
+        # First run writes the four project configs; the re-run must not
+        # tell the agent to re-add them (only home configs, which really
+        # are still unregistered here, may remain).
+        target, first = _scaffold(tmp_path)
+        assert first.exit_code == 0
+        runner = CliRunner()
+        second = runner.invoke(cli, ["agents", "init", str(target), "--json"])
+        assert second.exit_code == 0
+        payload = json.loads(second.stdout)
+
+        entries = {e["runtime"]: e for e in payload["mcp"]}
+        for runtime in PROJECT_RUNTIMES:
+            assert entries[runtime]["written"] is False  # skipped, kept
+            assert entries[runtime]["registered"] is True
+        step = _register_step(payload)
+        assert step is not None
+        assert "Codex CLI" in step and "Kimi CLI" in step
+        for label in ("Claude Code", "OpenCode", "Qwen Code", "Grok CLI"):
+            assert label not in step
+
+    def test_rerun_with_home_configs_registered_lists_nothing(
+        self, tmp_path: Path
+    ) -> None:
+        _register_home_configs(Path.home())
+        target, first = _scaffold(tmp_path)
+        assert first.exit_code == 0
+        runner = CliRunner()
+        second = runner.invoke(cli, ["agents", "init", str(target), "--json"])
+        payload = json.loads(second.stdout)
+        assert all(e["registered"] for e in payload["mcp"])
+        assert _register_step(payload) is None
+
+        human = runner.invoke(cli, ["agents", "init", str(target)])
+        assert human.exit_code == 0
+        assert "MCP registration for 'traitprint mcp-serve'" not in human.output
+
+    def test_foreign_project_config_stays_pending(self, tmp_path: Path) -> None:
+        # A pre-existing .mcp.json without a traitprint server is kept
+        # verbatim, so Claude Code is genuinely unregistered: it must be
+        # listed with its snippet.
+        target = tmp_path / "project"
+        target.mkdir()
+        (target / ".mcp.json").write_text(
+            json.dumps({"mcpServers": {"other": {"command": "other"}}}),
+            encoding="utf-8",
+        )
+        runner = CliRunner()
+        result = runner.invoke(cli, ["agents", "init", str(target), "--json"])
+        payload = json.loads(result.stdout)
+        entries = {e["runtime"]: e for e in payload["mcp"]}
+        assert entries["claude"]["registered"] is False
+        step = _register_step(payload)
+        assert step is not None and "Claude Code" in step
+
+    def test_unparsable_config_counts_as_unregistered(self, tmp_path: Path) -> None:
+        target = tmp_path / "project"
+        target.mkdir()
+        (target / ".mcp.json").write_text("not json {", encoding="utf-8")
+        claude = next(r for r in MCP_REGISTRATIONS if r.runtime == "claude")
+        assert mcp_entry_registered(claude, target) is False
+
+    def test_mcp_entry_registered_per_format(self, tmp_path: Path) -> None:
+        target = tmp_path / "project"
+        scaffold(target)  # writes all four project configs
+        for reg in MCP_REGISTRATIONS:
+            if reg.in_project:
+                assert mcp_entry_registered(reg, target), reg.runtime
+            else:
+                assert not mcp_entry_registered(reg, target), reg.runtime
+        _register_home_configs(Path.home())
+        for reg in MCP_REGISTRATIONS:
+            assert mcp_entry_registered(reg, target), reg.runtime
+
+    def test_missing_files_count_as_unregistered(self, tmp_path: Path) -> None:
+        target = tmp_path / "empty"
+        target.mkdir()
+        for reg in MCP_REGISTRATIONS:
+            assert mcp_entry_registered(reg, target) is False, reg.runtime
+
+
+# ── PATH warning for venv-only installs ──────────────────────────────
+
+
+class TestPathWarning:
+    def test_warns_with_resolved_entrypoint_when_not_on_path(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr("traitprint.cli.shutil.which", lambda _cmd: None)
+        target, result = _scaffold(tmp_path, "--json")
+        assert result.exit_code == 0
+        assert "WARNING: 'traitprint' is not on PATH" in result.stderr
+
+        # The test venv installs the console script next to the
+        # interpreter — exactly the venv-only case the hint resolves.
+        entrypoint = str(Path(sys.executable).with_name("traitprint"))
+        assert entrypoint in result.stderr
+
+        payload = json.loads(result.stdout)
+        hints = [s for s in payload["next_steps"] if "not on PATH" in s]
+        assert len(hints) == 1
+        assert entrypoint in hints[0]
+        # The hint never displaces the closing fill-vault step.
+        assert "traitprint-fill-vault" in payload["next_steps"][-1]
+        # The scaffolded config itself keeps the portable bare command.
+        config = json.loads((target / ".mcp.json").read_text(encoding="utf-8"))
+        assert config["mcpServers"]["traitprint"]["command"] == "traitprint"
+
+    def test_no_warning_when_on_path(self, tmp_path: Path) -> None:
+        # Autouse fixture stubs which() to a hit.
+        _, result = _scaffold(tmp_path, "--json")
+        assert "not on PATH" not in result.stderr
+        payload = json.loads(result.stdout)
+        assert not any("not on PATH" in s for s in payload["next_steps"])

@@ -63,7 +63,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`gemini-extension.json`) already covers it. Ends with a plain
   next-steps checklist (`traitprint init` if no vault, MCP snippets,
   launch the `traitprint-fill-vault` interview). `--json` emits
-  `{directory, written, skipped, mcp, next_steps}`.
+  `{directory, written, skipped, mcp, next_steps}`. Re-runs check the
+  actual config files (read-only, home paths included) and only list
+  registrations that genuinely lack a `traitprint` server entry — a
+  skipped-but-registered config is not re-suggested, while a
+  pre-existing foreign config still gets its snippet; each `--json`
+  `mcp` entry carries the resulting `registered` flag. When
+  `traitprint` is not on PATH (venv-only install), the command warns on
+  stderr with the resolved absolute entrypoint to put in the MCP
+  configs — the scaffolded files keep the portable bare `traitprint`
+  command — and repeats the hint in `next_steps`.
 - **New Agent Skill `traitprint-agent-vault-sync`** — teaches a wrapping
   agent the supported round-trip between a Traitprint vault and the
   working directory of an external agent-driven career tool (career-ops
@@ -210,6 +219,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   honor it. User rules win on style and workflow but cannot bypass the
   proposals channel or the never-invent-taxonomy-IDs/UUIDs invariant.
   Schema-ignored: no vault contract revision.
+
+### Changed
+
+- **`vault add-skill` no longer prints "Did you mean: …?" before the
+  add.** The old order (suggestion first, then "Added skill: …", exit 0)
+  read as a pending question when the skill was already committed.
+  Suggestions now follow the add as one clearly-marked line — `[note]
+  added as a custom skill (no taxonomy match). If you meant one of: … —
+  run: traitprint vault remove <uuid> -y && traitprint vault add-skill
+  "<name>" -p N` — with the real UUID and proficiency filled in, so an
+  agent can swap the typo in one paste. Still no confirmation prompt (it
+  would hang non-interactive agents), and exit stays 0.
+- **Custom validation/usage errors now print to stderr,** matching
+  click's own usage errors and the runtime `Error: …` path; exit codes
+  are unchanged. Covers the exit-2 guards across the CLI (`NAME and
+  --proficiency are required …`, every `--from-json cannot be combined
+  …` variant, `--slug and --name are required …`, `--lens and --zip are
+  only supported …`, `--assist cannot be combined …`, `--all cannot be
+  combined …`, malformed `--salience` pairs, and friends) plus the
+  duplicate-skill (exit 1) and `vault remove` "Item not found" messages.
+  Agents parsing stdout no longer see usage diagnostics mixed into
+  command output.
+
+### Fixed
+
+- **`vault remove <missing-id> -y` now exits 1** (message unchanged, on
+  stderr). It used to print "Item not found: …" and exit 0, so agents
+  chaining on exit codes — e.g. `remove && add-skill` swaps — read a
+  no-op as success.
+- **`vault migrate --json` on an already-v1 vault emits the full
+  documented payload** — `{status, migrated, files, proficiency_remaps}`
+  with empty arrays — instead of dropping the `files` and
+  `proficiency_remaps` keys, so `payload["files"]` can never KeyError.
 
 ## [0.11.0] - 2026-06-11
 

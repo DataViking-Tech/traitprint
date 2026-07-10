@@ -52,8 +52,10 @@ user explicitly dictating) is a PROPOSAL until they confirm:
 - Extracted skills enter at modest proficiency (2-3) unless the user
   confirms stronger demonstrated evidence.
 - Never invent taxonomy IDs. Pass skill *names* only; the CLI's
-  deterministic resolver maps names to the taxonomy. If `add-skill` replies
-  "Did you mean: …?", relay the suggestion to the user instead of guessing.
+  deterministic resolver maps names to the taxonomy. If `add-skill` prints
+  `[note] added as a custom skill (no taxonomy match)` with suggestions,
+  the skill is already saved — relay the suggestions to the user; the
+  note carries the remove/re-add command to swap in the right name.
 
 ## 3. Write with the CLI
 

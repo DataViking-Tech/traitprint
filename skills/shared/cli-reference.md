@@ -257,8 +257,10 @@ Output is one `[ok]` / `[dup]` / `[err]` line per item plus
 2. **Modest entry proficiency.** Extracted skills enter at 2-3 pending the
    user confirming stronger demonstrated evidence.
 3. **Never invent taxonomy IDs or UUIDs.** Pass skill *names*; the CLI's
-   deterministic resolver maps names to the taxonomy. If `add-skill` replies
-   "Did you mean: …?", relay the suggestion to the user instead of guessing.
+   deterministic resolver maps names to the taxonomy. If `add-skill` prints
+   `[note] added as a custom skill (no taxonomy match)` with suggestions,
+   the skill is already saved — relay the suggestions to the user and use
+   the note's remove/re-add command if they meant one of them.
    Copy cross-link UUIDs from `traitprint vault list` output.
 4. **Audit before finishing.** Run `traitprint vault audit --json` after a
    batch of writes and address (or report) what it finds. The audit is the

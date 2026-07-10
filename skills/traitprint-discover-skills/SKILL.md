@@ -48,8 +48,10 @@ Discovered skills are PROPOSALS, never silent writes:
 - Extracted skills enter at modest proficiency (2-3) unless the user
   confirms stronger demonstrated evidence.
 - Never invent taxonomy IDs. Pass skill *names*; the CLI's deterministic
-  resolver maps them. If `add-skill` replies "Did you mean: …?", relay the
-  suggestion to the user instead of guessing.
+  resolver maps them. If `add-skill` prints `[note] added as a custom
+  skill (no taxonomy match)` with suggestions, the skill is already
+  saved — relay the suggestions to the user; the note carries the
+  remove/re-add command to swap in the right name.
 
 After confirmation, write in one batch:
 
