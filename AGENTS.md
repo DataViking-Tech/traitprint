@@ -10,8 +10,8 @@ primary interface — this file is your reference for operating the
 [vault v1 format contract](docs/schema/vault-v1/README.md),
 [privacy model](docs/privacy.md).
 
-> Contributing to this codebase (issue tracking, session protocol)?
-> See `CLAUDE.md`. This file is about *using* traitprint.
+> Contributing to this codebase? `CLAUDE.md` covers contributor setup,
+> the gates, and the issue tracker. This file is about *using* traitprint.
 
 ## The vault on disk (schema v1)
 
@@ -29,6 +29,7 @@ Default `~/.traitprint`; override with `--vault-dir DIR` (global flag) or
 ├── stories/*.md        # frontmatter + ## Situation/Task/Action/Result (+ ## Lesson)
 ├── philosophies/*.md   # frontmatter + body = the stance
 ├── proposals/*.json    # staged writes awaiting review (see Proposals below)
+├── lenses.json         # positioning lenses (only written once a lens exists)
 ├── custom.md           # OPTIONAL user instructions for you (see below)
 ├── .credentials        # gitignored, never synced
 └── .git/               # every CLI write auto-commits
@@ -55,7 +56,7 @@ narrative text. Constraints:
 - **Frontmatter accepts allowed keys only** (`additionalProperties: false`
   in the schema):
   - experiences: `id, title, company, start_date, end_date,
-    accomplishments, skill_ids, source, created_at, updated_at`
+    accomplishments, skill_ids, skill_links, source, created_at, updated_at`
   - stories: `id, title, skill_ids, experience_id, outcome, theme_tags,
     source, created_at, updated_at`
   - philosophies: `id, title, category, evidence_story_ids, source,
@@ -67,7 +68,10 @@ narrative text. Constraints:
 - **Cross-links are UUIDs** (`skill_ids` on stories *and* experiences,
   `experience_id`, `evidence_story_ids`). A story's `skill_ids` are the
   skills the story evidences; an experience's `skill_ids` are the skills
-  exercised in that role (contract revision 1.1, optional). A dangling
+  exercised in that role, and its optional `skill_links` entries annotate
+  per-role emphasis on top of that list. (Both are additive, optional
+  keys; the current vault contract revision is 1.4 — `traitprint
+  proposals contract --json` prints the live contract.) A dangling
   UUID does not break parsing — it surfaces as an audit finding. Never
   fabricate UUIDs; copy them from `traitprint vault list` output.
 - Hand edits are not auto-committed; the next CLI write commits the whole
@@ -92,22 +96,23 @@ shell. Use `-y` on `remove`/`rollback` to skip confirmation.
 
 | Command | Notes |
 |---|---|
-| `traitprint vault show [-v] [--json]` | Summary; `-v` dumps everything incl. UUIDs and git metadata; `--json` emits the full vault document |
+| `traitprint vault show [-v] [--json]` | Summary; `-v` dumps everything incl. UUIDs and git metadata; `--json` emits the full vault document (incl. a `lenses` array — JSON surfaces gain keys additively, so tolerate unknown keys) |
 | `traitprint vault list <section> [--json]` | Table with UUIDs; sections: `skills`, `experiences`, `stories`, `philosophies`, `education`; `--json` emits `[{id, type, name\|title}]` |
-| `traitprint vault audit [--json] [--severity critical\|major\|minor] [--strict]` | Coherence report (below) |
+| `traitprint vault audit [--json] [--severity critical\|major\|minor] [--strict]` | Coherence report (below); `--severity` is a minimum threshold — it shows findings at that severity *and above* (`minor` shows everything) |
 | `traitprint vault history [-n N] [--json]` | Vault git log; `--json` emits `[{sha, message}]` |
 | `traitprint vault diff [--json]` | Changes since previous commit; `--json` emits `{from_sha, to_sha, diff_text}` |
-| `traitprint vault export -f <fmt> [-o FILE]` | Formats: `json` (lossless single doc), `markdown`, `jsonresume`, `synthpanel-persona`. `traitprint export` is a top-level alias |
+| `traitprint vault export -f <fmt> [-o FILE]` | Formats: `json` (lossless single doc), `markdown`, `jsonresume` (alias: `json-resume`), `synthpanel-persona`, `career-bundle` (multi-file working-directory bundle; needs `-o DIR` or `--zip`, optional `--lens SLUG`). `traitprint export` is a top-level alias |
 | `traitprint vault extract-text FILE [--json]` | Deterministic text extraction from PDF/DOCX/TXT/MD — no LLM, no vault writes; `--json` emits `{file, format, chars, text}`. PDF/DOCX need `pip install 'traitprint[import]'` |
+| `traitprint doctor [--json] [--stale-days N]` | Session-start orientation: deterministic vault phase (`first-run`\|`growing`\|`established`\|`stale`) plus freshness findings, each naming the Agent Skill that fixes it. Read-only; also exposed as the local-only MCP tool `doctor` |
 
 ### Write commands (each auto-commits)
 
 | Command | Required | Optional |
 |---|---|---|
 | `traitprint init` | — | creates dir, git repo, empty v1 vault |
-| `traitprint vault set-profile` | at least one flag | `--name --headline --summary --location --email`; omitted fields keep values, `""` clears |
+| `traitprint vault set-profile` | at least one flag | `--name --headline --summary --location --email --phone --url --link NETWORK=URL` (`--link` repeatable; any `--link` replaces the whole list, a single `--link ""` clears it); omitted fields keep values, `""` clears |
 | `traitprint vault add-skill NAME -p 1..5` | name, proficiency | `-c CAT` (optional; taxonomy category fills it on a match, else empty), `--notes`, `--force-category` (keep your category over the taxonomy's) |
-| `traitprint vault add-experience` | `--title` | `--company --start-date YYYY-MM --end-date YYYY-MM --description --accomplishment ...` (repeatable) `--skill-id UUID` (repeatable) |
+| `traitprint vault add-experience` | `--title` | `--company --start-date YYYY-MM --end-date YYYY-MM --description --accomplishment ...` (repeatable) `--skill-id UUID` (repeatable) `--skill-link UUID:1-5` (repeatable; per-role emphasis) |
 | `traitprint vault add-story` | `--title` | `--situation --task --action --result --lesson --outcome win\|failure\|learning --theme-tag TAG` (repeatable) `--skill-id UUID` (repeatable) `--experience-id UUID` |
 | `traitprint vault add-philosophy` | `--title` | `--description --category --evidence-id STORY_UUID` (repeatable); categories: `leadership`, `collaboration`, `technical-approach`, `culture`, `decision-making` |
 | `traitprint vault add-education` | `--institution` | `--degree --field --start-date YYYY --end-date YYYY --description` |
@@ -115,6 +120,7 @@ shell. Use `-y` on `remove`/`rollback` to skip confirmation.
 | `traitprint vault rollback -y` | — | reset tree to previous commit |
 | `traitprint vault migrate [--dry-run] [--json]` | — | v0 → v1 file tree; idempotent |
 | `traitprint vault import-resume PATH` | path | LLM extraction; `--provider --model --yes --dry-run --assist/--no-assist --propose --json`; PDF/DOCX need `pip install 'traitprint[import]'`. Resolution (D11): `--provider` flag → configured BYOK key → agent-assist mode (below) → actionable error. `--propose` stages extracted items as pending proposals instead of writing them (D9 staged path) |
+| `traitprint vault import-story-bank DIR` | directory | `--dry-run --json`. Detects a job-search working directory (`config/profile.yml` + `interview-prep/*.md`) by shape and stages proposals: one `add_story` per STAR block, one `update_profile`, and an `add_lens` when the config carries `target_roles.archetypes`. Nothing touches the vault until `proposals approve`; a `cv.md` is not parsed here — use `import-resume <DIR>/cv.md --propose` for it |
 
 #### Agent-assist mode (D11)
 
@@ -161,7 +167,10 @@ Payload rules (contract): full entity for `add_*`, only the changed fields
 for `update_*`; narrative text travels in `payload.body` for experiences,
 stories (`## Situation/Task/Action/Result` sections), and philosophies;
 `update_profile` takes `{"basics": {"name"?, "label"?, "summary"?,
-"email"?, "location"?}}` (no `target_id` — the profile is a singleton).
+"email"?, "location"?, "phone"?, "url"?, "profiles"?}}` (no `target_id` —
+the profile is a singleton). `traitprint proposals contract --json` is
+the machine-readable source of truth for kinds, per-kind payload keys,
+and the `basics` key list — prefer it over any inlined list here.
 Never invent `target_id`s — copy them from `traitprint vault list`.
 Pending proposals surface in `traitprint vault audit` as a minor
 `proposals.pending` finding.
@@ -197,15 +206,16 @@ written even when others fail.
 | Code | Meaning |
 |---|---|
 | 0 | success |
-| 1 | operation failed: any batch item errored or was a duplicate; duplicate single `add-skill`; `remove` of an id that matches nothing; `audit --strict` with critical/major findings; runtime errors (`Error: ...` on stderr) |
-| 2 | usage error: unknown flags, `--from-json` mixed with single-item args, missing required single-item fields |
+| 1 | operation failed: any batch item errored or was a duplicate; duplicate single `add-skill`; `remove` of an id that matches nothing; `audit --strict` with critical/major findings; an interactive prompt aborted on EOF; runtime errors (`Error: ...` on stderr) |
+| 2 | usage error: unknown flags, `--from-json` mixed with single-item args, `add-skill` missing NAME/`--proficiency` (`add-skill` never prompts — the other `add-*` commands prompt instead; see Gotchas) |
 
 ### `vault audit --json` contract
 
 ```json
 {
   "findings": [{"severity": "critical|major|minor", "code": "skill.unsupported_strength",
-                 "section": "skills", "message": "...", "item_id": "...", "related_id": null}],
+                 "section": "skills", "message": "...", "item_id": "...", "related_id": null,
+                 "fix_skill": null}],
   "story_scores": [{"story_id": "...", "title": "...", "overall": 0.88,
                      "evidence_level": "demonstrates|mentions|weak",
                      "label": "Polished|Strong|Solid|Draft"}],
@@ -222,8 +232,10 @@ skills), `story.*` (thin/broken STAR fields,
 missing metrics), dangling-reference findings, contradiction findings
 (conflicting metrics or leader-vs-IC claims between stories),
 `proposals.pending` (staged writes awaiting review — point the user at
-`traitprint proposals list`). Tensions are nuance, not bugs — present
-them as context-dependent thinking.
+`traitprint proposals list`). Findings carry a nullable `fix_skill`
+naming the Agent Skill that addresses them (JSON keys are added
+additively — tolerate ones you don't know). Tensions are nuance, not
+bugs — present them as context-dependent thinking.
 
 ### `vault migrate --json` contract
 
@@ -232,6 +244,32 @@ them as context-dependent thinking.
  "files": ["profile.json", "..."],
  "proficiency_remaps": [{"id": "...", "name": "...", "from": 8, "to": 4}]}
 ```
+
+### Positioning lenses (`lenses.json`)
+
+A **lens** is a named, non-destructive projection over the one vault: it
+selects, orders, and re-weights existing content (per-skill salience
+`core`/`supporting`/`suppressed`, signature experiences/stories, optional
+headline/bio overrides) so the same grounded facts read differently for a
+target role. A lens never adds facts — if a framing needs a fact the vault
+lacks, add the fact first (as a proposal the user approves), then let the
+lens surface it. At most 5 lenses per vault; the slug `none` is reserved
+as the canonical-rendering escape hatch on the read tools.
+
+| Command | Notes |
+|---|---|
+| `traitprint vault lens add --slug SLUG --name NAME` | Optional: `--headline-override --bio-override`, `--target-archetype ...` (repeatable), `--signature-experience UUID` / `--signature-story UUID` (repeatable, display order), `--salience SKILL_UUID=core\|supporting\|suppressed` (repeatable), `--default`; `--from-json` for batch |
+| `traitprint vault lens update LENS [same flags]` | LENS resolves by slug, full UUID, or 8-hex id prefix (the prefix is CLI-only sugar) |
+| `traitprint vault lens set-default LENS` | Make LENS the sole default |
+| `traitprint vault lens remove LENS -y` | Delete |
+
+Read lenses with `traitprint vault show --json` (the `lenses` array) or
+the MCP tools `vault_lens_list` / `vault_lens_get`; render through one
+with `get_profile_summary(lens=...)` or `traitprint vault export -f
+career-bundle --lens SLUG` (projects `cv.md` only — the bundle's
+interchange files stay canonical). Over the hosted MCP server the same
+edits are staged as `add_lens` / `update_lens` proposals via
+`vault_propose`. Format contract: `docs/schema/lens-v1/`.
 
 ### Cloud sync (git-native, sync-v1)
 
@@ -249,6 +287,7 @@ are deprecated in favor of `sync`.
 | `traitprint sync push [--json]` | Commits uncommitted hand edits, then uploads a thin bundle against the last-known server head (full bundle on first push; auto-retries full on `missing_prerequisites`). `--json` → `{pushed, head, server_head, ingest_status}` |
 | `traitprint sync pull [--json]` | Fetches the server's bundle, then fast-forwards or merges locally. `--json` → `{fetched, result: "up_to_date"\|"fast_forward"\|"merged"\|"conflicts", conflicts: [files], head}` |
 | `traitprint sync status [--json]` | No writes; probes `/vault-git/info`. `--json` → `{local_head, server_head, ingest_status, quarantine_summary: {count, items}, relation}` |
+| `traitprint sync taxonomy [--json]` | Refreshes the local skill taxonomy from the server (same lineage, newer version only — a different lineage is reported, never adopted automatically; no-op when current). `--json` → `{refreshed, local_version, server_version, ...}` |
 
 Sync flow rules (the server is fast-forward-only and never merges):
 
@@ -310,20 +349,34 @@ Client config (Claude Desktop, Cursor, Zed, …):
   "env": {"TRAITPRINT_VAULT_DIR": "/home/you/.traitprint"}}}}
 ```
 
-Seven read-only tools, response schemas mirroring the hosted cloud MCP
-server (swap local ↔ cloud by changing a URL): `get_profile_summary`,
-`vault_lens_list`, `vault_lens_get`, `search_skills`, `find_story`,
-`get_philosophy`, and the local-only `doctor` (the cloud mirrors the other
-six). `get_profile_summary` takes an optional `lens` (slug or id) to project
+Seven read-only tools: `get_profile_summary`, `vault_lens_list`,
+`vault_lens_get`, `search_skills`, `find_story`, `get_philosophy`, and
+`doctor` (session-start orientation: vault phase + freshness findings,
+each naming the fix skill; local-only, no hosted counterpart).
+`get_profile_summary` takes an optional `lens` (slug or id) to project
 the profile through a positioning lens; pass `lens="none"` to force the
 canonical rendering. Every tool returns a
 `{"result": ..., "meta": {...}}` envelope. Proficiency uses the full
 five-label vocabulary (`familiar`/`working`/`proficient`/`expert`/
-`authority`); `search_skills min_proficiency` accepts any label or an
-integer 1-5. `find_story theme` matches `theme_tags` first, then body
-text; `get_philosophy` filters by `topic` and/or `category`. (The cloud
-server still exposes a legacy 4-label proficiency enum; parity catch-up
-is tracked cloud-side.)
+`authority`) on both servers; `search_skills min_proficiency` accepts any
+label or an integer 1-5. `find_story theme` matches `theme_tags` first,
+then body text; `get_philosophy` filters by `topic` and/or `category`.
+
+**Local ↔ hosted delta.** The two servers share the response envelope and
+the read-tool names (every local tool except `doctor` is also served
+hosted), but they are not interchangeable by swapping a URL:
+
+- *Hosted adds:* `find_experience`; a `skill` filter, a `total` count, and
+  an uncapped inventory on `find_story`; the proposal tools
+  (`vault_propose`, `vault_list_proposals`, `vault_retract`); and the jobs
+  tools (`jobs_match`, `jobs_search`, `job_get`, `resume_tailor`,
+  `job_submit`).
+- *Hosted differs:* its `find_story` nulls `lesson` and never infers
+  `outcome`; its `get_philosophy` has no `category` filter.
+- *Local adds:* `doctor`; a free-text `query` filter on `find_story` (at
+  least one filter is required); real `lesson` text; an inferred `outcome`
+  when a story doesn't declare one; the `category` filter on
+  `get_philosophy`.
 
 Six prompts — `fill_vault(focus?)`, `mine_story_gaps`, `discover_skills`,
 `draft_star_story(experience?)`, `audit_coherence`, `position_lens` — served
@@ -356,9 +409,12 @@ the published extension (`gemini-extension.json`) already covers it.
 
 ## Gotchas
 
-- **Interactive fallback**: `add-*` without required flags prompts on
-  stdin and hangs non-interactive shells. Always pass flags; always `-y`
-  on `remove`/`rollback`.
+- **Interactive fallback**: `add-experience`, `add-story`,
+  `add-philosophy`, and `add-education` prompt on stdin when required
+  flags are missing — that hangs a shell with an open stdin, and EOF
+  aborts cleanly with exit 1. `add-skill` is the exception: it never
+  prompts and fails fast with exit 2 when NAME/`--proficiency` are
+  missing. Always pass flags; always `-y` on `remove`/`rollback`.
 - **Duplicate skills exit 1** with the existing UUID in the message;
   `remove` then re-add to replace.
 - **A failed git auto-commit never fails the write.** The CLI warns on
@@ -366,8 +422,10 @@ the published extension (`gemini-extension.json`) already covers it.
   fix the git problem, then commit inside the vault to restore history.
 - **Taxonomy may override your `--category`** on an exact match; pass
   `--force-category` to keep yours.
-- **Hand-edited frontmatter**: allowed keys only; unknown keys violate the
-  schema. Dangling UUID references become audit findings, not errors.
+- **Hand-edited frontmatter**: allowed keys only; unknown keys violate
+  the schema — but check the allowlists above before stripping a key
+  (`skill_links` on experiences is legal, for example). Dangling UUID
+  references become audit findings, not errors.
 - **Cloud commands need extras**: `login`/`logout`/`sync`/`push`/`pull`
   require `pip install 'traitprint[cloud]'`; PDF/DOCX in `import-resume`
   and `extract-text` require `'traitprint[import]'`. A base install

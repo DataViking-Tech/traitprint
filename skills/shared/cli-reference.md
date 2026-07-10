@@ -19,6 +19,7 @@ A vault is a git-versioned directory (default `~/.traitprint`; override with
 ├── stories/*.md        # frontmatter + ## Situation/Task/Action/Result (+ ## Lesson)
 ├── philosophies/*.md   # frontmatter + body = the stance
 ├── proposals/*.json    # staged writes awaiting user review
+├── lenses.json         # positioning lenses (only written once a lens exists)
 └── .git/               # every CLI write auto-commits
 ```
 
@@ -28,9 +29,10 @@ narrative text. Rules:
 - **Identity lives in the frontmatter `id` (a UUID), never the filename.**
   Filenames are kebab-case slugs; rename freely, but never change or remove
   `id`.
-- **Frontmatter allows specific keys only** (`additionalProperties: false`):
+- **Frontmatter allows specific keys only** (`additionalProperties: false`)
+  — check these lists before stripping a key you don't recognize:
   - experiences: `id, title, company, start_date, end_date, accomplishments,
-    skill_ids, source, created_at, updated_at`
+    skill_ids, skill_links, source, created_at, updated_at`
   - stories: `id, title, skill_ids, experience_id, outcome, theme_tags,
     source, created_at, updated_at`
   - philosophies: `id, title, category, evidence_story_ids, source,
@@ -72,29 +74,50 @@ traitprint vault show               # summary; -v for full dump with UUIDs;
 traitprint vault list skills        # also: experiences|stories|philosophies|education
                                     # --json -> [{id, type, name|title}]
 traitprint vault audit              # coherence report; --json to parse;
-                                    # --severity critical|major|minor; --strict exits 1
+                                    # --severity critical|major|minor is a
+                                    # MINIMUM threshold (that level and above);
+                                    # --strict exits 1; findings carry a
+                                    # nullable fix_skill naming the Agent
+                                    # Skill that addresses them
 traitprint vault history -n 10      # git log of vault changes; --json -> [{sha, message}]
 traitprint vault diff               # changes since previous commit;
                                     # --json -> {from_sha, to_sha, diff_text}
-traitprint vault export -f json     # also: markdown|jsonresume|synthpanel-persona; -o FILE
+traitprint vault export -f json     # also: markdown|jsonresume (alias
+                                    # json-resume)|synthpanel-persona|
+                                    # career-bundle (multi-file bundle: needs
+                                    # -o DIR or --zip; --lens SLUG projects
+                                    # cv.md through a lens); -o FILE
 traitprint vault extract-text FILE  # deterministic text extraction from
                                     # PDF|DOCX|TXT|MD (no LLM, no writes);
                                     # --json -> {file, format, chars, text}
+traitprint doctor                   # session-start orientation: vault phase
+                                    # (first-run|growing|established|stale) +
+                                    # freshness findings, each naming the fix
+                                    # skill; --json, --stale-days N
 ```
 
-Writes (flags only — omitting required flags triggers interactive prompts,
-which hang non-interactive shells; each write auto-commits):
+Writes (flags only — `add-experience`/`add-story`/`add-philosophy`/
+`add-education` fall back to interactive stdin prompts when required flags
+are missing, which hangs non-interactive shells (EOF aborts cleanly, exit
+1); `add-skill` never prompts and fails fast with exit 2 instead; each
+write auto-commits):
 
 ```bash
 traitprint vault set-profile --name "..." --headline "..." --summary "..." \
-  --location "..." --email "..."          # pass only the fields to change
+  --location "..." --email "..." --phone "..." --url "..." \
+  --link linkedin=https://...             # pass only the fields to change;
+                                          # --link NETWORK=URL is repeatable —
+                                          # any --link replaces the whole list,
+                                          # a single --link '' clears it
 traitprint vault add-skill "Name" --proficiency 3 --category technical \
   --notes "..."         # --category is optional (free-form: technical|soft|domain|tool);
                         # a taxonomy match fills it when omitted
 traitprint vault add-experience --title "..." --company "..." \
   --start-date YYYY-MM --end-date YYYY-MM --description "..." \
-  --accomplishment "..." --skill-id <UUID>
-                                          # --accomplishment and --skill-id are repeatable
+  --accomplishment "..." --skill-id <UUID> --skill-link <UUID>:<1-5>
+                                          # --accomplishment, --skill-id and
+                                          # --skill-link (per-role emphasis)
+                                          # are repeatable
 traitprint vault add-story --title "..." --situation "..." --task "..." \
   --action "..." --result "..." --lesson "..." --outcome win|failure|learning \
   --theme-tag TAG --skill-id <UUID> --experience-id <UUID>
@@ -119,6 +142,15 @@ traitprint vault import-resume FILE       # resolution order: --provider flag ->
                                           # --yes/--dry-run apply to the BYOK path;
                                           # --propose stages extracted items as
                                           # pending proposals instead of writing
+traitprint vault import-story-bank DIR    # stage a job-search working directory
+                                          # (config/profile.yml +
+                                          # interview-prep/*.md) as proposals:
+                                          # one add_story per STAR block, one
+                                          # update_profile, an add_lens when
+                                          # target archetypes are present;
+                                          # --dry-run previews, --json; cv.md is
+                                          # NOT parsed (use import-resume
+                                          # DIR/cv.md --propose for it)
 ```
 
 ### Positioning lenses (`vault lens` — config-like, non-factual)
@@ -179,17 +211,22 @@ traitprint proposals reject <ID> -y       # status=rejected + resolved_at;
 traitprint proposals add --kind add_skill --rationale "..." \
   --payload-json -                        # stage ONE proposal from a JSON object
                                           # on stdin; kinds: add_*/update_* per
-                                          # entity + update_profile; update_* kinds
+                                          # entity + update_profile +
+                                          # add_lens/update_lens; update_* kinds
                                           # need --target-id <UUID>
+traitprint proposals contract --json      # machine-readable contract: kinds,
+                                          # per-kind payload keys, basics keys —
+                                          # the source of truth when in doubt
 ```
 
 Payload rules: full entity for `add_*`, changed fields only for `update_*`;
 narrative text goes in `payload.body` (experiences, stories — STAR
 sections — and philosophies); `update_profile` takes
-`{"basics": {"name"?, "label"?, "summary"?, "email"?, "location"?}}`.
-Unknown payload keys are rejected with the allowed-key list. Pending
-proposals show up in `traitprint vault audit` as a `proposals.pending`
-finding.
+`{"basics": {"name"?, "label"?, "summary"?, "email"?, "location"?,
+"phone"?, "url"?, "profiles"?}}` — `traitprint proposals contract --json`
+prints the live key list. Unknown payload keys are rejected with the
+allowed-key list. Pending proposals show up in `traitprint vault audit`
+as a `proposals.pending` finding.
 
 ### Cloud sync (git-native, sync-v1 — needs `pip install 'traitprint[cloud]'`)
 
@@ -211,6 +248,9 @@ traitprint sync pull                # fetch + fast-forward or merge server commi
                                     # --json -> {fetched, result, conflicts, head};
                                     # conflicts exit 1 and print the exact
                                     # git add/commit commands to finish the merge
+traitprint sync taxonomy            # refresh the local skill taxonomy from the
+                                    # server (same lineage, newer version only;
+                                    # no-op when current); --json
 ```
 
 On merge conflicts: resolve the `<<<<<<</=======/>>>>>>>` markers in the
@@ -246,8 +286,8 @@ Output is one `[ok]` / `[dup]` / `[err]` line per item plus
 | Code | Meaning |
 |---|---|
 | 0 | success |
-| 1 | operation failed: any batch item errored or duplicated; `remove` of an id that matches nothing; `audit --strict` found critical/major issues |
-| 2 | usage error: bad flags, or mixing `--from-json` with single-item arguments |
+| 1 | operation failed: any batch item errored or duplicated; `remove` of an id that matches nothing; `audit --strict` found critical/major issues; an interactive prompt aborted on EOF |
+| 2 | usage error: bad flags, mixing `--from-json` with single-item arguments, or `add-skill` missing NAME/`--proficiency` (`add-skill` is the only `add-*` that fails fast instead of prompting) |
 
 ## Validation policy (non-negotiable)
 

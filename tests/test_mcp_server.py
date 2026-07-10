@@ -1,7 +1,8 @@
 """Tests for the FastMCP stdio server.
 
 Covers:
-- Tool registration (list_tools returns the 4 cloud-parity tools).
+- Tool registration (list_tools returns every registered tool; the
+  canonical name set is pinned in TestServerRegistration).
 - In-process tool invocation for each tool, asserting response schemas
   match the cloud shape (envelope + per-tool payload keys).
 - End-to-end JSON-RPC round-trip over stdio against ``traitprint
@@ -47,6 +48,7 @@ from traitprint.mcp_server import (
     _map_proficiency,
     _meets_proficiency,
     _mine_story_gaps_prompt,
+    _position_lens_prompt,
     _resolve_lens,
     create_server,
 )
@@ -1178,7 +1180,7 @@ class TestPromptCustomization:
             in text
         )
 
-    def test_all_five_builders_include_custom_md(self, tmp_path: Path) -> None:
+    def test_all_builders_include_custom_md(self, tmp_path: Path) -> None:
         (tmp_path / "custom.md").write_text("HOUSE-RULE-MARKER", encoding="utf-8")
         for built in (
             _fill_vault_prompt(vault_dir=tmp_path),
@@ -1186,6 +1188,7 @@ class TestPromptCustomization:
             _discover_skills_prompt(vault_dir=tmp_path),
             _draft_star_story_prompt(vault_dir=tmp_path),
             _audit_coherence_prompt(vault_dir=tmp_path),
+            _position_lens_prompt(vault_dir=tmp_path),
         ):
             assert "HOUSE-RULE-MARKER" in built
             assert self.HEADER in built

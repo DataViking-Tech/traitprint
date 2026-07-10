@@ -22,19 +22,31 @@ working directory → vault only as staged proposals the USER approves.
 
 ## 1. Export the vault into the working directory
 
-Deterministic — no LLM, no judgment, no vault writes:
+Deterministic — no LLM, no judgment, no vault writes. One command renders
+the whole working-directory layout:
+
+```bash
+traitprint vault export -f career-bundle -o <workdir>
+```
+
+That writes `cv.md` (ATS-style resume), `interview-prep/story-bank.md`
+(one STAR block per story), and `config/profile.yml`
+(candidate/narrative/target_roles, with commented placeholders for the
+judgment fields of step 2). `--lens SLUG` projects `cv.md` through a
+positioning lens (the interchange files stay canonical); `--zip` emits a
+single archive instead of a directory.
+
+Fallback — only on an older Traitprint whose
+`traitprint vault export --help` does not list `career-bundle`:
 
 ```bash
 traitprint vault export -f markdown -o <workdir>/cv.md
 traitprint vault export -f json -o <workdir>/traitprint-export.json   # grounded facts, with UUIDs
 ```
 
-Then populate the external tool's fact fields — the work-history and
+then populate the external tool's fact fields — the work-history and
 education blocks of `config/profile.yml`, the grounding facts of its
-story bank — by copying values out of those exports. `-f` is a fixed
-choice list, so `traitprint vault export --help` shows every format your
-installed version supports; if a newer version ships a format that
-renders the tool's working-directory layout in one command, prefer it.
+story bank — by copying values out of those exports.
 
 Never paraphrase vault facts from memory into the working directory —
 export them, so titles, dates, and metrics stay grounded in what the
@@ -54,7 +66,22 @@ proposal (step 3), not a working-directory edit.
 
 Anything the external tool produced that belongs in the vault — a STAR
 story mined during interview prep, a sharper summary, a skill the work
-surfaced — flows back as staged proposals, never as direct writes:
+surfaced — flows back as staged proposals, never as direct writes. The
+primary path is one command over the whole working directory:
+
+```bash
+traitprint vault import-story-bank <workdir>        # --dry-run to preview
+```
+
+It detects the `config/profile.yml` + `interview-prep/*.md` layout by
+shape and stages one `add_story` proposal per STAR block, one
+`update_profile` proposal, and — when the config carries
+`target_roles.archetypes` — one `add_lens` proposal for the target
+positioning. (`cv.md` is not parsed here: run
+`traitprint vault import-resume <workdir>/cv.md --propose` for it.)
+
+Fallback — for material outside that layout, or on an older Traitprint
+without `import-story-bank`, stage items one at a time:
 
 ```bash
 traitprint proposals add --kind add_story --source agent-vault-sync \

@@ -128,7 +128,7 @@ Add Traitprint to your Claude Desktop config file
   `/opt/homebrew/bin/traitprint`). Run `which traitprint` to find it.
 - `TRAITPRINT_VAULT_DIR` is optional — omit it to use the default `~/.traitprint`.
 - Restart Claude Desktop after editing the config. The `traitprint` server should
-  appear in the MCP tools list, exposing the four query tools and five prompts
+  appear in the MCP tools list, exposing the query tools and workflow prompts
   described below.
 
 The same snippet works for any MCP client that accepts an `mcpServers` block
@@ -143,7 +143,7 @@ traitprint agents init ~/my-project
 One command scaffolds a project directory for agent CLIs: thin entrypoint
 wrappers (`CLAUDE.md`, `QWEN.md`, `.grok/GROK.md`) that all delegate to a
 single canonical `AGENTS.md` (Codex CLI, OpenCode, and Kimi CLI read it
-natively), the six [Agent Skills](skills/) copied to `.agents/skills/` and
+natively), the bundled [Agent Skills](skills/) copied to `.agents/skills/` and
 `.claude/skills/`, and project-scoped MCP registration for
 `traitprint mcp-serve` (`.mcp.json`, `opencode.json`, `.qwen/settings.json`,
 `.grok/settings.json`) — plus copy-paste snippets for home-directory configs
@@ -162,17 +162,23 @@ Traitprint is designed so an AI agent does most of the heavy lifting — both
 *reading* your vault and *helping you fill it out and keep it honest*. The MCP
 server exposes two kinds of primitive:
 
-**Four query tools** (read-only, schema-identical to the cloud server, so an
-agent can swap local ↔ cloud by changing a URL):
+**Seven read-only query tools.** They share the hosted cloud server's
+response envelope, and every tool except `doctor` is served hosted too —
+but the surfaces are not identical (the hosted server layers proposal and
+jobs tools on top, and a few filters differ); the full local ↔ hosted
+delta lives in [`AGENTS.md`](AGENTS.md):
 
 | Tool | "Ask it…" |
 |---|---|
-| `get_profile_summary` | a one-shot identity primer — headline, bio, top skills |
+| `get_profile_summary` | a one-shot identity primer — headline, bio, top skills; optional `lens` renders it through a positioning lens |
 | `search_skills` | "what do they know about X?" — taxonomy- and graph-aware skill search |
-| `find_story` | "tell me about a time when…" — STAR narrative retrieval by situation, theme, or outcome |
-| `get_philosophy` | "what's their stance on X?" |
+| `find_story` | "tell me about a time when…" — STAR narrative retrieval by free-text query, situation, theme, or outcome |
+| `get_philosophy` | "what's their stance on X?" — filter by topic and/or category |
+| `vault_lens_list` | which positioning lenses exist, and which is the default |
+| `vault_lens_get` | one lens in full — salience map, signature content, overrides |
+| `doctor` | "where should we start?" — vault phase + freshness findings, each naming the skill that fixes it (local-only) |
 
-**Five prompts** — ready-made workflows an agent can pull to drive the vault
+**Six prompts** — ready-made workflows an agent can pull to drive the vault
 forward, adapted from the Traitprint Cloud Experience Mining engine (the same
 Socratic coach and its mining modes). In Claude Desktop they show up in the
 slash-command menu; in an agentic client (Claude Code, Cursor) they pair with
@@ -185,15 +191,18 @@ shell access so the agent can run the CLI directly:
 | `discover_skills` | SKILL DISCOVERY mode — probes for latent skills you have but haven't added yet. |
 | `draft_star_story` | FOCUSED deep dive — turns one raw accomplishment into a crisp, well-linked STAR story. Optional `experience` seeds the topic. |
 | `audit_coherence` | Runs the coherence audit, then applies judgment on consistency, voice, and evidence quality. |
+| `position_lens` | Curates a positioning lens for a target role — salience, signature content, headline/bio overrides — without inventing a fact. |
 
 ### Agent Skills
 
 The same workflows ship as [SKILL.md Agent Skills](skills/)
 (agentskills.io open standard) for filesystem agents like Claude Code,
-Codex CLI, Gemini CLI, and Cursor — plus two skills with no prompt
-counterpart: `traitprint-import-resume` (agent-assisted resume import)
-and `traitprint-capture-story` (background STAR capture that stages a
-story proposal whenever a work anecdote surfaces mid-session):
+Codex CLI, Gemini CLI, and Cursor — plus three skills with no prompt
+counterpart: `traitprint-import-resume` (agent-assisted resume import),
+`traitprint-capture-story` (background STAR capture that stages a
+story proposal whenever a work anecdote surfaces mid-session), and
+`traitprint-agent-vault-sync` (round-trip sync with an external agent
+career tool's working directory):
 
 ```
 npx skills add DataViking-Tech/traitprint
@@ -348,13 +357,17 @@ coaching workflows compose instead of starting from scratch each time.
 - **CLI** — `traitprint init`, `traitprint vault set-profile`, `add-skill`,
   `add-experience`, `add-story`, `add-philosophy`, `add-education`, `lens`,
   `remove`, `show`, `list`, `audit`, `history`, `diff`, `rollback`, `migrate`,
-  `export`, `import-resume`.
+  `export`, `extract-text`, `import-resume`, `import-story-bank`, the
+  `proposals` group (staged writes the user approves), plus top-level
+  `doctor`, `sync`, and `agents init`.
 - **Coherence audit** — `traitprint vault audit` flags unsupported claims,
   unbacked philosophies, and broken stories (text, `--json`, or `--strict`).
 - **Resume import** with BYOK LLM (Anthropic, OpenAI, Ollama, OpenRouter) —
   install with `pip install 'traitprint[import]'`.
-- **Optional cloud sync** — `login`, `logout`, `push`, `pull`. Install with
-  `pip install 'traitprint[cloud]'`.
+- **Optional cloud sync** — `login`, `logout`, and git-native
+  `traitprint sync` (`push` / `pull` / `status` / `taxonomy`); the legacy
+  whole-vault `push` / `pull` still work but are deprecated in favor of
+  `sync`. Install with `pip install 'traitprint[cloud]'`.
 
 ## Local vs Cloud
 
@@ -370,7 +383,7 @@ thing, hosted, plus the handful of features that genuinely need a server.
 | Narrative-coherence audit (`vault audit`) | ✅ | — |
 | Version history, diff, rollback | ✅ | — |
 | Resume import via BYOK LLM | ✅ | — |
-| Export (`json`, `markdown`, `jsonresume`, `synthpanel-persona`) | ✅ | — |
+| Export (`json`, `markdown`, `jsonresume`/`json-resume`, `synthpanel-persona`, `career-bundle`) | ✅ | — |
 | MIT-licensed source, fork and self-host | ✅ | — |
 | Public profile at `traitprint.com/profile/you` | — | ✅ |
 | Hosted MCP endpoint reachable by recruiter agents | — | ✅ |
@@ -449,13 +462,13 @@ full surface list.
 3. **Interactive prompt** — used as a last resort, only when stdin is a TTY.
 
 ```bash
-# Recommended: API token via env var
-export TRAITPRINT_API_TOKEN=tp_live_xxx
+# Recommended: API token via env var (generate an sk_ key in the web app)
+export TRAITPRINT_API_TOKEN=sk_xxx
 traitprint login        # one-time: persists token to <vault>/.credentials
-traitprint push
+traitprint sync push
 
-# Or skip login entirely — push/pull also honor TRAITPRINT_API_TOKEN directly
-TRAITPRINT_API_TOKEN=tp_live_xxx traitprint push
+# Or skip login entirely — sync/push/pull also honor TRAITPRINT_API_TOKEN directly
+TRAITPRINT_API_TOKEN=sk_xxx traitprint sync push
 ```
 
 Avoid `--password <pw>` on the command line: it lands in shell history and
