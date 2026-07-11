@@ -1,69 +1,53 @@
-# Project Instructions for AI Agents
+# CLAUDE.md — developing traitprint
 
-This file provides instructions and context for AI coding agents working on this project.
+Instructions for coding agents working **on** this codebase. If you are an
+agent **using** traitprint (the product — CLI, vault, MCP server), read
+`AGENTS.md` instead; that is the operating manual. This file is for
+developing it.
 
-<!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:ca08a54f -->
-## Beads Issue Tracker
+## Dev setup
 
-This project uses **bd (beads)** for issue tracking. Run `bd prime` to see full workflow context and commands.
-
-### Quick Reference
-
-```bash
-bd ready              # Find available work
-bd show <id>          # View issue details
-bd update <id> --claim  # Claim work
-bd close <id>         # Complete work
-```
-
-### Rules
-
-- Use `bd` for ALL task tracking — do NOT use TodoWrite, TaskCreate, or markdown TODO lists
-- Run `bd prime` for detailed command reference and session close protocol
-- Use `bd remember` for persistent knowledge — do NOT use MEMORY.md files
-
-## Session Completion
-
-**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
-
-**MANDATORY WORKFLOW:**
-
-1. **File issues for remaining work** - Create issues for anything that needs follow-up
-2. **Run quality gates** (if code changed) - Tests, linters, builds
-3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH TO REMOTE** - This is MANDATORY:
-   ```bash
-   git pull --rebase
-   bd dolt push
-   git push
-   git status  # MUST show "up to date with origin"
-   ```
-5. **Clean up** - Clear stashes, prune remote branches
-6. **Verify** - All changes committed AND pushed
-7. **Hand off** - Provide context for next session
-
-**CRITICAL RULES:**
-- Work is NOT complete until `git push` succeeds
-- NEVER stop before pushing - that leaves work stranded locally
-- NEVER say "ready to push when you are" - YOU must push
-- If push fails, resolve and retry until it succeeds
-<!-- END BEADS INTEGRATION -->
-
-
-## Build & Test
-
-_Add your build and test commands here_
+The package requires Python >= 3.10. If your system python is older
+(macOS ships 3.9), use a newer interpreter — e.g. homebrew's
+python3.12:
 
 ```bash
-# Example:
-# npm install
-# npm test
+/opt/homebrew/bin/python3.12 -m venv .venv
+.venv/bin/pip install -e ".[dev]"
 ```
 
-## Architecture Overview
+## Quality gates
 
-_Add a brief overview of your project architecture_
+All three must pass before any PR. CI (`.github/workflows/ci.yml`) runs
+the same three checks on each Python version in its matrix (currently
+3.10–3.13), with `pytest -v` instead of `-q`:
 
-## Conventions & Patterns
+```bash
+.venv/bin/pytest -q
+.venv/bin/ruff check src/ tests/
+.venv/bin/mypy src/
+```
 
-_Add your project-specific conventions here_
+## Issue tracking
+
+GitHub issues, via `gh`. That is the only tracker — `bd` is not installed
+and not used.
+
+## Constraints
+
+- **The vault format is a versioned contract** (`docs/schema/vault-v1/`).
+  Additive revisions only: pre-revision vaults must round-trip
+  byte-identical (omit new keys while empty). Adding allowed keys means
+  bumping the contract revision (README revision history + `$comment` in
+  the JSON schema). Anything non-additive needs an issue first.
+- **Skills** (`skills/*/SKILL.md`): every new or changed skill must be
+  registered in `SKILL_NAMES` (`src/traitprint/skills.py`) and pass the
+  conformance tests (`tests/test_skills.py`). Skills ship inside the
+  wheel via the `force-include` in `pyproject.toml`.
+- **Don't drift from cloud**: `src/traitprint/proposals.py` mirrors the
+  hosted MCP server's `vault_propose` validation, and
+  `src/traitprint/coherence.py` is a port of cloud's
+  `story-coherence.ts`. Changing behavior in either requires
+  coordinating with traitprint-cloud — flag it in the PR.
+- **CHANGELOG.md**: add an entry under `[Unreleased]` (Keep a Changelog
+  style) for every user-visible change.
