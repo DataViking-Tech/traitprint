@@ -865,13 +865,14 @@ class TestAddSkillCLI:
         self, runner: CliRunner, vault_dir: Path
     ) -> None:
         # No interactive prompt for missing required fields — exit 2 with
-        # an honest message that --category is optional.
+        # an honest message that --category is optional, on stderr like
+        # click's own usage errors.
         result = runner.invoke(
             cli, ["--path", str(vault_dir), "vault", "add-skill", "Python"]
         )
         assert result.exit_code == 2
-        assert "NAME and --proficiency are required" in result.output
-        assert "--category is optional" in result.output
+        assert "NAME and --proficiency are required" in result.stderr
+        assert "--category is optional" in result.stderr
 
     def test_add_skill_duplicate_rejected_cli(
         self, runner: CliRunner, vault_dir: Path
@@ -891,8 +892,82 @@ class TestAddSkillCLI:
         assert first.exit_code == 0
         second = runner.invoke(cli, args)
         assert second.exit_code == 1
-        assert "already exists" in second.output
+        assert "already exists" in second.stderr
         assert len(VaultStore(vault_dir).load().skills) == 1
+
+    def test_add_skill_suggestions_note_follows_the_add(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        # The skill is committed before any "did you mean" hint, so the
+        # output must say so in that order and hand the agent the exact
+        # remove/re-add swap — with the real UUID — instead of implying
+        # a pending question (no prompt: agents run non-interactively).
+        result = runner.invoke(
+            cli,
+            ["--path", str(vault_dir), "vault", "add-skill", "script", "-p", "3"],
+        )
+        assert result.exit_code == 0
+        skill = VaultStore(vault_dir).load().skills[0]
+
+        added = result.stdout.index(f"Added skill: script (3/5) [{skill.id}]")
+        note = result.stdout.index(
+            "[note] added as a custom skill (no taxonomy match)."
+        )
+        assert added < note
+        assert "If you meant one of: " in result.stdout
+        assert "Script" in result.stdout  # real taxonomy suggestions
+        assert (
+            f"run: traitprint vault remove {skill.id} -y "
+            '&& traitprint vault add-skill "<name>" -p 3'
+        ) in result.stdout
+        assert '-n "<notes>"' not in result.stdout  # no notes were passed
+
+    def test_add_skill_suggestions_hint_keeps_notes(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        # When the add carried --notes, the re-add half of the swap must
+        # remind about them (as a placeholder — raw notes could contain
+        # quotes or newlines that break the paste), or following the hint
+        # verbatim silently drops the notes.
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-skill",
+                "script",
+                "-p",
+                "2",
+                "-n",
+                "used on the ETL rewrite",
+            ],
+        )
+        assert result.exit_code == 0
+        skill = VaultStore(vault_dir).load().skills[0]
+        assert (
+            f"run: traitprint vault remove {skill.id} -y "
+            '&& traitprint vault add-skill "<name>" -p 2 -n "<notes>"'
+        ) in result.stdout
+
+    def test_add_skill_from_json_combined_is_usage_error(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-skill",
+                "Python",
+                "--from-json",
+                "-",
+            ],
+            input="[]",
+        )
+        assert result.exit_code == 2
+        assert "--from-json cannot be combined" in result.stderr
 
     def test_add_skill_no_taxonomy_match(
         self, runner: CliRunner, vault_dir: Path
@@ -2158,12 +2233,15 @@ class TestRemoveCLI:
         assert len(store.load().skills) == 0
 
     def test_remove_not_found(self, runner: CliRunner, vault_dir: Path) -> None:
+        # Exit 1 with the diagnosis on stderr: agents chain on exit codes
+        # and must not read a missing item as success.
         fake_id = str(uuid4())
         result = runner.invoke(
             cli,
             ["--path", str(vault_dir), "vault", "remove", fake_id, "--yes"],
         )
-        assert "Item not found" in result.output
+        assert result.exit_code == 1
+        assert "Item not found" in result.stderr
 
 
 # ------------------------------------------------------------------

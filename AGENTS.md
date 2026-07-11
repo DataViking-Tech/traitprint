@@ -111,7 +111,7 @@ shell. Use `-y` on `remove`/`rollback` to skip confirmation.
 | `traitprint vault add-story` | `--title` | `--situation --task --action --result --lesson --outcome win\|failure\|learning --theme-tag TAG` (repeatable) `--skill-id UUID` (repeatable) `--experience-id UUID` |
 | `traitprint vault add-philosophy` | `--title` | `--description --category --evidence-id STORY_UUID` (repeatable); categories: `leadership`, `collaboration`, `technical-approach`, `culture`, `decision-making` |
 | `traitprint vault add-education` | `--institution` | `--degree --field --start-date YYYY --end-date YYYY --description` |
-| `traitprint vault remove UUID -y` | UUID | searches all sections |
+| `traitprint vault remove UUID -y` | UUID | searches all sections; exit 1 if the id matches nothing |
 | `traitprint vault rollback -y` | — | reset tree to previous commit |
 | `traitprint vault migrate [--dry-run] [--json]` | — | v0 → v1 file tree; idempotent |
 | `traitprint vault import-resume PATH` | path | LLM extraction; `--provider --model --yes --dry-run --assist/--no-assist --propose --json`; PDF/DOCX need `pip install 'traitprint[import]'`. Resolution (D11): `--provider` flag → configured BYOK key → agent-assist mode (below) → actionable error. `--propose` stages extracted items as pending proposals instead of writing them (D9 staged path) |
@@ -197,7 +197,7 @@ written even when others fail.
 | Code | Meaning |
 |---|---|
 | 0 | success |
-| 1 | operation failed: any batch item errored or was a duplicate; duplicate single `add-skill`; `audit --strict` with critical/major findings; runtime errors (`Error: ...` on stderr) |
+| 1 | operation failed: any batch item errored or was a duplicate; duplicate single `add-skill`; `remove` of an id that matches nothing; `audit --strict` with critical/major findings; runtime errors (`Error: ...` on stderr) |
 | 2 | usage error: unknown flags, `--from-json` mixed with single-item args, missing required single-item fields |
 
 ### `vault audit --json` contract
@@ -290,8 +290,10 @@ Agent rules (D9, non-negotiable):
 - **Extracted skills enter at modest proficiency (2-3)** pending the user
   confirming stronger demonstrated evidence.
 - **Never invent taxonomy IDs.** Pass skill *names*; a deterministic
-  resolver maps them. If `add-skill` answers "Did you mean: …?", relay the
-  suggestion instead of guessing.
+  resolver maps them. If `add-skill` prints `[note] added as a custom
+  skill (no taxonomy match)` with suggestions, the skill is already
+  saved — relay the suggestions instead of guessing, and use the note's
+  remove/re-add command if the user meant one of them.
 - **Run `traitprint vault audit --json` after a batch of writes** and
   close (or report) the gaps before declaring the work done.
 

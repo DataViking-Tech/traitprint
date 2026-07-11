@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import sys
 from pathlib import Path
 from typing import IO, TYPE_CHECKING, Any
@@ -29,7 +30,7 @@ from traitprint.schema import (
     SalienceLevel,
     VaultSchema,
 )
-from traitprint.taxonomy import find_exact, suggest_matches
+from traitprint.taxonomy import TaxonomyEntry, find_exact, suggest_matches
 from traitprint.vault import (
     DuplicateLensSlugError,
     DuplicateSkillError,
@@ -685,7 +686,8 @@ def vault_add_skill(
         if name is not None or proficiency is not None or category is not None:
             click.echo(
                 "--from-json cannot be combined with NAME, --proficiency, "
-                "or --category."
+                "or --category.",
+                err=True,
             )
             ctx.exit(2)
             return
@@ -698,7 +700,8 @@ def vault_add_skill(
     if name is None or proficiency is None:
         click.echo(
             "NAME and --proficiency are required "
-            "(or use --from-json for batch input). --category is optional."
+            "(or use --from-json for batch input). --category is optional.",
+            err=True,
         )
         ctx.exit(2)
         return
@@ -707,6 +710,7 @@ def vault_add_skill(
     # taxonomy's category is used on a match, else it stays empty.
     taxonomy_id = None
     effective_category = category or ""
+    suggestions: list[TaxonomyEntry] = []
     exact = find_exact(name)
     if exact:
         taxonomy_id = exact.id
@@ -729,10 +733,6 @@ def vault_add_skill(
                 effective_category = exact.category
     else:
         suggestions = suggest_matches(name)
-        if suggestions:
-            names = ", ".join(s.name for s in suggestions)
-            click.echo(f"Did you mean: {names}?")
-            click.echo("Adding as custom skill (no taxonomy match).")
 
     try:
         skill = store.add_skill(
@@ -745,11 +745,29 @@ def vault_add_skill(
     except DuplicateSkillError as exc:
         click.echo(
             f"Skill already exists: {exc.name!r} ({exc.existing_id}). "
-            "Remove it first with 'vault remove <id>' to replace."
+            "Remove it first with 'vault remove <id>' to replace.",
+            err=True,
         )
         ctx.exit(1)
         return
     click.echo(f"Added skill: {skill.name} ({skill.proficiency}/5) [{skill.id}]")
+    if suggestions:
+        # Honest ordering: the skill IS committed at this point, so the
+        # "did you mean" hint comes after the add and spells out the exact
+        # remove/re-add swap (a confirmation prompt would hang
+        # non-interactive agents).
+        names = ", ".join(s.name for s in suggestions)
+        re_add = f'traitprint vault add-skill "<name>" -p {skill.proficiency}'
+        if notes:
+            # Placeholder, not the raw value: notes may contain quotes or
+            # newlines that would break the paste. Without it, following
+            # the hint verbatim would silently drop the notes.
+            re_add += ' -n "<notes>"'
+        click.echo(
+            "[note] added as a custom skill (no taxonomy match). "
+            f"If you meant one of: {names} — run: "
+            f"traitprint vault remove {skill.id} -y && {re_add}"
+        )
 
 
 def _report_item_problems(label: str, problems: list[str]) -> None:
@@ -899,13 +917,14 @@ def vault_add_experience(
 
     if from_json is not None:
         if title is not None:
-            click.echo("--from-json cannot be combined with --title.")
+            click.echo("--from-json cannot be combined with --title.", err=True)
             ctx.exit(2)
             return
         if skill_ids_opt or skill_links_opt:
             click.echo(
                 "--from-json cannot be combined with --skill-id/--skill-link; "
-                "put skill_ids/skill_links on each batch item instead."
+                "put skill_ids/skill_links on each batch item instead.",
+                err=True,
             )
             ctx.exit(2)
             return
@@ -1151,7 +1170,7 @@ def vault_add_story(
 
     if from_json is not None:
         if title is not None:
-            click.echo("--from-json cannot be combined with --title.")
+            click.echo("--from-json cannot be combined with --title.", err=True)
             ctx.exit(2)
             return
         items = _read_json_items(from_json)
@@ -1345,7 +1364,7 @@ def vault_add_philosophy(
 
     if from_json is not None:
         if title is not None:
-            click.echo("--from-json cannot be combined with --title.")
+            click.echo("--from-json cannot be combined with --title.", err=True)
             ctx.exit(2)
             return
         items = _read_json_items(from_json)
@@ -1495,7 +1514,7 @@ def vault_add_education(
 
     if from_json is not None:
         if institution is not None:
-            click.echo("--from-json cannot be combined with --institution.")
+            click.echo("--from-json cannot be combined with --institution.", err=True)
             ctx.exit(2)
             return
         items = _read_json_items(from_json)
@@ -1623,7 +1642,9 @@ def vault_remove(ctx: click.Context, item_id: UUID, yes: bool) -> None:
             click.echo(f"Removed from {section}: {uid}")
             return
 
-    click.echo(f"Item not found: {uid}")
+    # Exit 1 so chained agent commands see the failure (not false success).
+    click.echo(f"Item not found: {uid}", err=True)
+    ctx.exit(1)
 
 
 # --- vault lens (positioning-lens command group) ---
@@ -1888,7 +1909,7 @@ def vault_lens_add(
 
     if from_json is not None:
         if slug is not None or name is not None or salience or is_default:
-            click.echo("--from-json cannot be combined with per-lens flags.")
+            click.echo("--from-json cannot be combined with per-lens flags.", err=True)
             ctx.exit(2)
             return
         items = _read_json_items(from_json)
@@ -1899,7 +1920,8 @@ def vault_lens_add(
 
     if slug is None or name is None:
         click.echo(
-            "--slug and --name are required (or use --from-json for batch input)."
+            "--slug and --name are required (or use --from-json for batch input).",
+            err=True,
         )
         ctx.exit(2)
         return
@@ -1907,7 +1929,7 @@ def vault_lens_add(
     try:
         skill_salience = _parse_salience_pairs(salience)
     except ValueError as exc:
-        click.echo(str(exc))
+        click.echo(str(exc), err=True)
         ctx.exit(2)
         return
 
@@ -2001,7 +2023,10 @@ def vault_lens_update(
 
     if from_json is not None:
         if lens_ref is not None or slug is not None or salience or is_default:
-            click.echo("--from-json cannot be combined with LENS or per-lens flags.")
+            click.echo(
+                "--from-json cannot be combined with LENS or per-lens flags.",
+                err=True,
+            )
             ctx.exit(2)
             return
         items = _read_json_items(from_json)
@@ -2012,7 +2037,8 @@ def vault_lens_update(
 
     if lens_ref is None:
         click.echo(
-            "LENS (slug or id) is required (or use --from-json for batch input)."
+            "LENS (slug or id) is required (or use --from-json for batch input).",
+            err=True,
         )
         ctx.exit(2)
         return
@@ -2028,7 +2054,7 @@ def vault_lens_update(
     try:
         skill_salience = _parse_salience_pairs(salience) if salience else None
     except ValueError as exc:
-        click.echo(str(exc))
+        click.echo(str(exc), err=True)
         ctx.exit(2)
         return
 
@@ -2200,7 +2226,10 @@ def vault_export(
         _export_bundle(ctx, v, fmt, output, lens_ref, as_zip)
         return
     if lens_ref is not None or as_zip:
-        click.echo("--lens and --zip are only supported with -f career-bundle.")
+        click.echo(
+            "--lens and --zip are only supported with -f career-bundle.",
+            err=True,
+        )
         ctx.exit(2)
         return
 
@@ -2231,7 +2260,8 @@ def _export_bundle(
     if not output:
         click.echo(
             f"-f {fmt} writes multiple files — pass -o DIR "
-            "(or -o FILE.zip with --zip)."
+            "(or -o FILE.zip with --zip).",
+            err=True,
         )
         ctx.exit(2)
         return
@@ -2560,7 +2590,15 @@ def vault_migrate(ctx: click.Context, dry_run: bool, as_json: bool) -> None:
         return
     if store.is_v1():
         if as_json:
-            click.echo(json.dumps({"status": "already-v1", "migrated": False}))
+            # Same four keys as planned/migrated payloads (documented
+            # contract) so consumers can index "files" without KeyErrors.
+            payload: dict[str, Any] = {
+                "status": "already-v1",
+                "migrated": False,
+                "files": [],
+                "proficiency_remaps": [],
+            }
+            click.echo(json.dumps(payload))
         else:
             click.echo("Vault is already schema v1 — nothing to migrate.")
         return
@@ -2994,7 +3032,7 @@ def vault_import_resume(
         return
 
     if assist is True and provider is not None:
-        click.echo("--assist cannot be combined with --provider.")
+        click.echo("--assist cannot be combined with --provider.", err=True)
         ctx.exit(2)
         return
 
@@ -3368,7 +3406,7 @@ def proposals_approve(
 
     if approve_all:
         if ident is not None:
-            click.echo("--all cannot be combined with a proposal ID.")
+            click.echo("--all cannot be combined with a proposal ID.", err=True)
             ctx.exit(2)
             return
         pending = ProposalStore(store.directory).pending()
@@ -3407,7 +3445,10 @@ def proposals_approve(
         return
 
     if ident is None:
-        click.echo("Pass a proposal ID, or --all to approve every pending one.")
+        click.echo(
+            "Pass a proposal ID, or --all to approve every pending one.",
+            err=True,
+        )
         ctx.exit(2)
         return
     _approve_one(store, _find_proposal(store, ident), yes=yes)
@@ -3754,6 +3795,26 @@ def mcp_serve(ctx: click.Context) -> None:
 # ------------------------------------------------------------------
 
 
+def _cli_entrypoint() -> str:
+    """Best-effort absolute path to the running ``traitprint`` executable.
+
+    Used for advice when 'traitprint' is not on PATH (venv-only
+    installs): the console script sits next to the running interpreter;
+    otherwise fall back to how this process was invoked. Advice only —
+    the scaffolder never writes machine-specific absolute paths into
+    project config.
+    """
+    for name in ("traitprint", "traitprint.exe"):
+        candidate = Path(sys.executable).with_name(name)
+        if candidate.is_file():
+            return str(candidate)
+    argv0 = Path(sys.argv[0])
+    if argv0.name in ("traitprint", "traitprint.exe") and argv0.is_file():
+        return str(argv0.resolve())
+    # Last resort: where a console script for this interpreter would live.
+    return str(Path(sys.executable).with_name("traitprint"))
+
+
 @cli.group(name="agents")
 def agents_group() -> None:
     """Agent-runtime entrypoints (wrappers, skills, MCP wiring)."""
@@ -3779,8 +3840,11 @@ def agents_init(ctx: click.Context, directory: str, as_json: bool) -> None:
     .qwen/settings.json, .grok/settings.json). Codex CLI, OpenCode, and
     Kimi CLI read AGENTS.md natively; registrations that live in the home
     directory (Codex CLI, Kimi CLI) are printed as snippets — nothing
-    outside DIRECTORY is ever touched, and existing files are never
-    overwritten. Gemini CLI is not scaffolded: the published Gemini
+    outside DIRECTORY is ever written to, and existing files are never
+    overwritten. Snippets and next steps only list configs that genuinely
+    lack a traitprint entry (existing configs are read to check, never
+    modified), so re-runs never tell you to re-add what is already
+    wired. Gemini CLI is not scaffolded: the published Gemini
     extension (gemini-extension.json) already covers it. Already using
     `npx skills add DataViking-Tech/traitprint`? This command mainly adds
     the MCP wiring and a Node-free (pip-only) bootstrap path.
@@ -3790,6 +3854,7 @@ def agents_init(ctx: click.Context, directory: str, as_json: bool) -> None:
         NATIVE_AGENTS_MD_RUNTIMES,
         SKILL_DESTINATIONS,
         ScaffoldError,
+        mcp_entry_registered,
         scaffold,
     )
 
@@ -3800,8 +3865,28 @@ def agents_init(ctx: click.Context, directory: str, as_json: bool) -> None:
     except ScaffoldError as exc:
         raise click.ClickException(str(exc)) from exc
 
+    # A registration counts as done when this run wrote its config OR the
+    # existing config already carries a traitprint entry (idempotent
+    # re-runs must not tell the agent to re-add what is already wired).
+    # Only genuinely unregistered ones — e.g. a pre-existing foreign
+    # .mcp.json without a traitprint server — stay pending.
     written_paths = {f.path for f in report.files if f.written}
-    pending = [reg for reg in MCP_REGISTRATIONS if reg.path not in written_paths]
+    target_dir = Path(report.directory)
+    registered = {
+        reg.runtime: reg.path in written_paths
+        or mcp_entry_registered(reg, target_dir)
+        for reg in MCP_REGISTRATIONS
+    }
+    pending = [reg for reg in MCP_REGISTRATIONS if not registered[reg.runtime]]
+
+    path_hint: str | None = None
+    if shutil.which("traitprint") is None:
+        path_hint = (
+            "'traitprint' is not on PATH, so the scaffolded MCP configs "
+            "cannot spawn 'traitprint mcp-serve' as written. Edit them to "
+            f"launch the absolute entrypoint instead: {_cli_entrypoint()}"
+        )
+        click.echo(f"WARNING: {path_hint}", err=True)
 
     next_steps: list[str] = []
     if not vault_exists:
@@ -3812,6 +3897,8 @@ def agents_init(ctx: click.Context, directory: str, as_json: bool) -> None:
             f"Register 'traitprint mcp-serve' with {labels} "
             "(see the MCP snippets)."
         )
+    if path_hint is not None:
+        next_steps.append(path_hint)
     next_steps.append(
         f"Launch your agent CLI in {report.directory} and ask for the "
         "traitprint-fill-vault interview to build out your vault."
@@ -3829,6 +3916,7 @@ def agents_init(ctx: click.Context, directory: str, as_json: bool) -> None:
                     "path": reg.path,
                     "in_project": reg.in_project,
                     "written": reg.path in written_paths,
+                    "registered": registered[reg.runtime],
                     "snippet": reg.snippet,
                 }
                 for reg in MCP_REGISTRATIONS
