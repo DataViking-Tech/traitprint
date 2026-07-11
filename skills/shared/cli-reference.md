@@ -246,7 +246,7 @@ Output is one `[ok]` / `[dup]` / `[err]` line per item plus
 | Code | Meaning |
 |---|---|
 | 0 | success |
-| 1 | operation failed: any batch item errored or duplicated; `audit --strict` found critical/major issues |
+| 1 | operation failed: any batch item errored or duplicated; `remove` of an id that matches nothing; `audit --strict` found critical/major issues |
 | 2 | usage error: bad flags, or mixing `--from-json` with single-item arguments |
 
 ## Validation policy (non-negotiable)

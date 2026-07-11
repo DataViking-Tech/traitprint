@@ -920,6 +920,35 @@ class TestAddSkillCLI:
             f"run: traitprint vault remove {skill.id} -y "
             '&& traitprint vault add-skill "<name>" -p 3'
         ) in result.stdout
+        assert '-n "<notes>"' not in result.stdout  # no notes were passed
+
+    def test_add_skill_suggestions_hint_keeps_notes(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        # When the add carried --notes, the re-add half of the swap must
+        # remind about them (as a placeholder — raw notes could contain
+        # quotes or newlines that break the paste), or following the hint
+        # verbatim silently drops the notes.
+        result = runner.invoke(
+            cli,
+            [
+                "--path",
+                str(vault_dir),
+                "vault",
+                "add-skill",
+                "script",
+                "-p",
+                "2",
+                "-n",
+                "used on the ETL rewrite",
+            ],
+        )
+        assert result.exit_code == 0
+        skill = VaultStore(vault_dir).load().skills[0]
+        assert (
+            f"run: traitprint vault remove {skill.id} -y "
+            '&& traitprint vault add-skill "<name>" -p 2 -n "<notes>"'
+        ) in result.stdout
 
     def test_add_skill_from_json_combined_is_usage_error(
         self, runner: CliRunner, vault_dir: Path

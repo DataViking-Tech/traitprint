@@ -228,17 +228,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Suggestions now follow the add as one clearly-marked line — `[note]
   added as a custom skill (no taxonomy match). If you meant one of: … —
   run: traitprint vault remove <uuid> -y && traitprint vault add-skill
-  "<name>" -p N` — with the real UUID and proficiency filled in, so an
-  agent can swap the typo in one paste. Still no confirmation prompt (it
-  would hang non-interactive agents), and exit stays 0.
-- **Custom validation/usage errors now print to stderr,** matching
-  click's own usage errors and the runtime `Error: …` path; exit codes
-  are unchanged. Covers the exit-2 guards across the CLI (`NAME and
-  --proficiency are required …`, every `--from-json cannot be combined
-  …` variant, `--slug and --name are required …`, `--lens and --zip are
-  only supported …`, `--assist cannot be combined …`, `--all cannot be
+  "<name>" -p N` — with the real UUID and proficiency filled in (plus an
+  `-n "<notes>"` placeholder when the add carried notes, so the swap
+  doesn't drop them), so an agent can swap the typo in one paste. Still
+  no confirmation prompt (it would hang non-interactive agents), and
+  exit stays 0.
+- **Usage errors (exit 2), plus the duplicate-skill and item-not-found
+  diagnostics, now print to stderr,** matching click's own usage errors
+  and the runtime `Error: …` path; exit codes are unchanged. Covers
+  every echo-then-exit-2 guard across the CLI (`NAME and --proficiency
+  are required …`, every `--from-json cannot be combined …` variant,
+  `--slug and --name are required …`, `--lens and --zip are only
+  supported …`, `--assist cannot be combined …`, `--all cannot be
   combined …`, malformed `--salience` pairs, and friends) plus the
   duplicate-skill (exit 1) and `vault remove` "Item not found" messages.
+  Other exit-1 diagnostics (the lens-not-found family, `No fields
+  provided`, `Invalid --link`) deliberately stay on stdout for now.
   Agents parsing stdout no longer see usage diagnostics mixed into
   command output.
 

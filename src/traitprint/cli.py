@@ -757,11 +757,16 @@ def vault_add_skill(
         # remove/re-add swap (a confirmation prompt would hang
         # non-interactive agents).
         names = ", ".join(s.name for s in suggestions)
+        re_add = f'traitprint vault add-skill "<name>" -p {skill.proficiency}'
+        if notes:
+            # Placeholder, not the raw value: notes may contain quotes or
+            # newlines that would break the paste. Without it, following
+            # the hint verbatim would silently drop the notes.
+            re_add += ' -n "<notes>"'
         click.echo(
             "[note] added as a custom skill (no taxonomy match). "
             f"If you meant one of: {names} — run: "
-            f"traitprint vault remove {skill.id} -y && "
-            f'traitprint vault add-skill "<name>" -p {skill.proficiency}'
+            f"traitprint vault remove {skill.id} -y && {re_add}"
         )
 
 
