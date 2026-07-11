@@ -870,10 +870,9 @@ class TestProposalsListCLI:
         result = tp(runner, vault_dir, "proposals", "list", "--json")
         assert result.exit_code == 0
         # The warning goes to stderr; stdout stays a clean JSON array.
-        # (click >= 8.2 separates the streams; fall back to the combined
-        # output on older click, where the test is weaker but still runs.)
-        stdout = getattr(result, "stdout", result.output)
-        assert json.loads(stdout) == []
+        # (click >= 8.2, the pyproject floor, separates the streams —
+        # result.stderr raises on older click, hence the floor.)
+        assert json.loads(result.stdout) == []
         assert "[warn] proposals/broken.json" in result.stderr
 
 
@@ -1364,6 +1363,37 @@ class TestProposalsAddQualityAdvisory:
         # The proposal itself staged normally.
         assert len(ProposalStore(vault_dir).pending()) == 1
 
+    def test_gaps_are_severity_ordered_and_capped_at_three(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        """One major + three criticals: criticals lead, the major is capped.
+
+        The scorer emits the Situation major FIRST (field order), so this
+        fails if the advisory drops either the severity sort (the major
+        would lead the line) or the 3-gap cap (the major would trail it).
+        """
+        result = tp(
+            runner,
+            vault_dir,
+            "proposals",
+            "add",
+            "--kind",
+            "add_story",
+            "--payload-json",
+            "-",
+            inp=json.dumps(
+                {
+                    "title": "Thin story",
+                    # 4 words -> major "too brief"; Task/Action/Result
+                    # missing -> three criticals.
+                    "body": star_body(situation="We had a thing."),
+                }
+            ),
+        )
+        assert result.exit_code == 0, result.output
+        assert "— Task is empty; Action is empty; Result is empty" in result.output
+        assert "too brief" not in result.output  # the major got capped out
+
     def test_add_story_strong_body_scores_without_restage_hint(
         self, runner: CliRunner, vault_dir: Path
     ) -> None:
@@ -1485,10 +1515,10 @@ class TestProposalsAddQualityAdvisory:
             ),
         )
         assert result.exit_code == 0
-        # (click >= 8.2 separates the streams; fall back to the combined
-        # output on older click, where the test is weaker but still runs.)
-        stdout = getattr(result, "stdout", result.output)
-        assert json.loads(stdout)["kind"] == "add_story"
+        # click >= 8.2 (the pyproject floor) separates the streams:
+        # stdout is the clean JSON document, the advisory is on stderr
+        # (result.stderr raises on older click — hence the floor).
+        assert json.loads(result.stdout)["kind"] == "add_story"
         assert "[quality]" in result.stderr
 
 

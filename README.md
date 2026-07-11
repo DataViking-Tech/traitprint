@@ -179,8 +179,9 @@ delta lives in [`AGENTS.md`](AGENTS.md):
 | `doctor` | "where should we start?" — vault phase + freshness findings, each naming the skill that fixes it (local-only) |
 
 **Eight prompts** — ready-made workflows an agent can pull to drive the vault
-forward, adapted from the Traitprint Cloud Experience Mining engine (the same
-Socratic coach and its mining modes). In Claude Desktop they show up in the
+forward, most adapted from the Traitprint Cloud Experience Mining engine (the
+same Socratic coach and its mining modes); `deepen_story` and
+`improve_profile` are new here. In Claude Desktop they show up in the
 slash-command menu; in an agentic client (Claude Code, Cursor) they pair with
 shell access so the agent can run the CLI directly:
 
