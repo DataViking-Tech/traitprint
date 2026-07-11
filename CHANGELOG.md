@@ -281,6 +281,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   revision are asserted against the live registries and the schema
   README — shipping a new skill, tool, prompt, export format, or
   contract revision fails CI until the docs are updated.
+- **Contributor docs for coding agents replaced.** `CLAUDE.md` was an
+  unfilled issue-tracker integration template mandating a `bd` tool that
+  is not part of this project; it now documents the real dev setup, the
+  three quality gates, the tracker (GitHub issues via `gh`), and the
+  repo's don't-break constraints, and points agents *using* traitprint
+  to `AGENTS.md`. The `.claude/settings.json` session hooks and the
+  `done`/`handoff` commands that depended on absent tooling were
+  removed (`review` stays). No behavior change to the package itself.
 
 ### Fixed
 
