@@ -193,14 +193,17 @@ class TestCounts:
                     )
         assert not problems, "\n".join(problems)
         # Positive-match floor: the corpus is known to carry at least this
-        # many deliberate count claims. If a rephrase drops below it, the
-        # claim parser stopped seeing a phrase it used to check (e.g. a
-        # modifier word missing from _MODIFIER_WORDS) — extend the
-        # allowlist or lower the floor consciously, don't let the test go
-        # vacuous.
-        assert total_claims >= 9, (
+        # many deliberate count claims (was 9 until AGENTS.md's skill/prompt
+        # counts went count-free when the quality skills landed; the six
+        # that remain are the stable tool counts, README's prompt counts,
+        # and the derived no-prompt-counterpart claim). If a rephrase drops
+        # below it, the claim parser stopped seeing a phrase it used to
+        # check (e.g. a modifier word missing from _MODIFIER_WORDS) —
+        # extend the allowlist or lower the floor consciously, don't let
+        # the test go vacuous.
+        assert total_claims >= 6, (
             f"only {total_claims} count claims parsed across "
-            f"{', '.join(DOC_PATHS)} (expected >= 9) — a phrasing change "
+            f"{', '.join(DOC_PATHS)} (expected >= 6) — a phrasing change "
             f"likely made a claim invisible to _count_claims()"
         )
 

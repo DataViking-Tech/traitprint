@@ -228,6 +228,21 @@ prints the live key list. Unknown payload keys are rejected with the
 allowed-key list. Pending proposals show up in `traitprint vault audit`
 as a `proposals.pending` finding.
 
+Story kinds get propose-time quality feedback: after staging an
+`add_story`/`update_story`, the CLI prints an advisory line
+
+```text
+[quality] <Label> (<overall>) — <up to 3 concrete gaps>
+```
+
+with the audit's story scorer (labels Polished/Strong/Solid/Draft;
+`update_story` scores the current story merged with the staged changes),
+plus one revise-and-restage hint line when the staged content scores
+Draft/weak. Advisory only: it never blocks staging and never changes the
+exit code; with `--json` the lines go to stderr so stdout stays a clean
+JSON document. Treat a Draft advisory as "keep working": fix the flagged
+fields and re-stage rather than asking the user to approve thin evidence.
+
 ### Cloud sync (git-native, sync-v1 — needs `pip install 'traitprint[cloud]'`)
 
 The `sync` group syncs the vault's git history with the hosted remote

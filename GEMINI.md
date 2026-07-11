@@ -15,8 +15,8 @@ extension gives you two surfaces:
    the vault on this machine. The bundled skills
    (fill-vault, mine-story-gaps, discover-skills, draft-star-story,
    audit-coherence, import-resume, capture-story, agent-vault-sync,
-   position-lens) drive the CLI; the full operating manual
-   is `AGENTS.md` in this extension directory.
+   position-lens, deepen-story, improve-profile) drive the CLI; the
+   full operating manual is `AGENTS.md` in this extension directory.
 
 Prefer the local CLI when the `traitprint` command is available; fall back
 to the hosted MCP tools otherwise.

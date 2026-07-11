@@ -870,10 +870,9 @@ class TestProposalsListCLI:
         result = tp(runner, vault_dir, "proposals", "list", "--json")
         assert result.exit_code == 0
         # The warning goes to stderr; stdout stays a clean JSON array.
-        # (click >= 8.2 separates the streams; fall back to the combined
-        # output on older click, where the test is weaker but still runs.)
-        stdout = getattr(result, "stdout", result.output)
-        assert json.loads(stdout) == []
+        # (click >= 8.2, the pyproject floor, separates the streams —
+        # result.stderr raises on older click, hence the floor.)
+        assert json.loads(result.stdout) == []
         assert "[warn] proposals/broken.json" in result.stderr
 
 
@@ -1268,6 +1267,259 @@ class TestProposalsAddCLI:
         assert exp.title == "Senior Platform Engineer"
         assert exp.description == "Platform team lead for deploy tooling."
         assert exp.source == "agent:test"
+
+
+# ── advisory [quality] feedback on staged story proposals ───────────
+
+# Strong STAR fields: >=10 words each, first-person active Action,
+# metric-bearing Result, task↔action and action↔result stem overlap —
+# scores "demonstrates" under traitprint.coherence.
+STRONG_STAR = {
+    "situation": (
+        "Our checkout service was timing out for customers during the "
+        "holiday peak traffic period last year."
+    ),
+    "task": (
+        "I owned reducing checkout latency across the payment service "
+        "before the December traffic peak arrived."
+    ),
+    "action": (
+        "I profiled the payment service, rewrote the slowest checkout "
+        "queries, and deployed a caching layer for latency."
+    ),
+    "result": (
+        "Checkout latency dropped 40 percent at peak, from 2 seconds to "
+        "1.2 seconds for every customer."
+    ),
+}
+
+
+def star_body(**sections: str) -> str:
+    """Render STAR sections as the ## heading body payload.body expects."""
+    return "\n\n".join(
+        f"## {name.capitalize()}\n{text}" for name, text in sections.items()
+    )
+
+
+def add_story_via_cli(runner: CliRunner, vault_dir: Path) -> UUID:
+    result = tp(
+        runner,
+        vault_dir,
+        "vault",
+        "add-story",
+        "--title",
+        "Checkout latency",
+        "--situation",
+        STRONG_STAR["situation"],
+        "--task",
+        STRONG_STAR["task"],
+        "--action",
+        STRONG_STAR["action"],
+        "--result",
+        STRONG_STAR["result"],
+    )
+    assert result.exit_code == 0, result.output
+    return UUID(result.output.rsplit("[", 1)[1].rstrip("]\n"))
+
+
+class TestProposalsAddQualityAdvisory:
+    """proposals add prints advisory [quality] lines for story kinds.
+
+    The advisory consumes traitprint.coherence as-is (the cloud-mirrored
+    scorer), never blocks, and never changes exit codes; non-story kinds
+    are untouched.
+    """
+
+    def test_add_story_weak_body_gets_line_and_restage_hint(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        from traitprint.coherence import score_story_coherence
+
+        result = tp(
+            runner,
+            vault_dir,
+            "proposals",
+            "add",
+            "--kind",
+            "add_story",
+            "--payload-json",
+            "-",
+            inp=json.dumps(
+                {
+                    "title": "Thin story",
+                    "body": star_body(situation="We had a thing."),
+                }
+            ),
+        )
+        assert result.exit_code == 0, result.output  # advisory never blocks
+        expected = score_story_coherence("We had a thing.", "", "", "")
+        assert (
+            f"[quality] {expected.label} ({expected.overall:.2f})"
+            in result.output
+        )
+        # Concrete gaps ride the line; weak evidence adds the restage hint.
+        assert "Task is empty" in result.output
+        assert "re-stage" in result.output
+        # The proposal itself staged normally.
+        assert len(ProposalStore(vault_dir).pending()) == 1
+
+    def test_gaps_are_severity_ordered_and_capped_at_three(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        """One major + three criticals: criticals lead, the major is capped.
+
+        The scorer emits the Situation major FIRST (field order), so this
+        fails if the advisory drops either the severity sort (the major
+        would lead the line) or the 3-gap cap (the major would trail it).
+        """
+        result = tp(
+            runner,
+            vault_dir,
+            "proposals",
+            "add",
+            "--kind",
+            "add_story",
+            "--payload-json",
+            "-",
+            inp=json.dumps(
+                {
+                    "title": "Thin story",
+                    # 4 words -> major "too brief"; Task/Action/Result
+                    # missing -> three criticals.
+                    "body": star_body(situation="We had a thing."),
+                }
+            ),
+        )
+        assert result.exit_code == 0, result.output
+        assert "— Task is empty; Action is empty; Result is empty" in result.output
+        assert "too brief" not in result.output  # the major got capped out
+
+    def test_add_story_strong_body_scores_without_restage_hint(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        from traitprint.coherence import score_story_coherence
+
+        result = tp(
+            runner,
+            vault_dir,
+            "proposals",
+            "add",
+            "--kind",
+            "add_story",
+            "--payload-json",
+            "-",
+            inp=json.dumps(
+                {"title": "Strong story", "body": star_body(**STRONG_STAR)}
+            ),
+        )
+        assert result.exit_code == 0, result.output
+        expected = score_story_coherence(
+            STRONG_STAR["situation"],
+            STRONG_STAR["task"],
+            STRONG_STAR["action"],
+            STRONG_STAR["result"],
+        )
+        assert expected.evidence_level == "demonstrates"  # fixture sanity
+        assert (
+            f"[quality] {expected.label} ({expected.overall:.2f})"
+            in result.output
+        )
+        assert "re-stage" not in result.output
+
+    def test_update_story_scores_current_merged_with_changes(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        story_id = add_story_via_cli(runner, vault_dir)
+        result = tp(
+            runner,
+            vault_dir,
+            "proposals",
+            "add",
+            "--kind",
+            "update_story",
+            "--target-id",
+            str(story_id),
+            "--payload-json",
+            "-",
+            inp=json.dumps(
+                {
+                    "body": star_body(
+                        result=(
+                            "Checkout latency dropped 40 percent at peak, "
+                            "from 2 seconds to 1.2 seconds, verified on the "
+                            "payment service latency dashboard."
+                        )
+                    )
+                }
+            ),
+        )
+        assert result.exit_code == 0, result.output
+        assert "[quality]" in result.output
+        # Merged with the current story: untouched sections are NOT gaps.
+        assert "Situation is empty" not in result.output
+        assert "Task is empty" not in result.output
+
+    def test_update_story_dangling_target_stages_without_advisory(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        result = tp(
+            runner,
+            vault_dir,
+            "proposals",
+            "add",
+            "--kind",
+            "update_story",
+            "--target-id",
+            str(uuid4()),
+            "--payload-json",
+            "-",
+            inp=json.dumps({"body": star_body(result="Better.")}),
+        )
+        # Nothing sensible to score — staging proceeds, no advisory.
+        assert result.exit_code == 0, result.output
+        assert "[quality]" not in result.output
+        assert len(ProposalStore(vault_dir).pending()) == 1
+
+    def test_non_story_kinds_unaffected(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        result = tp(
+            runner,
+            vault_dir,
+            "proposals",
+            "add",
+            "--kind",
+            "add_skill",
+            "--payload-json",
+            "-",
+            inp=json.dumps({"name": "Rust", "proficiency": 2}),
+        )
+        assert result.exit_code == 0, result.output
+        assert "[quality]" not in result.output
+
+    def test_json_stdout_stays_parseable_advisory_on_stderr(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        result = tp(
+            runner,
+            vault_dir,
+            "proposals",
+            "add",
+            "--kind",
+            "add_story",
+            "--payload-json",
+            "-",
+            "--json",
+            inp=json.dumps(
+                {"title": "Thin", "body": star_body(situation="We had a thing.")}
+            ),
+        )
+        assert result.exit_code == 0
+        # click >= 8.2 (the pyproject floor) separates the streams:
+        # stdout is the clean JSON document, the advisory is on stderr
+        # (result.stderr raises on older click — hence the floor).
+        assert json.loads(result.stdout)["kind"] == "add_story"
+        assert "[quality]" in result.stderr
 
 
 # ── audit integration ───────────────────────────────────────────────

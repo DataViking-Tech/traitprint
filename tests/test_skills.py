@@ -43,6 +43,8 @@ PROMPT_TO_SKILL = {
     "draft_star_story": "traitprint-draft-star-story",
     "audit_coherence": "traitprint-audit-coherence",
     "position_lens": "traitprint-position-lens",
+    "deepen_story": "traitprint-deepen-story",
+    "improve_profile": "traitprint-improve-profile",
 }
 
 
@@ -322,3 +324,100 @@ class TestPositionLensSkill:
         # local: direct CLI; cloud: staged via vault_propose (never direct)
         assert "vault_propose" in body
         assert "add_lens" in body
+
+
+# ── (g) The story/profile quality skills + MCP prompts ───────────────
+
+DEEPEN_SKILL = "traitprint-deepen-story"
+IMPROVE_SKILL = "traitprint-improve-profile"
+
+
+class TestDeepenStorySkill:
+    """The one-story cross-examination protocol (deepen_story prompt)."""
+
+    def test_registered_and_loadable(self) -> None:
+        assert DEEPEN_SKILL in SKILL_NAMES
+        fm, body = load_skill(DEEPEN_SKILL)
+        assert fm["name"] == DEEPEN_SKILL
+        assert body.strip()
+
+    def test_target_selection_uses_the_audit(self) -> None:
+        body = skill_body(DEEPEN_SKILL)
+        assert "traitprint vault audit --json" in body
+        assert "story_scores" in body
+        assert "signature" in body  # weakest signature story first
+
+    def test_cross_examination_thrusts_present(self) -> None:
+        body = skill_body(DEEPEN_SKILL)
+        # a metric needs a baseline/denominator, and a source
+        assert "baseline or denominator" in body
+        assert "unsourced percentage" in body.lower()
+        # attribution split — you vs the team, and the seat held
+        assert "seat" in body
+        # the counterfactual
+        assert "without you" in body
+        # scope anchors
+        assert "Team size, data scale, duration, stakes" in body
+        # honest outcome labels — a real learning beats an inflated win
+        for label in ("`win`", "`failure`", "`learning`"):
+            assert label in body
+        assert "inflated win" in body
+        # lesson extraction + skill pairing
+        assert "Lesson" in body
+        assert "skill_ids" in body
+
+    def test_changes_stage_through_proposals_and_report_delta(self) -> None:
+        body = skill_body(DEEPEN_SKILL)
+        assert "traitprint proposals add --kind update_story" in body
+        assert "vault_propose" in body  # the hosted staging path
+        assert "never a silent write" in body
+        assert "never approve on their behalf" in body
+        # closes with the re-audit + score delta
+        assert "delta" in body.lower()
+
+
+class TestImproveProfileSkill:
+    """Vault-wide triage: rank by leverage, route, re-audit
+    (improve_profile prompt)."""
+
+    def test_registered_and_loadable(self) -> None:
+        assert IMPROVE_SKILL in SKILL_NAMES
+        fm, body = load_skill(IMPROVE_SKILL)
+        assert fm["name"] == IMPROVE_SKILL
+        assert body.strip()
+
+    def test_gathers_state_from_the_read_surface(self) -> None:
+        body = skill_body(IMPROVE_SKILL)
+        assert "traitprint doctor" in body
+        assert "traitprint vault audit --json" in body
+        assert "traitprint vault show --json" in body
+        # the hosted (shell-less) alternative + market signal
+        assert "get_profile_summary" in body
+        assert "jobs_match" in body
+        assert "missing_skills" in body
+
+    def test_leverage_heuristic_is_encoded_in_order(self) -> None:
+        body = skill_body(IMPROVE_SKILL)
+        rungs = (
+            "contradicts itself undermines everything",  # 1 disputes/dangling
+            "zero evidencing",                           # 2 unbacked expert claims
+            "traitprint-deepen-story",                   # 3 weak signature stories
+            "traitprint-mine-story-gaps",                # 4 story-less roles
+            "cheapest win",                              # 5 missing_skills labeling
+            "Stale basics or headline",                  # 6 stale identity
+            "traitprint-position-lens",                  # 7 lens coverage
+        )
+        positions = [body.find(r) for r in rungs]
+        missing = [r for r, p in zip(rungs, positions, strict=True) if p == -1]
+        assert not missing, f"missing rung(s): {missing}"
+        assert positions == sorted(positions), (
+            "leverage rungs are out of order — the ranking heuristic must "
+            "read the same for every agent"
+        )
+
+    def test_presents_payoff_and_routes_through_channels(self) -> None:
+        body = skill_body(IMPROVE_SKILL)
+        assert "payoff" in body
+        assert "traitprint proposals add" in body
+        assert "vault_propose" in body
+        assert "never a silent write" in body

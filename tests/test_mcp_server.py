@@ -34,6 +34,7 @@ from traitprint.mcp_server import (
     _audit_coherence_prompt,
     _coerce_min_proficiency,
     _compute_disputes,
+    _deepen_story_prompt,
     _discover_skills_prompt,
     _draft_star_story_prompt,
     _envelope,
@@ -45,6 +46,7 @@ from traitprint.mcp_server import (
     _handle_search_skills,
     _handle_vault_lens_get,
     _handle_vault_lens_list,
+    _improve_profile_prompt,
     _map_proficiency,
     _meets_proficiency,
     _mine_story_gaps_prompt,
@@ -1104,6 +1106,8 @@ class TestPrompts:
             "draft_star_story",
             "audit_coherence",
             "position_lens",
+            "deepen_story",
+            "improve_profile",
         }
 
     def test_fill_vault_focus_argument(self, populated_store: VaultStore) -> None:
@@ -1152,6 +1156,38 @@ class TestPrompts:
         text = got.messages[0].content.text  # type: ignore[union-attr]
         assert "a tricky migration" in text
 
+    def test_deepen_story_seeds_target_story(
+        self, populated_store: VaultStore
+    ) -> None:
+        server = create_server(populated_store)
+        got = asyncio.run(
+            server.get_prompt("deepen_story", {"story": "the billing migration"})
+        )
+        text = got.messages[0].content.text  # type: ignore[union-attr]
+        assert "the billing migration" in text
+        # Canonical protocol markers + the staged write path.
+        assert "baseline or denominator" in text
+        assert "update_story" in text
+
+    def test_deepen_story_without_argument_selects_weakest(
+        self, populated_store: VaultStore
+    ) -> None:
+        server = create_server(populated_store)
+        got = asyncio.run(server.get_prompt("deepen_story", {}))
+        text = got.messages[0].content.text  # type: ignore[union-attr]
+        assert "story_scores" in text
+
+    def test_improve_profile_focus_argument(
+        self, populated_store: VaultStore
+    ) -> None:
+        server = create_server(populated_store)
+        got = asyncio.run(server.get_prompt("improve_profile", {"focus": "stories"}))
+        text = got.messages[0].content.text  # type: ignore[union-attr]
+        assert "FOCUS OVERRIDE" in text
+        assert "stories" in text
+        # The leverage ranking travels with the prompt.
+        assert "traitprint-mine-story-gaps" in text
+
 
 class TestPromptCustomization:
     """An optional user-owned custom.md at the vault root rides along on
@@ -1189,6 +1225,8 @@ class TestPromptCustomization:
             _draft_star_story_prompt(vault_dir=tmp_path),
             _audit_coherence_prompt(vault_dir=tmp_path),
             _position_lens_prompt(vault_dir=tmp_path),
+            _deepen_story_prompt(vault_dir=tmp_path),
+            _improve_profile_prompt(vault_dir=tmp_path),
         ):
             assert "HOUSE-RULE-MARKER" in built
             assert self.HEADER in built

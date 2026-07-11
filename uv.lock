@@ -1272,7 +1272,7 @@ import = [
 
 [package.metadata]
 requires-dist = [
-    { name = "click", specifier = ">=8.0" },
+    { name = "click", specifier = ">=8.2" },
     { name = "httpx", marker = "extra == 'cloud'" },
     { name = "httpx", marker = "extra == 'dev'" },
     { name = "httpx", marker = "extra == 'import'" },

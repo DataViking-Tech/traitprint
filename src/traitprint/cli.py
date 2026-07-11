@@ -3216,6 +3216,87 @@ def _find_proposal(store: VaultStore, ident: str) -> LoadedProposal:
         raise click.ClickException(str(exc)) from exc
 
 
+# Advisory propose-time quality feedback (local half). Story proposals get
+# scored with the same coherence engine the audit uses
+# (traitprint.coherence — the faithful cloud port; consumed as-is, never
+# re-tuned here). Output is decoration on stdout/stderr only: it NEVER
+# blocks staging, never changes an exit code, and non-story kinds are
+# untouched.
+
+_STORY_STAR_FIELDS = ("situation", "task", "action", "result")
+_QUALITY_SEVERITY_RANK = {"critical": 0, "major": 1, "minor": 2}
+_QUALITY_MAX_GAPS = 3
+
+
+def _staged_story_star(
+    store: VaultStore, kind: str, target_id: UUID | None, payload: dict[str, Any]
+) -> dict[str, str] | None:
+    """The STAR fields a staged story proposal would produce on approval.
+
+    ``add_story`` scores the payload body's sections (missing ones stay
+    empty — those are real gaps). ``update_story`` scores the current
+    story with the body-provided sections layered on top, mirroring the
+    apply semantics (a partial body never blanks untouched sections).
+    Returns ``None`` when there is nothing sensible to score — an
+    ``update_story`` whose target is not in the vault.
+    """
+    from traitprint.vault_io import parse_story_body
+
+    body = payload.get("body")
+    star = parse_story_body(body) if isinstance(body, str) else {}
+    if kind == "add_story":
+        return {name: star.get(name, "") for name in _STORY_STAR_FIELDS}
+    if target_id is None:
+        return None
+    current = next((s for s in store.load().stories if s.id == target_id), None)
+    if current is None:
+        return None
+    merged = {name: str(getattr(current, name)) for name in _STORY_STAR_FIELDS}
+    for name in _STORY_STAR_FIELDS:
+        if star.get(name):
+            merged[name] = star[name]
+    return merged
+
+
+def _story_quality_lines(
+    store: VaultStore, kind: str, target_id: UUID | None, payload: dict[str, Any]
+) -> list[str]:
+    """Advisory ``[quality]`` lines for a staged story proposal.
+
+    ``[quality] <Label> (<overall>) — <up to 3 gaps>``, plus a
+    revise-and-restage hint when the staged content scores Draft/weak.
+    Empty for non-story kinds and whenever scoring is impossible —
+    advisory feedback must never break or block ``proposals add``.
+    """
+    if kind not in ("add_story", "update_story"):
+        return []
+    try:
+        from traitprint.coherence import score_story_coherence
+
+        star = _staged_story_star(store, kind, target_id, payload)
+        if star is None:
+            return []
+        score = score_story_coherence(
+            star["situation"], star["task"], star["action"], star["result"]
+        )
+    except Exception:  # advisory only — never fail the staging path
+        return []
+    gaps = sorted(
+        score.issues, key=lambda i: _QUALITY_SEVERITY_RANK.get(i.severity, 9)
+    )[:_QUALITY_MAX_GAPS]
+    line = f"[quality] {score.label} ({score.overall:.2f})"
+    if gaps:
+        line += " — " + "; ".join(gap.message for gap in gaps)
+    lines = [line]
+    if score.label == "Draft" or score.evidence_level == "weak":
+        lines.append(
+            "[quality] Weak evidence as staged — revise the flagged fields "
+            "and re-stage before approving (reject this proposal, fix the "
+            "payload, run 'traitprint proposals add' again)."
+        )
+    return lines
+
+
 @cli.group()
 def proposals() -> None:
     """Review staged writes awaiting approval (proposals/*.json).
@@ -3545,6 +3626,12 @@ def proposals_add(
     vault v1 proposal contract — the same checks the hosted MCP server's
     vault_propose tool runs — then writes proposals/<kind>-<id8>.json and
     commits. Nothing touches the vault until the proposal is approved.
+
+    Story proposals (add_story/update_story) additionally get an advisory
+    '[quality]' line scoring the staged content with the audit's coherence
+    engine (for update_story: the current story merged with the staged
+    changes). Feedback only — it never blocks and never changes the exit
+    code; with --json it goes to stderr so stdout stays parseable.
     """
     from traitprint.proposals import ProposalStore, ProposalValidationError
 
@@ -3574,13 +3661,19 @@ def proposals_add(
 
     p = lp.proposal
     commit(store.directory, f"Add proposal: {p.kind} {p.summary()}".rstrip())
+    quality = _story_quality_lines(store, p.kind, p.target_id, p.payload)
     if as_json:
         click.echo(json.dumps(_proposal_dict(lp), indent=2))
+        # Advisory only; stderr keeps stdout a clean JSON document.
+        for line in quality:
+            click.echo(line, err=True)
         return
     click.echo(
         f"Created pending proposal {p.kind} [{p.id}] "
         f"→ proposals/{lp.path.name}"
     )
+    for line in quality:
+        click.echo(line)
     click.echo(
         "Review with 'traitprint proposals show' / approve with "
         "'traitprint proposals approve'."

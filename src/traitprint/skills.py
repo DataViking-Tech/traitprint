@@ -13,7 +13,7 @@ the repo root (source checkouts and editable installs, where the
 force-include is not materialized).
 
 The MCP server reads skill bodies through :func:`skill_body` at serve time,
-so the five workflow prompts can never drift from the published skills.
+so the workflow prompts can never drift from the published skills.
 """
 
 from __future__ import annotations
@@ -41,6 +41,8 @@ SKILL_NAMES = (
     "traitprint-capture-story",
     "traitprint-agent-vault-sync",
     "traitprint-position-lens",
+    "traitprint-deepen-story",
+    "traitprint-improve-profile",
 )
 
 

@@ -23,15 +23,15 @@ referential integrity) recomputed locally from the same check
 ``get_profile_summary`` additionally rolls every disputed entity up into a
 vault-wide ``disputes`` inventory.
 
-It also exposes six *prompts* — ``fill_vault``, ``mine_story_gaps``,
-``discover_skills``, ``draft_star_story``, ``audit_coherence``, and
-``position_lens``. They hand an agent a ready-made workflow for helping the
-user build out, tighten, and position their vault. Their canonical text
-lives in the Agent Skills (``skills/<name>/SKILL.md``); each prompt is a
-thin wrapper that reads the skill body at serve time so prompt and skill
-cannot drift. The cloud server mirrors six of the tools (all but the
-local-only ``doctor``) and maintains its own adapted prompt bodies that
-route writes through ``vault_propose``.
+It also exposes eight *prompts* — ``fill_vault``, ``mine_story_gaps``,
+``discover_skills``, ``draft_star_story``, ``audit_coherence``,
+``position_lens``, ``deepen_story``, and ``improve_profile``. They hand an
+agent a ready-made workflow for helping the user build out, tighten, and
+position their vault. Their canonical text lives in the Agent Skills
+(``skills/<name>/SKILL.md``); each prompt is a thin wrapper that reads the
+skill body at serve time so prompt and skill cannot drift. The cloud server
+mirrors six of the tools (all but the local-only ``doctor``) and maintains
+its own adapted prompt bodies that route writes through ``vault_propose``.
 """
 
 from __future__ import annotations
@@ -1308,6 +1308,24 @@ def _position_lens_prompt(vault_dir: Path | None = None) -> str:
     return _skill_prompt("traitprint-position-lens", vault_dir=vault_dir)
 
 
+def _deepen_story_prompt(story: str = "", vault_dir: Path | None = None) -> str:
+    extra = ""
+    if story.strip():
+        extra = f"The story to deepen: {story.strip()}."
+    return _skill_prompt("traitprint-deepen-story", extra, vault_dir)
+
+
+def _improve_profile_prompt(focus: str = "", vault_dir: Path | None = None) -> str:
+    extra = ""
+    if focus.strip():
+        extra = (
+            f"FOCUS OVERRIDE: the user asked to concentrate on "
+            f"**{focus.strip()}** — rank and present tasks for that area "
+            "only this session."
+        )
+    return _skill_prompt("traitprint-improve-profile", extra, vault_dir)
+
+
 # ── Server factory ──────────────────────────────────────────────────
 
 
@@ -1520,6 +1538,30 @@ def create_server(store: VaultStore) -> FastMCP:
     def position_lens() -> str:
         return _position_lens_prompt(vault_dir=store.directory)
 
+    @mcp.prompt(
+        description=(
+            "CROSS-EXAMINATION mode: harden one STAR story until it survives "
+            "interview follow-ups — sourced metrics, split attribution, the "
+            "counterfactual, anchored scope, an honest outcome label. Changes "
+            "stage as an update_story proposal. Optional 'story' names the "
+            "target; default is the weakest signature story."
+        )
+    )
+    def deepen_story(story: str = "") -> str:
+        return _deepen_story_prompt(story, vault_dir=store.directory)
+
+    @mcp.prompt(
+        description=(
+            "TRIAGE mode: scan the whole vault and surface the 1-3 "
+            "highest-leverage improvements — disputes first, then unbacked "
+            "expert claims, weak signature stories, story-less roles — each "
+            "with its payoff and exact next step. Optional 'focus' narrows "
+            "the ranking to one area."
+        )
+    )
+    def improve_profile(focus: str = "") -> str:
+        return _improve_profile_prompt(focus, vault_dir=store.directory)
+
     # Expose handles so tests can reach the raw logic without stdio.
     mcp._traitprint_store = store  # type: ignore[attr-defined]
     mcp._traitprint_taxonomy = taxonomy  # type: ignore[attr-defined]
@@ -1545,10 +1587,13 @@ __all__ = [
     "SERVER_VERSION",
     "_audit_coherence_prompt",
     "_compute_disputes",
+    "_deepen_story_prompt",
     "_discover_skills_prompt",
     "_draft_star_story_prompt",
     "_fill_vault_prompt",
+    "_improve_profile_prompt",
     "_mine_story_gaps_prompt",
+    "_position_lens_prompt",
     "create_server",
     "run_stdio",
 ]

@@ -30,7 +30,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "click>=8.0",
+    "click>=8.2",
     "pydantic>=2.0",
     "mcp",
     "pyyaml>=6.0",
