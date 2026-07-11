@@ -1,8 +1,9 @@
 """FastMCP stdio server exposing the local vault to AI agents.
 
-Response schemas mirror the cloud MCP server
-(``supabase/functions/mcp-server/index.ts``) so switching an agent between
-local and cloud is a URL swap. Seven tools are exposed:
+Response schemas share the cloud MCP server's envelope
+(``supabase/functions/mcp-server/index.ts`` in the cloud repo); the
+tool-level local ↔ hosted delta is documented in ``AGENTS.md`` ("MCP
+stdio server"). Seven tools are exposed:
 
 - ``get_profile_summary``
 - ``vault_lens_list``
@@ -69,10 +70,7 @@ RESPONSE_CONTRACT_VERSION = "1.1.0"
 
 # Five-label proficiency vocabulary, one label per 1-5 level (the vault
 # contract: 1 familiar, 2 working, 3 proficient, 4 expert, 5 authority).
-# NOTE: this intentionally diverges from the cloud MCP server's current
-# 4-label enum (which has no "proficient"); cloud parity catch-up is
-# tracked as a cloud-side follow-up — until it lands, this server is
-# deliberately ahead of the hosted one.
+# The hosted MCP server ships the same five-label vocabulary.
 PROFICIENCY_LABELS = ("familiar", "working", "proficient", "expert", "authority")
 PROFICIENCY_ORDER = {label: i for i, label in enumerate(PROFICIENCY_LABELS)}
 
@@ -834,8 +832,7 @@ def _handle_get_profile_summary(
             vault.experiences, key=lambda e: -e.created_at.timestamp()
         )[:3]
     # related_skills mirrors find_story's related_skills (names, dangling
-    # refs skipped). Contract revision 1.1; the cloud MCP server catches
-    # up separately — until then this server is deliberately ahead.
+    # refs skipped; experience skill_ids are contract revision 1.1+).
     skill_name_by_id = {s.id: s.name for s in vault.skills}
     result["signature_experiences"] = [
         {
@@ -1218,15 +1215,17 @@ def _handle_get_philosophy(
 # string builders so they unit-test without an MCP client.
 
 # Appended to every prompt: skill bodies assume a shell; MCP clients may
-# not have one, but they do have the four read tools.
+# not have one, but they do have the seven read tools.
 _MCP_SERVING_NOTE = """
 
 ---
 Serving context: you received this workflow over MCP. If you have shell
 access, run the `traitprint` commands above yourself. If not, do reads with
-the MCP tools (`get_profile_summary` with depth="detailed", `search_skills`,
-`find_story`, `get_philosophy`) and hand the user the exact `traitprint`
-command for every write instead of running it."""
+the MCP tools (`doctor` to orient on vault phase and freshness,
+`get_profile_summary` with depth="detailed", `search_skills`, `find_story`,
+`get_philosophy`, and `vault_lens_list` / `vault_lens_get` for positioning
+lenses) and hand the user the exact `traitprint` command for every write
+instead of running it."""
 
 # Optional user customization: a ``custom.md`` at the vault root is the
 # user-owned instruction layer (never written by the package, survives pip

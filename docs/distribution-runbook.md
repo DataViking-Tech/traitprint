@@ -266,7 +266,7 @@ Source: `google-gemini/gemini-cli` docs — `extensions/reference.md`,
   repository", which is why it is not under a `gemini-extension/`
   subdirectory.
 - `GEMINI.md` context file at the root (wired via `contextFileName`).
-- The six skills under `skills/<name>/SKILL.md` — Gemini CLI
+- The bundled skills under `skills/<name>/SKILL.md` — Gemini CLI
   auto-discovers extension skills from exactly this layout; no manifest
   entry needed. (`skills/shared/` has no SKILL.md, so it is bundled as
   plain supporting files, not a skill.)
@@ -315,7 +315,7 @@ Source: `vercel-labs/skills` README (fetched 2026-06-10).
 
 1. Smoke-test the public install path in a scratch directory:
    ```bash
-   npx skills add DataViking-Tech/traitprint --list   # shows the 6 skills
+   npx skills add DataViking-Tech/traitprint --list   # lists the bundled skills
    npx skills add DataViking-Tech/traitprint          # installs them
    ```
 2. **Check the `../shared/cli-reference.md` link in the installed copy.**

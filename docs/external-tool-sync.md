@@ -24,24 +24,31 @@ Agent Skill (`npx skills add DataViking-Tech/traitprint` installs it into
 any skills-aware agent):
 
 1. **Export — deterministic.**
-   `traitprint vault export -f markdown -o <workdir>/cv.md` renders the
-   CV, and `traitprint vault export -f json` supplies grounded,
-   UUID-carrying facts the agent copies into the tool's other files
-   (the fact fields of `config/profile.yml`, the story bank's grounding
-   details). No LLM, no judgment, no vault writes. `-f` is a fixed
-   choice list — `traitprint vault export --help` shows what an
-   installed version supports.
+   `traitprint vault export -f career-bundle -o <workdir>` renders the
+   whole working-directory layout in one command: `cv.md`,
+   `interview-prep/story-bank.md` (one STAR block per story), and
+   `config/profile.yml` (with commented placeholders for the judgment
+   fields). `--lens SLUG` projects `cv.md` through a positioning lens;
+   `--zip` emits one archive. No LLM, no judgment, no vault writes. On
+   an older Traitprint without `career-bundle`, fall back to
+   `-f markdown -o <workdir>/cv.md` plus `-f json` for grounded,
+   UUID-carrying facts to copy into the tool's other files
+   (`traitprint vault export --help` shows the supported formats).
 2. **Judgment gaps — the agent asks the user.** The export fills
    everything the vault knows; what remains in `config/profile.yml` are
    judgment calls a vault does not store — compensation targets, the
    exit story, archetype/role-fit rankings. The wrapping agent fills
    ONLY those, from the user's answers, never from guesswork.
-3. **Write-back — proposals, never direct writes.** Anything the
-   external tool produced that belongs in the vault (a STAR story mined
-   during interview prep, a sharper summary, a newly surfaced skill) is
-   staged with `traitprint proposals add`. The user reviews with
-   `traitprint proposals list` / `traitprint proposals show` and applies
-   with `traitprint proposals approve`. Nothing touches the vault
+3. **Write-back — proposals, never direct writes.**
+   `traitprint vault import-story-bank <workdir>` (add `--dry-run` to
+   preview) detects the `config/profile.yml` + `interview-prep/*.md`
+   layout and stages everything it finds as pending proposals: one
+   `add_story` per STAR block, one `update_profile`, and an `add_lens`
+   when the config carries `target_roles.archetypes`. Material outside
+   that layout is staged item-by-item with `traitprint proposals add`.
+   The user reviews with `traitprint proposals list` /
+   `traitprint proposals show` and applies with
+   `traitprint proposals approve`. Nothing touches the vault
    silently, and taxonomy IDs / UUIDs are never invented.
 4. **Audit.** `traitprint vault audit --json` closes the loop; the agent
    reports findings alongside the pending-proposal queue.
@@ -64,13 +71,15 @@ configuration file — editing it is ordinary user-layer use):
 When I say "sync traitprint":
 
 1. Refresh this working directory from my Traitprint vault:
-   `traitprint vault export -f markdown -o cv.md`, plus
-   `traitprint vault export -f json -o traitprint-export.json` for
-   grounded facts with UUIDs — copy from these, never from memory.
+   `traitprint vault export -f career-bundle -o .` (on an older
+   Traitprint without career-bundle: `-f markdown -o cv.md` plus
+   `-f json -o traitprint-export.json`) — copy from these exports,
+   never from memory.
 2. Ask me — do not guess — for any judgment fields still blank in
    config/profile.yml: compensation targets, exit story, archetype fits.
-3. Stage anything new this directory produced since the last sync
-   (stories, summary edits, new skills) back to the vault with
+3. Stage anything new this directory produced since the last sync back
+   to the vault with `traitprint vault import-story-bank .` (preview
+   with --dry-run); for items outside the story-bank layout use
    `traitprint proposals add` — one JSON payload per item, STAR text in
    payload.body. Never write vault files directly; never invent UUIDs
    or taxonomy IDs.

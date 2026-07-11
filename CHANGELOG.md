@@ -246,6 +246,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   provided`, `Invalid --link`) deliberately stay on stdout for now.
   Agents parsing stdout no longer see usage diagnostics mixed into
   command output.
+- **Doc-truth pass across every agent surface** (`AGENTS.md`,
+  `README.md`, `GEMINI.md`, `skills/shared/cli-reference.md`,
+  `docs/distribution-runbook.md`, `docs/external-tool-sync.md`, the
+  `traitprint-agent-vault-sync` skill, the `mcp-serve --help` text, and
+  the MCP serving note). Stale counts and lists now match the code:
+  skills, local MCP tools and prompts, the full hosted tool list (with
+  the OAuth caveat: a tool gated on a scope added after the user
+  connected stays invisible until they reconnect), export formats incl.
+  `career-bundle` and the `json-resume` alias, the full
+  `update_profile` basics key list (`phone`/`url`/`profiles` landed in
+  contract rev 1.3), experience `skill_links` in the frontmatter
+  allowlists, `set-profile --phone/--url/--link`, `add-experience
+  --skill-link`, and the previously undocumented
+  `vault import-story-bank`, `doctor`, and `sync taxonomy` commands.
+  The local ↔ hosted "mirror / swap a URL" parity claim is replaced
+  with an honest delta note, and the stale "cloud 4-label proficiency
+  catch-up" comments are gone (cloud ships the five-label vocabulary).
+  Lenses are documented on the agent surfaces (vault-tree diagrams
+  gained `lenses.json`; `AGENTS.md` gained a "Positioning lenses"
+  section). The vault-sync skill and `docs/external-tool-sync.md` now
+  lead with the shipped `vault export -f career-bundle` /
+  `vault import-story-bank` pair, demoting the generic
+  export/`proposals add` loop to a fallback. The interactive-fallback
+  docs now note that `add-skill` fails fast (exit 2) while the other
+  `add-*` commands prompt (EOF aborts, exit 1); `--severity` is
+  documented as a minimum threshold; additive JSON keys (`fix_skill`
+  on audit findings, `lenses` in `vault show --json`) are called out.
+- **New conformance test `tests/test_doc_truth.py`** pins the docs to
+  the code: stated skill/tool/prompt counts, local MCP tool and prompt
+  names (including inside the MCP serving note), GEMINI.md's
+  bundled-skills list, the export-format list, inlined
+  `update_profile` basics keys, and AGENTS.md's stated vault-contract
+  revision are asserted against the live registries and the schema
+  README — shipping a new skill, tool, prompt, export format, or
+  contract revision fails CI until the docs are updated.
 - **Contributor docs for coding agents replaced.** `CLAUDE.md` was an
   unfilled issue-tracker integration template mandating a `bd` tool that
   is not part of this project; it now documents the real dev setup, the

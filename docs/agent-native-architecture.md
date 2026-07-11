@@ -221,9 +221,9 @@ accept+quarantine ingest).
 ### Phase 4 — Distribution (wave 1, D7)
 - MCP Registry publish; Claude connector directory; ChatGPT app directory; Gemini CLI extension (manifest wrapping MCP + GEMINI.md + skills).
 
-> **Issue tracking note:** `bd` was unavailable in the session that authored
-> this doc. File the `tp-an-*` items above into beads verbatim at next local
-> session (`bd create` per row, phase as label, this doc as the design link).
+> **Issue tracking note:** the `tp-an-*` items above are tracked as GitHub
+> issues (`gh issue create` per row, phase as label, this doc as the design
+> link) — GitHub Issues is this repo's tracker; beads/`bd` is not used.
 
 ## 7. Out of Scope / Explicitly Not Doing
 

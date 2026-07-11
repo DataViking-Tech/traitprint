@@ -14,7 +14,8 @@ extension gives you two surfaces:
 2. **Local CLI** (`pip install traitprint`) — direct, audit-gated access to
    the vault on this machine. The bundled skills
    (fill-vault, mine-story-gaps, discover-skills, draft-star-story,
-   audit-coherence, import-resume) drive the CLI; the full operating manual
+   audit-coherence, import-resume, capture-story, agent-vault-sync,
+   position-lens) drive the CLI; the full operating manual
    is `AGENTS.md` in this extension directory.
 
 Prefer the local CLI when the `traitprint` command is available; fall back
@@ -22,12 +23,24 @@ to the hosted MCP tools otherwise.
 
 ## Hosted MCP tools
 
-Read (response schemas identical to the local stdio server):
-`get_profile_summary`, `search_skills`, `find_story`, `get_philosophy`.
+Read: `get_profile_summary`, `search_skills`, `find_story`,
+`find_experience`, `get_philosophy`, `vault_lens_list`, `vault_lens_get`.
+All but `find_experience` are shared with the local stdio server and use
+the same response envelope — but the servers are not identical: local
+additionally has a `doctor` tool, a free-text `query` filter on
+`find_story`, real `lesson` text, an inferred `outcome`, and a `category`
+filter on `get_philosophy`; hosted `find_story` instead has a `skill`
+filter and an uncapped `total` inventory.
 Write (staged, never direct): `vault_propose` creates a proposal the user
-must approve; `vault_list_proposals` shows pending ones. Jobs (cloud-only):
-`job_get`, `jobs_match`, `resume_tailor`. Tools are scope-filtered — if a
-tool is missing, the user granted a narrower scope.
+must approve; `vault_list_proposals` shows pending ones; `vault_retract`
+withdraws one. Jobs (cloud-only): `jobs_search`, `jobs_match`, `job_get`,
+`resume_tailor`, `job_submit`.
+Tools are scope-filtered per session — if a tool is missing, the user
+granted a narrower scope. OAuth grants also freeze the scope set at
+consent time: a tool gated on a scope added *after* the user connected
+stays invisible until they reconnect (re-run the OAuth consent), while
+tools riding an already-granted scope appear without re-consent.
+Suggest a reconnect when a documented tool is absent.
 
 ## The vault on disk (schema v1)
 
@@ -44,6 +57,7 @@ Default `~/.traitprint`; override with `--vault-dir DIR` or
 ├── stories/*.md        # frontmatter + ## Situation/Task/Action/Result (+ ## Lesson)
 ├── philosophies/*.md   # frontmatter + body = the stance
 ├── proposals/*.json    # staged writes awaiting user review
+├── lenses.json         # positioning lenses (only written once a lens exists)
 └── .git/               # every CLI write auto-commits
 ```
 
@@ -74,8 +88,9 @@ Proposals: `traitprint proposals list`, `traitprint proposals show ID`,
 Sync (cloud extras): `traitprint sync push`, `traitprint sync pull`,
 `traitprint sync status`.
 
-Always pass flags — `add-*` commands fall back to interactive prompts and
-hang non-interactive shells. Batch mode: every `add-*` takes
+Always pass flags — most `add-*` commands fall back to interactive
+prompts and hang non-interactive shells (`add-skill` instead fails fast
+with exit 2). Batch mode: every `add-*` takes
 `--from-json -` (JSON array on stdin). The cheatsheet is
 `skills/shared/cli-reference.md` in this extension directory.
 
