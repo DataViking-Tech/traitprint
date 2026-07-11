@@ -159,7 +159,7 @@ until approval.
 | `traitprint proposals approve ID [-y]` | Validates the payload against the entity schema (Layer 0, hard reject), applies it (`add_*` creates; `update_*` partial-updates by `target_id` — clear error if the target is gone), and deletes the proposal file **in the same git commit** (contract rule 7). Duplicate skill names are rejected with the existing UUID |
 | `traitprint proposals approve --all [-y]` | D9 one-step approve-all: applies every pending proposal in ONE batch commit (`Approve N proposals`); failures print `[err]` lines, those proposals stay pending, exit 1 |
 | `traitprint proposals reject ID [-y]` | Sets `status: rejected` + `resolved_at`; the file is kept (and committed) |
-| `traitprint proposals add --kind K [--target-id UUID] [--rationale R] [--source S] --payload-json -` | Stage a new pending proposal from a JSON object (file or stdin). Same validation as the hosted MCP `vault_propose`: kind enum, per-kind allowed payload keys, `target_id` required for `update_*` kinds (forbidden otherwise). Exit 1 with `[err] proposal: ...` lines on violations |
+| `traitprint proposals add --kind K [--target-id UUID] [--rationale R] [--source S] --payload-json -` | Stage a new pending proposal from a JSON object (file or stdin). Same validation as the hosted MCP `vault_propose`: kind enum, per-kind allowed payload keys, `target_id` required for `update_*` kinds (forbidden otherwise). Exit 1 with `[err] proposal: ...` lines on violations. Story kinds (`add_story`/`update_story`) additionally print an advisory `[quality] <Label> (<overall>) — <up to 3 gaps>` line scoring the staged content with the audit's coherence engine (`update_story` scores the current story merged with the staged changes; a Draft/weak score adds a revise-and-restage hint). Advisory only: never blocks, never changes the exit code; with `--json` the lines go to stderr so stdout stays a clean JSON document |
 | `traitprint proposals validate PATH... [--json]` | Read-only, needs no vault: contract-validate proposal `.json` files (or every `*.json` in a directory) with the exact checks `add`/review run, without staging anything. `[ok]`/`[err]` lines + `Summary:`; exit 0 all valid, 1 otherwise. For pre-flighting files produced by external tools — see `docs/external-exporters.md` |
 | `traitprint proposals contract [--json]` | Print the proposal contract (kinds, per-kind allowed/required payload keys, statuses, profile `basics` keys, which kinds take `target_id`). `--json` emits a machine-readable document external proposers can vendor/diff to catch contract drift. Needs no vault |
 
@@ -378,13 +378,15 @@ hosted), but they are not interchangeable by swapping a URL:
   when a story doesn't declare one; the `category` filter on
   `get_philosophy`.
 
-Six prompts — `fill_vault(focus?)`, `mine_story_gaps`, `discover_skills`,
-`draft_star_story(experience?)`, `audit_coherence`, `position_lens` — served
-verbatim from the Agent Skills below, so prompt and skill never drift.
+The workflow prompts — `fill_vault(focus?)`, `mine_story_gaps`,
+`discover_skills`, `draft_star_story(experience?)`, `audit_coherence`,
+`position_lens`, `deepen_story(story?)`, `improve_profile(focus?)` — are
+served verbatim from the Agent Skills below, so prompt and skill never
+drift.
 
 ## Agent Skills
 
-Nine SKILL.md workflow skills (agentskills.io format) live under
+The SKILL.md workflow skills (agentskills.io format) live under
 [`skills/`](skills/), with a shared CLI cheatsheet at
 [`skills/shared/cli-reference.md`](skills/shared/cli-reference.md). Install
 into any skills-aware agent with `npx skills add DataViking-Tech/traitprint`;
@@ -397,7 +399,7 @@ directory so agent CLIs pick up traitprint on first launch — a Node-free
 alternative to `npx skills add` that also wires MCP. It writes: a
 canonical copy of this manual as `AGENTS.md`; thin wrappers delegating to
 it (`CLAUDE.md`, `QWEN.md`, `.grok/GROK.md` — Codex CLI, OpenCode, and
-Kimi CLI read `AGENTS.md` natively); the nine skills under
+Kimi CLI read `AGENTS.md` natively); the bundled skills under
 `.agents/skills/` and `.claude/skills/`; and project-scoped MCP
 registration for `traitprint mcp-serve` (`.mcp.json`, `opencode.json`,
 `.qwen/settings.json`, `.grok/settings.json`). Home-directory configs

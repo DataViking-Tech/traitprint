@@ -178,7 +178,7 @@ delta lives in [`AGENTS.md`](AGENTS.md):
 | `vault_lens_get` | one lens in full — salience map, signature content, overrides |
 | `doctor` | "where should we start?" — vault phase + freshness findings, each naming the skill that fixes it (local-only) |
 
-**Six prompts** — ready-made workflows an agent can pull to drive the vault
+**Eight prompts** — ready-made workflows an agent can pull to drive the vault
 forward, adapted from the Traitprint Cloud Experience Mining engine (the same
 Socratic coach and its mining modes). In Claude Desktop they show up in the
 slash-command menu; in an agentic client (Claude Code, Cursor) they pair with
@@ -192,6 +192,8 @@ shell access so the agent can run the CLI directly:
 | `draft_star_story` | FOCUSED deep dive — turns one raw accomplishment into a crisp, well-linked STAR story. Optional `experience` seeds the topic. |
 | `audit_coherence` | Runs the coherence audit, then applies judgment on consistency, voice, and evidence quality. |
 | `position_lens` | Curates a positioning lens for a target role — salience, signature content, headline/bio overrides — without inventing a fact. |
+| `deepen_story` | CROSS-EXAMINATION mode — hardens one STAR story until it survives follow-up questions: sourced metrics, split attribution, honest outcome. Optional `story` names the target. |
+| `improve_profile` | TRIAGE mode — ranks the whole vault by leverage and surfaces the 1-3 highest-payoff tasks, each with its exact next step. Optional `focus` narrows the ranking. |
 
 ### Agent Skills
 
@@ -349,9 +351,9 @@ coaching workflows compose instead of starting from scratch each time.
   versioned with git.
 - **MCP server (stdio)** — seven query tools (`get_profile_summary`,
   `search_skills`, `find_story`, `get_philosophy`, `vault_lens_list`,
-  `vault_lens_get`, and local-only `doctor`) and six workflow prompts
+  `vault_lens_get`, and local-only `doctor`) and eight workflow prompts
   (`fill_vault`, `mine_story_gaps`, `discover_skills`, `draft_star_story`,
-  `audit_coherence`, `position_lens`).
+  `audit_coherence`, `position_lens`, `deepen_story`, `improve_profile`).
 - **Agent Skills** — the same workflows as SKILL.md skills under
   [`skills/`](skills/) for Claude Code, Codex CLI, Gemini CLI, Cursor, etc.
 - **CLI** — `traitprint init`, `traitprint vault set-profile`, `add-skill`,

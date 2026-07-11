@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Two story/profile quality skills + MCP prompts.**
+  `traitprint-deepen-story` (prompt `deepen_story(story?)`) cross-examines
+  one STAR story until it survives interview follow-ups: a sourced metric
+  with a baseline/denominator, attribution split between you and the team,
+  the counterfactual, anchored scope (team size, data scale, duration,
+  stakes), an honest win/failure/learning label, and a sharpened lesson —
+  every change staged as an `update_story` proposal, finishing with the
+  audit score delta. `traitprint-improve-profile` (prompt
+  `improve_profile(focus?)`) triages the whole vault by an explicit
+  leverage ranking (disputes/dangling refs → unbacked expert claims → weak
+  signature stories → story-less roles → job-match labeling gaps → stale
+  basics → lens coverage) and presents the top 1-3 tasks with the payoff
+  and exact next step. Both served verbatim as local MCP prompts.
+- **Advisory propose-time quality feedback on staged stories.**
+  `traitprint proposals add` with kind `add_story`/`update_story` now
+  prints `[quality] <Label> (<overall>) — <up to 3 concrete gaps>` after
+  staging, scored with the audit's coherence engine (`update_story` scores
+  the current story merged with the staged changes), plus a
+  revise-and-restage hint when the content scores Draft/weak. Advisory
+  only — never blocks, never changes exit codes, non-story kinds
+  untouched; with `--json` the lines go to stderr so stdout stays a clean
+  JSON document.
 - **Positioning lenses — a named, non-destructive projection over the one
   vault.** A lens selects, orders, and re-weights existing vault content
   (per-skill salience `core`/`supporting`/`suppressed`, signature
