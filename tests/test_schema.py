@@ -9,7 +9,9 @@ from pydantic import ValidationError
 
 from traitprint.schema import (
     MAX_LENSES,
+    SCOPE_TEXT_MAX,
     ExperienceSchema,
+    ExperienceScope,
     LensSchema,
     PhilosophyCategory,
     PhilosophySchema,
@@ -184,6 +186,92 @@ class TestExperienceSchema:
     def test_skill_link_requires_skill_id(self) -> None:
         with pytest.raises(ValidationError):
             SkillLink.model_validate({"proficiency": 3})
+
+
+class TestExperienceScope:
+    """Contract revision 1.5: the optional quantified role-scope block."""
+
+    def test_scope_defaults_to_none(self) -> None:
+        # Additive — pre-1.5 payloads omit the key and must keep validating.
+        exp = ExperienceSchema(title="Staff Engineer")
+        assert exp.scope is None
+
+    def test_scope_round_trip(self) -> None:
+        exp = ExperienceSchema.model_validate(
+            {
+                "title": "Head of Data",
+                "scope": {
+                    "reporting_line": "VP of Data",
+                    "direct_reports": 6,
+                    "indirect_reports": 24,
+                    "managers_led": 2,
+                    "functions_owned": ["analytics eng", "data platform"],
+                    "budget_authority": "co-managed $2M vendor budget",
+                    "hiring_authority": True,
+                    "decision_rights": "architecture + tooling standards",
+                    "platform_scale": "2,500+ dbt models, 30-person data org",
+                    "org_context": "public co, ~7k employees",
+                },
+            }
+        )
+        assert exp.scope is not None
+        assert exp.scope.direct_reports == 6
+        assert ExperienceSchema.model_validate(exp.model_dump(mode="json")) == exp
+
+    @pytest.mark.parametrize(
+        "field", ["direct_reports", "indirect_reports", "managers_led"]
+    )
+    def test_negative_headcounts_rejected(self, field: str) -> None:
+        with pytest.raises(ValidationError):
+            ExperienceScope.model_validate({field: -1})
+
+    @pytest.mark.parametrize(
+        "field", ["direct_reports", "indirect_reports", "managers_led"]
+    )
+    def test_zero_headcount_valid_and_serialized(self, field: str) -> None:
+        # 0 is a set value (an IC role can truthfully claim zero reports).
+        scope = ExperienceScope.model_validate({field: 0})
+        assert scope.model_dump(mode="json") == {field: 0}
+
+    @pytest.mark.parametrize(
+        "field",
+        [
+            "reporting_line",
+            "budget_authority",
+            "decision_rights",
+            "platform_scale",
+            "org_context",
+        ],
+    )
+    def test_short_text_length_cap(self, field: str) -> None:
+        ExperienceScope.model_validate({field: "x" * SCOPE_TEXT_MAX})
+        with pytest.raises(ValidationError):
+            ExperienceScope.model_validate({field: "x" * (SCOPE_TEXT_MAX + 1)})
+
+    def test_functions_owned_entry_length_cap(self) -> None:
+        ExperienceScope(functions_owned=["x" * SCOPE_TEXT_MAX])
+        with pytest.raises(ValidationError):
+            ExperienceScope(functions_owned=["x" * (SCOPE_TEXT_MAX + 1)])
+
+    def test_serializes_only_set_fields(self) -> None:
+        scope = ExperienceScope(reporting_line="CTO", hiring_authority=False)
+        # False is a set value; every unset field stays absent (no nulls).
+        assert scope.model_dump(mode="json") == {
+            "reporting_line": "CTO",
+            "hiring_authority": False,
+        }
+
+    def test_absent_scope_omitted_from_experience_dump(self) -> None:
+        # Additive revision 1.5: an experience without scope must serialize
+        # exactly as before the field existed — no ``scope: null``.
+        exp = ExperienceSchema(title="Staff Engineer")
+        assert "scope" not in exp.model_dump(mode="json")
+
+    def test_all_empty_scope_normalizes_to_none(self) -> None:
+        exp = ExperienceSchema.model_validate({"title": "Eng", "scope": {}})
+        assert exp.scope is None
+        exp = ExperienceSchema(title="Eng", scope=ExperienceScope())
+        assert exp.scope is None
 
 
 class TestStorySchema:

@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Experience scope block (vault contract revision 1.5, additive).**
+  `experiences/*.md` frontmatter gains an optional `scope` object — the
+  quantified role-scope block recruiters need for calibration:
+  `reporting_line`, `direct_reports`, `indirect_reports`, `managers_led`,
+  `functions_owned[]`, `budget_authority`, `hiring_authority`,
+  `decision_rights`, `platform_scale`, `org_context`. Every field is
+  optional (headcounts non-negative integers, short text capped at 200
+  characters); writers emit only set fields and an absent/all-empty scope
+  is omitted entirely — never `null` or `{}` — so pre-1.5 vaults
+  round-trip byte-identically. Attestation-ready: each field is
+  addressable as `(experience_id, field_name)` for future single-field
+  attestations (themselves parked). `get_profile_summary(depth="detailed")`
+  now includes each signature experience's scope block when present.
+  Cloud mirrors the block 1:1 as `user_experiences.scope` per the
+  recruiter-brief coordination spec.
 - **Two story/profile quality skills + MCP prompts.**
   `traitprint-deepen-story` (prompt `deepen_story(story?)`) cross-examines
   one STAR story until it survives interview follow-ups: a sourced metric

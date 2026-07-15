@@ -63,6 +63,7 @@ EXPERIENCE_FRONTMATTER_KEYS = (
     "accomplishments",
     "skill_ids",
     "skill_links",
+    "scope",
     "source",
     "created_at",
     "updated_at",
@@ -71,8 +72,10 @@ EXPERIENCE_FRONTMATTER_KEYS = (
 # Frontmatter keys that are omitted entirely when empty, so a vault that
 # never sets them round-trips byte-identically against the prior contract
 # revision (e.g. ``skill_links`` is additive in revision 1.2 — a 1.1 vault
-# must not gain an empty ``skill_links: []`` line on rewrite).
-_OMIT_WHEN_EMPTY = ("skill_links",)
+# must not gain an empty ``skill_links: []`` line on rewrite; ``scope`` is
+# additive in revision 1.5 and an unset scope is dropped from the model
+# dump itself, never serialized as null).
+_OMIT_WHEN_EMPTY = ("skill_links", "scope")
 STORY_FRONTMATTER_KEYS = (
     "id",
     "title",
@@ -237,7 +240,9 @@ def _frontmatter(item: Any, keys: tuple[str, ...]) -> dict[str, Any]:
     dump = item.model_dump(mode="json")
     fm: dict[str, Any] = {}
     for k in keys:
-        value = dump[k]
+        # ``.get``: an unset experience ``scope`` is dropped from the model
+        # dump itself (ExperienceSchema serializer), so the key may be absent.
+        value = dump.get(k)
         # Additive optional collections are omitted when empty to keep
         # diffs clean and preserve byte-compat with prior revisions.
         if k in _OMIT_WHEN_EMPTY and not value:

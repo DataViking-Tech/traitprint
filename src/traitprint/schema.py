@@ -23,9 +23,17 @@ from __future__ import annotations
 import enum
 import re
 from datetime import datetime, timezone
+from typing import Any
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    SerializerFunctionWrapHandler,
+    field_validator,
+    model_serializer,
+    model_validator,
+)
 
 
 def _now() -> datetime:
@@ -101,6 +109,64 @@ class SkillLink(BaseModel):
     proficiency: int | None = Field(default=None, ge=1, le=5)
 
 
+# Length cap for the scope block's short-text fields (and each
+# ``functions_owned`` entry). Scope values are card-sized facts, not
+# narrative — narrative belongs in the experience body.
+SCOPE_TEXT_MAX = 200
+
+
+class ExperienceScope(BaseModel):
+    """The scope block of an experience (contract revision 1.5, additive).
+
+    Quantified role scope for recruiter-grade calibration: reporting line,
+    headcount, budget/hiring/decision authority, platform scale, and org
+    context. Every field is optional; only set fields are serialized, and
+    an all-empty scope normalizes to "no scope" (see
+    :class:`ExperienceSchema`). Attestation-ready: each field is
+    addressable as ``(experience_id, field_name)`` so future single-field
+    attestations can attach without a schema migration.
+
+    Integer headcounts are non-negative; short-text fields are capped at
+    ``SCOPE_TEXT_MAX`` characters.
+    """
+
+    reporting_line: str | None = Field(default=None, max_length=SCOPE_TEXT_MAX)
+    direct_reports: int | None = Field(default=None, ge=0)
+    indirect_reports: int | None = Field(default=None, ge=0)
+    managers_led: int | None = Field(default=None, ge=0)
+    functions_owned: list[str] = Field(default_factory=list)
+    budget_authority: str | None = Field(default=None, max_length=SCOPE_TEXT_MAX)
+    hiring_authority: bool | None = None
+    decision_rights: str | None = Field(default=None, max_length=SCOPE_TEXT_MAX)
+    platform_scale: str | None = Field(default=None, max_length=SCOPE_TEXT_MAX)
+    org_context: str | None = Field(default=None, max_length=SCOPE_TEXT_MAX)
+
+    @field_validator("functions_owned")
+    @classmethod
+    def _validate_functions_owned(cls, value: list[str]) -> list[str]:
+        for item in value:
+            if len(item) > SCOPE_TEXT_MAX:
+                raise ValueError(
+                    f"functions_owned entries must be at most "
+                    f"{SCOPE_TEXT_MAX} characters"
+                )
+        return value
+
+    @model_serializer(mode="wrap")
+    def _serialize_set_fields_only(
+        self, handler: SerializerFunctionWrapHandler
+    ) -> dict[str, Any]:
+        """Serialize only the set fields (never ``null``/empty-list keys).
+
+        Keeps written scope objects minimal and stable: absent facts stay
+        absent instead of accreting ``null`` entries, matching the
+        omit-while-empty convention of the other additive revisions.
+        ``False``/``0`` are set values and are kept.
+        """
+        data: dict[str, Any] = handler(self)
+        return {k: v for k, v in data.items() if v is not None and v != []}
+
+
 class ExperienceSchema(BaseModel):
     """A work experience entry.
 
@@ -117,6 +183,13 @@ class ExperienceSchema(BaseModel):
     a skill in ``skill_ids`` with no matching link simply has unset
     proficiency. Vaults written before 1.2 omit the key; it defaults to an
     empty list and is not emitted into frontmatter when empty.
+
+    ``scope`` (contract revision 1.5, additive) is the optional
+    :class:`ExperienceScope` block — quantified role scope for
+    recruiter-grade calibration. Vaults written before 1.5 omit the key;
+    it defaults to ``None`` and an absent scope is never serialized (no
+    ``null``/empty object on write), so pre-1.5 vaults round-trip
+    byte-identically. A scope with no set fields normalizes to ``None``.
     """
 
     id: UUID = Field(default_factory=uuid4)
@@ -128,9 +201,41 @@ class ExperienceSchema(BaseModel):
     accomplishments: list[str] = Field(default_factory=list)
     skill_ids: list[UUID] = Field(default_factory=list)
     skill_links: list[SkillLink] = Field(default_factory=list)
+    scope: ExperienceScope | None = None
     source: str = "manual"
     created_at: datetime = Field(default_factory=_now)
     updated_at: datetime = Field(default_factory=_now)
+
+    @field_validator("scope", mode="after")
+    @classmethod
+    def _collapse_empty_scope(
+        cls, value: ExperienceScope | None
+    ) -> ExperienceScope | None:
+        """Normalize an all-empty scope to ``None`` (absent = omitted).
+
+        A scope object with no set fields carries no information; keeping
+        it would serialize as an empty mapping and break the byte-identical
+        round trip (an omitted key must not reappear as ``scope: {}``).
+        """
+        if value is not None and value == ExperienceScope():
+            return None
+        return value
+
+    @model_serializer(mode="wrap")
+    def _omit_absent_scope(
+        self, handler: SerializerFunctionWrapHandler
+    ) -> dict[str, Any]:
+        """Drop the ``scope`` key entirely when unset.
+
+        Revision 1.5 is additive: an experience without scope must
+        serialize exactly as it did before the field existed — omitted,
+        never ``scope: null`` — wherever the model is dumped (frontmatter,
+        JSON export, sync payloads).
+        """
+        data: dict[str, Any] = handler(self)
+        if data.get("scope") is None:
+            data.pop("scope", None)
+        return data
 
 
 # Valid story outcomes; empty string means "not classified".

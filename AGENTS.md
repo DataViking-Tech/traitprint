@@ -56,7 +56,12 @@ narrative text. Constraints:
 - **Frontmatter accepts allowed keys only** (`additionalProperties: false`
   in the schema):
   - experiences: `id, title, company, start_date, end_date,
-    accomplishments, skill_ids, skill_links, source, created_at, updated_at`
+    accomplishments, skill_ids, skill_links, scope, source, created_at,
+    updated_at` — `scope` is the optional quantified role-scope block
+    (reporting line, direct/indirect headcount, functions owned,
+    budget/hiring/decision authority, platform scale, org context); set
+    only the fields you know — an absent scope is omitted entirely,
+    never written as `null` or `{}`
   - stories: `id, title, skill_ids, experience_id, outcome, theme_tags,
     source, created_at, updated_at`
   - philosophies: `id, title, category, evidence_story_ids, source,
@@ -70,7 +75,7 @@ narrative text. Constraints:
   skills the story evidences; an experience's `skill_ids` are the skills
   exercised in that role, and its optional `skill_links` entries annotate
   per-role emphasis on top of that list. (Both are additive, optional
-  keys; the current vault contract revision is 1.4 — `traitprint
+  keys; the current vault contract revision is 1.5 — `traitprint
   proposals contract --json` prints the live contract.) A dangling
   UUID does not break parsing — it surfaces as an audit finding. Never
   fabricate UUIDs; copy them from `traitprint vault list` output.

@@ -22,6 +22,7 @@ from traitprint.git_ops import log as git_log
 from traitprint.schema import (
     EducationSchema,
     ExperienceSchema,
+    ExperienceScope,
     PhilosophySchema,
     ProfileLink,
     ProfileSchema,
@@ -105,6 +106,15 @@ def _full_vault() -> VaultSchema:
         philosophies=[phil],
         education=[edu],
     )
+
+
+def _tree_bytes(directory: Path) -> dict[str, bytes]:
+    """Every tracked vault file's exact bytes, keyed by relative path."""
+    return {
+        str(p.relative_to(directory)): p.read_bytes()
+        for p in sorted(directory.rglob("*"))
+        if p.is_file() and ".git" not in p.parts
+    }
 
 
 # ── slugify / remap unit tests ──────────────────────────────────────
@@ -240,6 +250,85 @@ class TestV1RoundTrip:
         assert profile.phone == ""
         assert profile.url == ""
         assert profile.profiles == []
+
+    def test_vault_without_scope_round_trips_byte_identically(
+        self, vault_dir: Path
+    ) -> None:
+        """Contract revision 1.5 is additive: a vault that never set an
+        experience scope must read+write byte-identically — no scope key
+        (and no ``scope: null``) may appear on rewrite."""
+        store = VaultStore(vault_dir)
+        store.save(_full_vault())
+        before = _tree_bytes(vault_dir)
+        loaded = store.load()
+        assert loaded.experiences[0].scope is None
+        store.save(loaded, bump_updated_at=False)
+        assert _tree_bytes(vault_dir) == before
+        exp_text = (
+            vault_dir / "experiences" / "staff-engineer-acme.md"
+        ).read_text()
+        assert "scope" not in exp_text
+
+    def test_experience_scope_round_trips_byte_identically(
+        self, vault_dir: Path
+    ) -> None:
+        """A full scope block survives save→load→save with exact bytes."""
+        store = VaultStore(vault_dir)
+        vault = _full_vault()
+        vault.experiences[0].scope = ExperienceScope(
+            reporting_line="VP of Data",
+            direct_reports=6,
+            indirect_reports=24,
+            managers_led=2,
+            functions_owned=["analytics eng", "data platform"],
+            budget_authority="co-managed $2M vendor budget",
+            hiring_authority=True,
+            decision_rights="architecture + tooling standards",
+            platform_scale="2,500+ dbt models, 30-person data org",
+            org_context="public co, ~7k employees, 40-person data org",
+        )
+        store.save(vault)
+        before = _tree_bytes(vault_dir)
+        loaded = store.load()
+        assert loaded.experiences[0].scope == vault.experiences[0].scope
+        store.save(loaded, bump_updated_at=False)
+        assert _tree_bytes(vault_dir) == before
+
+    def test_partial_scope_frontmatter_carries_only_set_fields(
+        self, vault_dir: Path
+    ) -> None:
+        """Only set scope fields reach the frontmatter — unset fields are
+        absent, never ``null`` (0/False are set values and are kept)."""
+        store = VaultStore(vault_dir)
+        vault = _full_vault()
+        vault.experiences[0].scope = ExperienceScope(
+            reporting_line="CTO", direct_reports=0, hiring_authority=False
+        )
+        store.save(vault)
+        fm, _ = parse_markdown(
+            (vault_dir / "experiences" / "staff-engineer-acme.md").read_text()
+        )
+        assert fm["scope"] == {
+            "reporting_line": "CTO",
+            "direct_reports": 0,
+            "hiring_authority": False,
+        }
+        loaded = store.load()
+        assert loaded.experiences[0].scope == vault.experiences[0].scope
+
+    def test_hand_edited_scope_loads(self, vault_dir: Path) -> None:
+        """Agents hand-edit these files; a scope mapping added by hand
+        must load (and an all-empty one normalizes to absent)."""
+        store = VaultStore(vault_dir)
+        store.save(_full_vault())
+        path = vault_dir / "experiences" / "staff-engineer-acme.md"
+        fm, body = parse_markdown(path.read_text(), path=path)
+        fm["scope"] = {"reporting_line": "VP of Data", "direct_reports": 6}
+        path.write_text(render_markdown(fm, body))
+        loaded = store.load()
+        assert loaded.experiences[0].scope == ExperienceScope(
+            reporting_line="VP of Data", direct_reports=6
+        )
 
     def test_deleting_entity_deletes_its_file(self, vault_dir: Path) -> None:
         store = VaultStore(vault_dir)

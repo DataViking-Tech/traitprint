@@ -833,6 +833,8 @@ def _handle_get_profile_summary(
         )[:3]
     # related_skills mirrors find_story's related_skills (names, dangling
     # refs skipped; experience skill_ids are contract revision 1.1+).
+    # scope (contract revision 1.5) is included only when the role has one;
+    # the dump carries only its set fields, so consumers never see nulls.
     skill_name_by_id = {s.id: s.name for s in vault.skills}
     result["signature_experiences"] = [
         {
@@ -845,6 +847,11 @@ def _handle_get_profile_summary(
                 if sid in skill_name_by_id
                 and (lens is None or lens.salience_for(sid) != SalienceLevel.SUPPRESSED)
             ],
+            **(
+                {"scope": e.scope.model_dump(mode="json")}
+                if e.scope is not None
+                else {}
+            ),
             "evidence": None,
             "disputed": e.id in disputes,
             "dispute": disputes.get(e.id),
@@ -1348,7 +1355,9 @@ def create_server(store: VaultStore) -> FastMCP:
             "and optionally signature experiences and core philosophies. "
             "depth: 'brief' = headline + bio only; 'standard' (default) = "
             "+ top 5 skills; 'detailed' = + top 10 skills, signature "
-            "experiences, and core philosophies. "
+            "experiences (each with its scope block — reporting line, "
+            "headcount, budget/hiring/decision authority, platform scale, "
+            "org context — when the role has one), and core philosophies. "
             "lens: optional positioning lens (slug or id) to project the "
             "profile through — applies headline/bio overrides, the lens's "
             "signature experiences, and skill salience (core skills lead, "
