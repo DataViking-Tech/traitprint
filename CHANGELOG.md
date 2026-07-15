@@ -271,6 +271,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Bundled skills: pruned the dead BYOK branch from the resume-import
+  docs.** `traitprint-import-resume/SKILL.md` and the shared
+  `shared/cli-reference.md` no longer describe an "if a BYOK LLM key is
+  configured, use the provider path" branch — user compute is the
+  connected agent (the "you are the model" D11 agent-assist path), which
+  is now the primary and only user-compute path documented. Platform-run
+  extraction is noted as beta-gated (join at https://traitprint.com/beta).
+  Docs-only; the local CLI's deterministic paths are unchanged.
 - **`vault add-skill` no longer prints "Did you mean: …?" before the
   add.** The old order (suggestion first, then "Added skill: …", exit 0)
   read as a pending question when the skill was already committed.

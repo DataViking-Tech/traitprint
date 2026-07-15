@@ -131,17 +131,15 @@ traitprint vault remove <UUID> -y         # any section, by UUID
 traitprint vault rollback -y              # undo the last vault commit
 traitprint vault migrate                  # legacy v0 vault -> v1 file tree
                                           # (remaps old proficiency scale to 1-5)
-traitprint vault import-resume FILE       # resolution order: --provider flag ->
-                                          # configured BYOK key -> agent-assist
-                                          # mode (emits extracted text + the
-                                          # extraction contract for YOU, the
-                                          # wrapping agent, to complete; exit 0);
-                                          # --json emits the assist payload as
-                                          # JSON; --assist forces the payload,
-                                          # --no-assist errors when no key;
-                                          # --yes/--dry-run apply to the BYOK path;
+traitprint vault import-resume FILE       # emits an agent-assist payload:
+                                          # extracted text + the extraction
+                                          # contract for YOU, the connected
+                                          # agent, to complete (exit 0);
+                                          # --json emits the payload as JSON;
                                           # --propose stages extracted items as
-                                          # pending proposals instead of writing
+                                          # pending proposals instead of writing.
+                                          # Platform-run extraction is beta-gated
+                                          # (https://traitprint.com/beta)
 traitprint vault import-story-bank DIR    # stage a job-search working directory
                                           # (config/profile.yml +
                                           # interview-prep/*.md) as proposals:
