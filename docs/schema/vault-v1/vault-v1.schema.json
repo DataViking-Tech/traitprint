@@ -3,7 +3,7 @@
   "$id": "https://traitprint.com/schema/vault-v1.schema.json",
   "title": "Traitprint Vault v1",
   "description": "Contract for the vault v1 file tree. Each $defs entry validates one file type; see README.md for layout and markdown-body conventions.",
-  "$comment": "Contract revision 1.1 — adds optional experienceFrontmatter.skill_ids (additive; vaults written against 1.0 remain valid, schema_version stays 1). Revision 1.2 — adds optional experienceFrontmatter.skill_links (additive; vaults written against 1.0/1.1 remain valid). Revision 1.3 — adds optional profile basics.phone, basics.url and basics.profiles (additive; vaults written against 1.0-1.2 remain valid). Revision 1.4 — adds the optional top-level lenses.json array ($defs/lens): positioning lenses, an emphasis-only projection over the vault (canonical semantics in lens-v1); unique kebab-case slugs with 'none' reserved, at most one is_default, at most 5 lenses; additive, schema_version stays 1. Revision history in README.md.",
+  "$comment": "Contract revision 1.1 — adds optional experienceFrontmatter.skill_ids (additive; vaults written against 1.0 remain valid, schema_version stays 1). Revision 1.2 — adds optional experienceFrontmatter.skill_links (additive; vaults written against 1.0/1.1 remain valid). Revision 1.3 — adds optional profile basics.phone, basics.url and basics.profiles (additive; vaults written against 1.0-1.2 remain valid). Revision 1.4 — adds the optional top-level lenses.json array ($defs/lens): positioning lenses, an emphasis-only projection over the vault (canonical semantics in lens-v1); unique kebab-case slugs with 'none' reserved, at most one is_default, at most 5 lenses; additive, schema_version stays 1. Revision 1.5 — adds optional experienceFrontmatter.scope ($defs/experienceScope): quantified role scope (reporting line, headcount, budget/hiring/decision authority, platform scale, org context); all fields optional, only set fields are written (absent scope is omitted, never null/empty), attestation-ready — each field addressable as (experience_id, field_name); additive, vaults written against 1.0-1.4 remain valid, schema_version stays 1. Revision history in README.md.",
   "$defs": {
     "uuid": {
       "type": "string",
@@ -42,6 +42,33 @@
       "properties": {
         "skill_id": { "$ref": "#/$defs/uuid" },
         "proficiency": { "$ref": "#/$defs/proficiency" }
+      },
+      "additionalProperties": false
+    },
+    "scopeText": {
+      "type": "string",
+      "maxLength": 200,
+      "description": "Revision 1.5: a short-text scope fact (card-sized, not narrative)."
+    },
+    "scopeCount": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Revision 1.5: a non-negative headcount."
+    },
+    "experienceScope": {
+      "type": "object",
+      "description": "Revision 1.5: the optional scope block of an experience — quantified role scope for recruiter-grade calibration. Every field is optional and only set fields are written (an absent scope is omitted entirely, never serialized as null or an empty object, so pre-1.5 vaults round-trip byte-identically). Attestation-ready: each field is addressable as (experience_id, field_name) so future single-field attestations can attach without a schema migration.",
+      "properties": {
+        "reporting_line": { "$ref": "#/$defs/scopeText", "description": "Who the role reported to, e.g. 'VP of Data'." },
+        "direct_reports": { "$ref": "#/$defs/scopeCount" },
+        "indirect_reports": { "$ref": "#/$defs/scopeCount" },
+        "managers_led": { "$ref": "#/$defs/scopeCount" },
+        "functions_owned": { "type": "array", "items": { "$ref": "#/$defs/scopeText" } },
+        "budget_authority": { "$ref": "#/$defs/scopeText", "description": "Short text, e.g. 'co-managed $2M vendor budget'." },
+        "hiring_authority": { "type": "boolean" },
+        "decision_rights": { "$ref": "#/$defs/scopeText", "description": "Short text, e.g. 'architecture + tooling standards'." },
+        "platform_scale": { "$ref": "#/$defs/scopeText", "description": "Short text, e.g. '2,500+ dbt models, 30-person data org'." },
+        "org_context": { "$ref": "#/$defs/scopeText", "description": "Company stage/size/scale context, e.g. 'public co, ~7k employees'." }
       },
       "additionalProperties": false
     },
@@ -134,6 +161,7 @@
         "accomplishments": { "type": "array", "items": { "type": "string" } },
         "skill_ids": { "type": "array", "items": { "$ref": "#/$defs/uuid" } },
         "skill_links": { "type": "array", "items": { "$ref": "#/$defs/skillLink" } },
+        "scope": { "$ref": "#/$defs/experienceScope" },
         "source": { "$ref": "#/$defs/source" },
         "created_at": { "$ref": "#/$defs/timestamp" },
         "updated_at": { "$ref": "#/$defs/timestamp" }

@@ -57,6 +57,7 @@ from traitprint.mcp_server import (
 from traitprint.schema import (
     MAX_LENSES,
     ExperienceSchema,
+    ExperienceScope,
     LensSchema,
     PhilosophyCategory,
     PhilosophySchema,
@@ -263,6 +264,35 @@ class TestGetProfileSummary:
         out = _handle_get_profile_summary(vault, "detailed")
         exp = out["signature_experiences"][0]
         assert set(exp["related_skills"]) == {"Python", "SQL"}
+
+    def test_detailed_experience_scope_included_when_present(
+        self, populated_store: VaultStore
+    ) -> None:
+        # Contract revision 1.5: the scope block travels with the
+        # experience, carrying only its set fields (0/False are set).
+        vault = populated_store.load()
+        vault.experiences[0].scope = ExperienceScope(
+            reporting_line="VP of Data",
+            direct_reports=6,
+            functions_owned=["analytics eng", "data platform"],
+            hiring_authority=False,
+        )
+        out = _handle_get_profile_summary(vault, "detailed")
+        exp = out["signature_experiences"][0]
+        assert exp["scope"] == {
+            "reporting_line": "VP of Data",
+            "direct_reports": 6,
+            "functions_owned": ["analytics eng", "data platform"],
+            "hiring_authority": False,
+        }
+
+    def test_detailed_experience_scope_key_absent_without_scope(
+        self, populated_store: VaultStore
+    ) -> None:
+        # No scope on the role: the payload shape is exactly the pre-1.5
+        # one — the key is absent, never null.
+        out = _handle_get_profile_summary(populated_store.load(), "detailed")
+        assert "scope" not in out["signature_experiences"][0]
 
 
 class TestSearchSkills:

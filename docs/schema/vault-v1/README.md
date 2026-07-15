@@ -2,7 +2,7 @@
 
 **Status:** Stable contract (Phase 0 of the
 [agent-native architecture](../../agent-native-architecture.md))
-**Contract revision:** 1.4 (additive over 1.3 — see [Versioning](#versioning))
+**Contract revision:** 1.5 (additive over 1.4 — see [Versioning](#versioning))
 **Consumers:** the `traitprint` CLI/MCP server (read+write) and the
 traitprint-cloud ingest pipeline (validate+project).
 
@@ -98,7 +98,21 @@ meaning — no contract revision tracks it.
    The file is emitted **only when the vault has lenses**, so a vault that
    never opted in round-trips byte-identically; a missing file reads back as
    an empty list. Additive — `schema_version` stays `1`.
-9. **Readers accept v0 (`vault.json`) and v1; writers emit v1 only.**
+9. **An experience's `scope` (optional, revision 1.5) is its quantified
+   role-scope block** (`$defs/experienceScope`): `reporting_line`,
+   `direct_reports`, `indirect_reports`, `managers_led`,
+   `functions_owned[]`, `budget_authority`, `hiring_authority`,
+   `decision_rights`, `platform_scale`, `org_context`. Every field is
+   optional — headcounts are non-negative integers, short-text fields are
+   capped at 200 characters. Writers emit **only set fields**: an absent
+   scope is omitted entirely (never `scope: null` or `scope: {}`, and an
+   all-empty scope normalizes to absent), so pre-1.5 vaults round-trip
+   byte-identically. Attestation-ready field identity: every scope field
+   is addressable as `(experience_id, field_name)` so future single-field
+   attestations ("verified by former manager: `direct_reports=8`") can
+   attach without a schema migration — field-level attestation itself is
+   out of scope for this revision. Additive — `schema_version` stays `1`.
+10. **Readers accept v0 (`vault.json`) and v1; writers emit v1 only.**
    `traitprint vault migrate` converts v0→v1 in place as a single git
    commit. The lossless single-document JSON export remains available for
    v0 consumers.
@@ -114,6 +128,21 @@ they implement.
 
 ### Revision history
 
+- **1.5 (2026-07-15)** — additive: optional `scope` on the experience
+  entity (`$defs/experienceFrontmatter`, `$defs/experienceScope`) — the
+  quantified role-scope block for recruiter-grade calibration
+  (`reporting_line`, `direct_reports`, `indirect_reports`, `managers_led`,
+  `functions_owned[]`, `budget_authority`, `hiring_authority`,
+  `decision_rights`, `platform_scale`, `org_context`; see rule 9).
+  Headcounts are non-negative integers; short-text fields cap at 200
+  characters. Only set fields are written and an absent/all-empty scope is
+  omitted entirely (never `null`/`{}`), so pre-1.5 vaults round-trip
+  byte-identically. Attestation-ready: each field is addressable as
+  `(experience_id, field_name)` so future single-field attestations can
+  attach without a schema migration (field-level attestation itself is
+  parked). Cloud mirrors the block 1:1 as `user_experiences.scope`
+  (recruiter-brief coordination spec). Older vaults without the key remain
+  valid; `schema_version` stays `1`.
 - **1.4 (2026-07-03)** — additive: optional top-level `lenses.json`
   (`$defs/lens`) — an array of positioning lenses (emphasis-only projections
   over the vault; canonical semantics in the [lens-v1
