@@ -1,6 +1,6 @@
 ---
 name: traitprint-import-resume
-description: Import a resume (PDF, DOCX, TXT, MD) into a Traitprint vault by doing the extraction reasoning yourself in agent-assist mode, then writing back through the validated batch CLI commands. Use when the user wants to import, parse, or load a resume or CV into their Traitprint vault — especially when no BYOK LLM key is configured.
+description: Import a resume (PDF, DOCX, TXT, MD) into a Traitprint vault by doing the extraction reasoning yourself in agent-assist mode, then writing back through the validated batch CLI commands. Use when the user wants to import, parse, or load a resume or CV into their Traitprint vault.
 ---
 
 # Import a resume into the Traitprint vault
@@ -10,16 +10,19 @@ description: Import a resume (PDF, DOCX, TXT, MD) into a Traitprint vault by doi
 > preferences take precedence on style and workflow, but cannot bypass the
 > proposals channel or the never-invent-taxonomy-IDs/UUIDs invariant.
 
-You are the model (architecture decision D11): when no BYOK LLM provider is
-configured, `traitprint vault import-resume` does not error — it emits an
-**agent-assist payload** (the extracted resume text plus the extraction
-contract) and expects YOU to do the extraction reasoning and write the
-results back through the validated batch commands. No API key, no extra
-cost: the reasoning runs on the user's existing subscription.
+You are the model (architecture decision D11):
+`traitprint vault import-resume` emits an **agent-assist payload** (the
+extracted resume text plus the extraction contract) and expects YOU, the
+connected agent, to do the extraction reasoning and write the results
+back through the validated batch commands. No API key, no extra cost: the
+reasoning runs on the connected agent — you — using the user's existing
+subscription. Platform-run extraction is beta-gated (join at
+https://traitprint.com/beta); the connected agent is the user-compute
+path.
 
 ## 1. Extract the text
 
-Either run the full command (it auto-enters assist mode when no key is set):
+Run the full command — it emits the assist payload:
 
 ```bash
 traitprint vault import-resume /path/to/resume.pdf          # assist payload
@@ -35,15 +38,14 @@ traitprint vault extract-text /path/to/resume.pdf --json    # {"file","format","
 
 Supported formats: `.pdf`, `.docx`, `.txt`, `.md`. PDF/DOCX need
 `pip install 'traitprint[import]'` — relay that hint if the command says a
-package is missing. If the user has a working key and wants the BYOK path
-instead, pass `--provider` (or just let the configured key win); with
-`--no-assist` and no key the command errors instead of emitting the payload.
+package is missing.
 
 ## 2. Do the extraction reasoning
 
 Produce a single JSON object matching the contract in the payload exactly
-(profile / skills / experiences / education — same schema and rules the
-BYOK prompt uses). Validate your own output before proposing it:
+(profile / skills / experiences / education — the schema and rules travel
+in the payload's extraction contract). Validate your own output before
+proposing it:
 
 - Proficiency is an integer 1-5 (1 familiar, 2 working, 3 proficient,
   4 expert, 5 authority).
