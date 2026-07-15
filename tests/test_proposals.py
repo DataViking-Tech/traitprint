@@ -40,6 +40,7 @@ from traitprint.proposals import (
 )
 from traitprint.schema import (
     MAX_LENSES,
+    ExperienceScope,
     LensSchema,
     SalienceLevel,
     VaultSchema,
@@ -444,6 +445,103 @@ class TestApplyProposal:
         )
         assert any("skill_links" in p for p in problems)
 
+    def test_experience_scope_accepted_and_applied(self) -> None:
+        # Contract revision 1.5: scope is part of the experience entity
+        # shape, so experience proposals may carry it (parity with the
+        # cloud vault_propose allowlist).
+        scope_payload = {
+            "reporting_line": "VP of Data",
+            "direct_reports": 6,
+            "functions_owned": ["analytics eng", "data platform"],
+            "hiring_authority": True,
+        }
+        assert (
+            validate_proposal_fields(
+                "add_experience",
+                None,
+                {"title": "Head of Data", "scope": scope_payload},
+            )
+            == []
+        )
+        vault = VaultSchema()
+        apply_proposal(
+            vault,
+            ProposalSchema(
+                kind="add_experience",
+                payload={"title": "Head of Data", "scope": scope_payload},
+            ),
+        )
+        assert vault.experiences[0].scope == ExperienceScope(**scope_payload)
+        # update_experience replaces the whole block.
+        apply_proposal(
+            vault,
+            ProposalSchema(
+                kind="update_experience",
+                target_id=vault.experiences[0].id,
+                payload={"scope": {"reporting_line": "CTO"}},
+            ),
+        )
+        assert vault.experiences[0].scope == ExperienceScope(
+            reporting_line="CTO"
+        )
+
+    def test_update_experience_scope_null_clears_the_block(self) -> None:
+        # scope: null (and the all-empty {}) clears the block — the same
+        # semantics the cloud applier implements.
+        vault = VaultSchema()
+        apply_proposal(
+            vault,
+            ProposalSchema(
+                kind="add_experience",
+                payload={"title": "Head of Data", "scope": {"direct_reports": 6}},
+            ),
+        )
+        assert vault.experiences[0].scope is not None
+        apply_proposal(
+            vault,
+            ProposalSchema(
+                kind="update_experience",
+                target_id=vault.experiences[0].id,
+                payload={"scope": None},
+            ),
+        )
+        assert vault.experiences[0].scope is None
+
+    def test_invalid_scope_shape_rejected_at_apply(self) -> None:
+        # Layer 0 hard reject: the ExperienceScope model validates the
+        # block (non-negative headcounts, 200-char short-text cap) before
+        # anything mutates.
+        vault = VaultSchema()
+        with pytest.raises(ProposalApplyError, match="direct_reports"):
+            apply_proposal(
+                vault,
+                ProposalSchema(
+                    kind="add_experience",
+                    payload={"title": "Eng", "scope": {"direct_reports": -1}},
+                ),
+            )
+        with pytest.raises(ProposalApplyError, match="reporting_line"):
+            apply_proposal(
+                vault,
+                ProposalSchema(
+                    kind="add_experience",
+                    payload={
+                        "title": "Eng",
+                        "scope": {"reporting_line": "x" * 201},
+                    },
+                ),
+            )
+        assert vault.experiences == []  # nothing applied
+
+    def test_scope_rejected_on_story_proposals(self) -> None:
+        # scope is experience-only; story payloads must not accept it.
+        problems = validate_proposal_fields(
+            "add_story",
+            None,
+            {"title": "A Story", "scope": {"direct_reports": 6}},
+        )
+        assert any("scope" in p for p in problems)
+
     def test_update_profile_maps_basics(self) -> None:
         vault = VaultSchema()
         p = ProposalSchema(
@@ -590,6 +688,33 @@ class TestApplyProposal:
         )
         rows = proposal_diff(vault, p)
         assert rows == [{"field": "proficiency", "current": 3, "proposed": 4}]
+
+    def test_diff_rows_are_json_safe_for_model_typed_fields(self) -> None:
+        # The current entity's values are dumped to plain JSON values, so
+        # a scope block (revision 1.5) — or any model-typed field — never
+        # leaks a pydantic object into `proposals show --json`.
+        vault = VaultSchema()
+        apply_proposal(
+            vault,
+            ProposalSchema(
+                kind="add_experience",
+                payload={"title": "Eng", "scope": {"reporting_line": "CTO"}},
+            ),
+        )
+        p = ProposalSchema(
+            kind="update_experience",
+            target_id=vault.experiences[0].id,
+            payload={"scope": {"reporting_line": "VP of Data"}},
+        )
+        rows = proposal_diff(vault, p)
+        assert rows == [
+            {
+                "field": "scope",
+                "current": {"reporting_line": "CTO"},
+                "proposed": {"reporting_line": "VP of Data"},
+            }
+        ]
+        json.dumps(rows)  # must not raise
 
 
 # ── lens proposal kinds ─────────────────────────────────────────────
@@ -968,6 +1093,38 @@ class TestProposalsApproveCLI:
         assert skill.proficiency == 4
         assert skill.notes == "battle-tested"
         assert skill.name == "Python"  # untouched field survives
+
+    def test_approve_experience_scope_round_trips_into_the_vault(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
+        """A staged proposal carrying scope (revision 1.5) lands in the
+        vault on approval and survives the on-disk round trip: the
+        frontmatter carries only the set fields, and a fresh load reads
+        the same block back."""
+        scope_payload = {
+            "reporting_line": "VP of Data",
+            "direct_reports": 6,
+            "functions_owned": ["analytics eng"],
+            "hiring_authority": False,
+        }
+        p = add_proposal(
+            vault_dir,
+            "add_experience",
+            {"title": "Head of Data", "company": "Acme", "scope": scope_payload},
+        )
+        result = tp(runner, vault_dir, "proposals", "approve", str(p.id), "-y")
+        assert result.exit_code == 0, result.output
+
+        # In the freshly loaded vault…
+        vault = VaultStore(vault_dir).load()
+        assert vault.experiences[0].scope == ExperienceScope(**scope_payload)
+        # …and in the written frontmatter, exactly the set fields.
+        from traitprint.vault_io import parse_markdown
+
+        fm, _ = parse_markdown(
+            (vault_dir / "experiences" / "head-of-data-acme.md").read_text()
+        )
+        assert fm["scope"] == scope_payload
 
     def test_approve_dangling_target_errors_and_stays_pending(
         self, runner: CliRunner, vault_dir: Path

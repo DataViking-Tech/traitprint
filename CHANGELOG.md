@@ -24,6 +24,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   now includes each signature experience's scope block when present.
   Cloud mirrors the block 1:1 as `user_experiences.scope` per the
   recruiter-brief coordination spec.
+- **Experience proposals may carry `scope` (cloud `vault_propose`
+  parity).** `add_experience`/`update_experience` payloads accept the
+  revision-1.5 `scope` key — the allowlist matches the hosted MCP
+  server's `vault_propose` exactly, so a scope-bearing proposal staged
+  on any surface reviews identically on any other. Shape validation
+  happens at apply time through the `ExperienceScope` model (invalid
+  shapes hard-reject with nothing applied); `scope: null` (or `{}`) on
+  an update clears the block, mirroring the cloud applier. `traitprint
+  proposals contract --json` now lists the key. Also fixed: `proposals
+  show --json` no longer crashes on update proposals whose current
+  entity carries model-typed fields (UUID lists, `skill_links`, the
+  scope block) — diff rows now emit plain JSON values.
 - **Two story/profile quality skills + MCP prompts.**
   `traitprint-deepen-story` (prompt `deepen_story(story?)`) cross-examines
   one STAR story until it survives interview follow-ups: a sourced metric
