@@ -82,6 +82,12 @@ _SKILL_KEYS = (
     "created_at",
     "updated_at",
 )
+#: ``scope`` is contract revision 1.5 (additive, EXPERIENCES ONLY: the
+#: quantified role-scope block — see ``$defs/experienceScope``). Shape
+#: validation happens at apply time via :class:`ExperienceScope` (through
+#: ``ExperienceSchema.model_validate``), matching how every other
+#: experience field is checked; ``scope: null`` (or ``{}``) clears the
+#: block on update — same semantics as the cloud applier.
 _EXPERIENCE_KEYS = (
     "id",
     "title",
@@ -91,6 +97,7 @@ _EXPERIENCE_KEYS = (
     "accomplishments",
     "skill_ids",
     "skill_links",
+    "scope",
     "source",
     "created_at",
     "updated_at",
@@ -918,14 +925,22 @@ def proposal_diff(
     if is_update_kind(proposal.kind) and proposal.target_id is not None:
         current = _find_item(getattr(vault, section), proposal.target_id)
 
+    # Dump the current entity to plain JSON values so every ``current``
+    # cell is renderable and ``proposals show --json`` stays serializable —
+    # model-typed fields (UUID lists, skill_links, the revision-1.5 scope
+    # block) would otherwise leak pydantic objects into the rows.
+    current_dump: dict[str, Any] | None = (
+        current.model_dump(mode="json") if current is not None else None
+    )
+
     fields = _entity_fields(proposal.kind, proposal.payload)
     for field_name in sorted(fields):
         rows.append(
             {
                 "field": field_name,
                 "current": (
-                    getattr(current, field_name, None)
-                    if current is not None
+                    current_dump.get(field_name)
+                    if current_dump is not None
                     else None
                 ),
                 "proposed": fields[field_name],
