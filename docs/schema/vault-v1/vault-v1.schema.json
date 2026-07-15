@@ -3,7 +3,7 @@
   "$id": "https://traitprint.com/schema/vault-v1.schema.json",
   "title": "Traitprint Vault v1",
   "description": "Contract for the vault v1 file tree. Each $defs entry validates one file type; see README.md for layout and markdown-body conventions.",
-  "$comment": "Contract revision 1.1 — adds optional experienceFrontmatter.skill_ids (additive; vaults written against 1.0 remain valid, schema_version stays 1). Revision 1.2 — adds optional experienceFrontmatter.skill_links (additive; vaults written against 1.0/1.1 remain valid). Revision 1.3 — adds optional profile basics.phone, basics.url and basics.profiles (additive; vaults written against 1.0-1.2 remain valid). Revision 1.4 — adds the optional top-level lenses.json array ($defs/lens): positioning lenses, an emphasis-only projection over the vault (canonical semantics in lens-v1); unique kebab-case slugs with 'none' reserved, at most one is_default, at most 20 lenses; additive, schema_version stays 1. Revision 1.5 — adds optional experienceFrontmatter.scope ($defs/experienceScope): quantified role scope (reporting line, headcount, budget/hiring/decision authority, platform scale, org context); all fields optional, only set fields are written (absent scope is omitted, never null/empty), attestation-ready — each field addressable as (experience_id, field_name); additive, vaults written against 1.0-1.4 remain valid, schema_version stays 1. Revision history in README.md.",
+  "$comment": "Contract revision 1.1 — adds optional experienceFrontmatter.skill_ids (additive; vaults written against 1.0 remain valid, schema_version stays 1). Revision 1.2 — adds optional experienceFrontmatter.skill_links (additive; vaults written against 1.0/1.1 remain valid). Revision 1.3 — adds optional profile basics.phone, basics.url and basics.profiles (additive; vaults written against 1.0-1.2 remain valid). Revision 1.4 — adds the optional top-level lenses.json array ($defs/lens): positioning lenses, an emphasis-only projection over the vault (canonical semantics in lens-v1); unique kebab-case slugs with 'none' reserved, at most one is_default, at most 20 lenses; also adds the add_lens/update_lens proposal kinds to $defs/proposal (the kinds shipped with 1.4; the enum here caught up in a later correction); additive, schema_version stays 1. Revision 1.5 — adds optional experienceFrontmatter.scope ($defs/experienceScope): quantified role scope (reporting line, headcount, budget/hiring/decision authority, platform scale, org context); all fields optional, only set fields are written (absent scope is omitted, never null/empty), attestation-ready — each field addressable as (experience_id, field_name); additive, vaults written against 1.0-1.4 remain valid, schema_version stays 1. Revision history in README.md.",
   "$defs": {
     "uuid": {
       "type": "string",
@@ -209,13 +209,15 @@
       "properties": {
         "id": { "$ref": "#/$defs/uuid" },
         "kind": {
+          "description": "Revision 1.4: add_lens/update_lens shipped with the positioning-lens feature (this enum caught up in a later correction; the reference validation lives in traitprint.proposals / the hosted vault_propose).",
           "enum": [
             "add_skill", "update_skill",
             "add_experience", "update_experience",
             "add_story", "update_story",
             "add_philosophy", "update_philosophy",
             "add_education", "update_education",
-            "update_profile"
+            "update_profile",
+            "add_lens", "update_lens"
           ]
         },
         "target_id": {

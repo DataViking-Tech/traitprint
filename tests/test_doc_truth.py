@@ -32,6 +32,7 @@ them count-free.
 from __future__ import annotations
 
 import asyncio
+import json
 import re
 from pathlib import Path
 
@@ -39,7 +40,11 @@ import pytest
 
 from traitprint.cli import _EXPORT_FORMAT_CHOICES
 from traitprint.mcp_server import _MCP_SERVING_NOTE, create_server
-from traitprint.proposals import _PROFILE_BASICS_KEYS
+from traitprint.proposals import (
+    _PROFILE_BASICS_KEYS,
+    PROPOSAL_KINDS,
+    PROPOSAL_STATUSES,
+)
 from traitprint.skills import SKILL_NAMES
 from traitprint.vault import VaultStore
 
@@ -367,3 +372,41 @@ class TestContractRevision:
             if claim != declared
         ]
         assert not problems, "\n".join(problems)
+
+
+class TestSchemaProposalEnums:
+    """The contract JSON Schema's proposal enums must match the code.
+
+    External validators consume ``vault-v1.schema.json`` directly, so
+    its ``$defs/proposal`` kind/status enums must never drift from
+    ``PROPOSAL_KINDS``/``PROPOSAL_STATUSES`` (the reference validation
+    shared with the hosted ``vault_propose``). The 1.4 lens kinds were
+    missed in the schema once; this pins the two surfaces together.
+    """
+
+    @staticmethod
+    def _proposal_def() -> dict[str, object]:
+        schema = json.loads(_read("docs/schema/vault-v1/vault-v1.schema.json"))
+        proposal = schema["$defs"]["proposal"]
+        assert isinstance(proposal, dict)
+        return proposal
+
+    def test_kind_enum_matches_proposal_kinds(self) -> None:
+        properties = self._proposal_def()["properties"]
+        assert isinstance(properties, dict)
+        enum = properties["kind"]["enum"]
+        assert set(enum) == set(PROPOSAL_KINDS), (
+            "vault-v1.schema.json $defs/proposal kind enum drifted from "
+            "traitprint.proposals.PROPOSAL_KINDS — update both together "
+            "(README revision history + $comment per CLAUDE.md)"
+        )
+        assert len(enum) == len(set(enum)), "duplicate kinds in the schema enum"
+
+    def test_status_enum_matches_proposal_statuses(self) -> None:
+        properties = self._proposal_def()["properties"]
+        assert isinstance(properties, dict)
+        enum = properties["status"]["enum"]
+        assert set(enum) == set(PROPOSAL_STATUSES), (
+            "vault-v1.schema.json $defs/proposal status enum drifted from "
+            "traitprint.proposals.PROPOSAL_STATUSES"
+        )

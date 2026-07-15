@@ -352,6 +352,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`vault-v1.schema.json` proposal kind enum caught up to revision
+  1.4.** The `add_lens`/`update_lens` proposal kinds shipped with the
+  1.4 positioning-lens feature (`traitprint.proposals`,
+  `traitprint proposals contract`) but were missing from the contract
+  schema's `$defs/proposal` kind enum, so external validators using the
+  JSON Schema directly rejected lens proposals the CLI accepts. The
+  enum, the schema `$comment`, and the README's 1.4 revision entry now
+  record the kinds; a new doc-truth test pins the schema's kind and
+  status enums to `PROPOSAL_KINDS`/`PROPOSAL_STATUSES` so the two can
+  never drift again. Documentation of shipped behavior only — no
+  validation semantics change and no new contract revision.
 - **`vault remove <missing-id> -y` now exits 1** (message unchanged, on
   stderr). It used to print "Item not found: …" and exit 0, so agents
   chaining on exit codes — e.g. `remove && add-skill` swaps — read a

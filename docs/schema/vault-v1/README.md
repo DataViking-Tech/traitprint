@@ -151,8 +151,12 @@ they implement.
   at most 20 lenses; these invariants are enforced identically at local vault
   load and at cloud ingest (`lenses.json` now projects into the cloud
   `user_lenses` mirror). Signature/salience references are Layer 1 (rule 2).
-  The file is emitted only when the vault has lenses, so pre-1.4 vaults
-  round-trip byte-identically; `schema_version` stays `1`.
+  Also adds the `add_lens`/`update_lens` proposal kinds to
+  `$defs/proposal` — they shipped with the 1.4 lens feature
+  (`traitprint.proposals`), but the schema's kind enum was only caught up
+  in a later correction. The file is emitted only when the vault has
+  lenses, so pre-1.4 vaults round-trip byte-identically; `schema_version`
+  stays `1`.
 - **1.3 (2026-07-02)** — additive: optional `basics.phone`, `basics.url`
   and `basics.profiles[]` on the profile entity (`$defs/profile`,
   `$defs/profileLink`), following the JSON Resume `basics` vocabulary:
