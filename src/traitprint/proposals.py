@@ -660,7 +660,7 @@ def _apply_add_lens(vault: VaultSchema, proposal: ProposalSchema) -> str:
     """Apply an ``add_lens`` proposal to the in-memory vault.
 
     Re-checks the vault-level lens invariants at approval time (the vault
-    may have gained lenses since the proposal was staged): the 5-lens
+    may have gained lenses since the proposal was staged): the 20-lens
     :data:`~traitprint.schema.MAX_LENSES` cap, slug-uniqueness, and the
     single-default rule (a new default clears every other lens's flag).
 

@@ -258,7 +258,7 @@ selects, orders, and re-weights existing content (per-skill salience
 headline/bio overrides) so the same grounded facts read differently for a
 target role. A lens never adds facts — if a framing needs a fact the vault
 lacks, add the fact first (as a proposal the user approves), then let the
-lens surface it. At most 5 lenses per vault; the slug `none` is reserved
+lens surface it. At most 20 lenses per vault; the slug `none` is reserved
 as the canonical-rendering escape hatch on the read tools.
 
 | Command | Notes |

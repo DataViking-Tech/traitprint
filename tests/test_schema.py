@@ -317,21 +317,21 @@ class TestPhilosophyCategory:
 
 
 class TestLensCap:
-    """The documented 5-lens cap is enforced at vault load (MAX_LENSES)."""
+    """The documented 20-lens cap is enforced at vault load (MAX_LENSES)."""
 
     @staticmethod
     def _lenses(count: int) -> list[LensSchema]:
         return [LensSchema(slug=f"lens-{i}", name=f"Lens {i}") for i in range(count)]
 
-    def test_max_lenses_is_five(self) -> None:
-        assert MAX_LENSES == 5
+    def test_max_lenses_is_twenty(self) -> None:
+        assert MAX_LENSES == 20
 
     def test_exactly_max_lenses_validates(self) -> None:
         vault = VaultSchema(lenses=self._lenses(MAX_LENSES))
         assert len(vault.lenses) == MAX_LENSES
 
     def test_over_cap_rejected_at_load(self) -> None:
-        with pytest.raises(ValidationError, match="at most 5 lenses"):
+        with pytest.raises(ValidationError, match="at most 20 lenses"):
             VaultSchema(lenses=self._lenses(MAX_LENSES + 1))
 
 

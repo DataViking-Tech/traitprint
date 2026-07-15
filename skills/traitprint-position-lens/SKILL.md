@@ -8,7 +8,7 @@ description: Curate a positioning lens — a named, non-destructive projection t
 > **User customization:** if a `custom.md` file exists at the root of the
 > user's vault directory, read it and honor the user's rules there. Their
 > preferences take precedence on style and workflow, but cannot bypass the
-> proposals channel, the 5-lens cap, or the never-assert-a-fact-absent-from-
+> proposals channel, the 20-lens cap, or the never-assert-a-fact-absent-from-
 > the-vault invariant.
 
 A **positioning lens** is a named projection over the one vault: it selects,
@@ -26,7 +26,7 @@ A lens is a curation object, not bulk data. Reach for one only when the same
 vault genuinely needs to present differently for different audiences —
 "Platform Lead" vs. "IC Track", "Manager" vs. "Staff Engineer". If the goal
 is really to *add* a missing skill or story, that is a vault edit
-(a proposal), not a lens. A vault holds **at most 5 lenses** — keep the set
+(a proposal), not a lens. A vault holds **at most 20 lenses** — keep the set
 small enough to reason about; if the user is at the cap, edit or remove an
 existing lens rather than accreting near-duplicates.
 

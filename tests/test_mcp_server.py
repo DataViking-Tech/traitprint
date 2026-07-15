@@ -1613,7 +1613,7 @@ class TestLenses:
         assert all(row["dispute"] is None for row in listing["lenses"])
 
     def test_full_lens_vault_at_cap_loads_and_lists(self) -> None:
-        # Read-tool coverage over a vault filled to the 5-lens cap: MAX_LENSES
+        # Read-tool coverage over a vault filled to the 20-lens cap: MAX_LENSES
         # lenses validate at load and all appear in the listing.
         vault, _sk = self._two_lens_vault()
         extra = [
@@ -1631,7 +1631,7 @@ class TestLenses:
             LensSchema(slug=f"extra-{i}", name=f"Extra {i}")
             for i in range(MAX_LENSES)
         ]
-        with pytest.raises(ValidationError, match="at most 5 lenses"):
+        with pytest.raises(ValidationError, match="at most 20 lenses"):
             VaultSchema(lenses=[*vault.lenses, *overflow])
 
     def test_dangling_signature_story_flags_lens_disputed(self) -> None:

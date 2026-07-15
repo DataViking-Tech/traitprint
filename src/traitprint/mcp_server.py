@@ -1541,7 +1541,7 @@ def create_server(store: VaultStore) -> FastMCP:
             "projection that re-orders, re-weights, and optionally "
             "re-headlines the one vault for a target role or archetype, "
             "without inventing a fact. Covers salience discipline, override "
-            "rules, the 5-lens cap, and dispute repair."
+            "rules, the 20-lens cap, and dispute repair."
         )
     )
     def position_lens() -> str:

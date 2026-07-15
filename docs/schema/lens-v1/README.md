@@ -35,7 +35,7 @@ contradictory Word résumés.
 }
 ```
 
-- A vault may hold multiple lenses (cap: **5**). Storage: a `lenses.json` array
+- A vault may hold multiple lenses (cap: **20**). Storage: a `lenses.json` array
   in the v1 file tree (alongside `skills.json` / `education.json`).
 - **Omitting a lens everywhere preserves the canonical rendering** — an un-lensed
   vault is byte-identical to pre-lens output.
