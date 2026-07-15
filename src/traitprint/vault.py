@@ -432,7 +432,7 @@ class VaultStore:
     ) -> LensSchema:
         """Create a lens, save, and auto-commit.
 
-        Enforces the 5-lens cap and slug-uniqueness up front (the schema
+        Enforces the 20-lens cap and slug-uniqueness up front (the schema
         re-checks both at load). When ``is_default`` is set, any previous
         default is cleared so at most one lens is default.
         """

@@ -159,7 +159,7 @@ A **lens** is a named, non-destructive projection over the one vault: it
 selects, orders, and re-weights existing content (plus optional
 headline/bio overrides) so the same grounded facts read differently for a
 target role. A lens never asserts a fact absent from the vault. The vault
-holds **at most 5 lenses**; the slug `none` is reserved (it is the
+holds **at most 20 lenses**; the slug `none` is reserved (it is the
 canonical-rendering escape hatch on the read tools). Because lenses are
 config-like and non-factual, the CLI edits them directly (each write
 auto-commits) — over the hosted MCP server the same edits are staged with
@@ -326,7 +326,7 @@ Output is one `[ok]` / `[dup]` / `[err]` line per item plus
    headline/bio) — it must never introduce a title, metric, skill, or story
    the vault can't back. If a desired framing needs a missing fact, add that
    fact first (as a proposal the user approves), then let the lens surface
-   it. The 5-lens cap and the reserved `none` slug are enforced at every
+   it. The 20-lens cap and the reserved `none` slug are enforced at every
    write surface (CLI, proposal apply, cloud ingest); a lens whose signature
    or salience reference points at a deleted entity is not a parse error —
    it surfaces as `disputed`, so repair or drop the stale reference.

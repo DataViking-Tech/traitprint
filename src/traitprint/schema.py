@@ -345,7 +345,7 @@ class SalienceLevel(str, enum.Enum):
 # Enforced at every write surface: vault load (below), proposal apply, cloud
 # ingest, and commit-through. A lens is a curation object, not bulk data — the
 # cap keeps the set small enough to reason about.
-MAX_LENSES = 5
+MAX_LENSES = 20
 
 # Reserved lens slug: the canonical-rendering escape hatch. ``lens="none"`` on
 # the read tools requests the un-lensed (canonical) rendering even when a default
@@ -425,7 +425,7 @@ class VaultSchema(BaseModel):
         A lens is resolved by slug (and the bare profile renders the default),
         so a duplicate slug would shadow other lenses and two defaults would make
         the bare rendering depend on list order. Enforce both at load time —
-        ``lenses.json`` can be hand-edited or synced. The 5-lens cap
+        ``lenses.json`` can be hand-edited or synced. The 20-lens cap
         (``MAX_LENSES``) is enforced here too, so a vault carrying too many
         lenses fails to load rather than silently rendering an over-cap set.
         """

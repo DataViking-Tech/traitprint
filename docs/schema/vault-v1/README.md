@@ -93,7 +93,7 @@ meaning — no contract revision tracks it.
    (enforced identically on local load and cloud ingest): slugs are
    lowercase kebab-case and unique per vault, the slug `none` is **reserved**
    (the canonical-rendering keyword), at most one lens is `is_default`, and a
-   vault holds **at most 5 lenses**. Signature/salience references follow
+   vault holds **at most 20 lenses**. Signature/salience references follow
    rule 2 (dangling → Layer 1, warned/surfaced live, never a parse error).
    The file is emitted **only when the vault has lenses**, so a vault that
    never opted in round-trips byte-identically; a missing file reads back as
@@ -148,7 +148,7 @@ they implement.
   over the vault; canonical semantics in the [lens-v1
   contract](../lens-v1/README.md)). Slugs are unique lowercase kebab-case
   with `none` reserved, at most one lens is `is_default`, and a vault holds
-  at most 5 lenses; these invariants are enforced identically at local vault
+  at most 20 lenses; these invariants are enforced identically at local vault
   load and at cloud ingest (`lenses.json` now projects into the cloud
   `user_lenses` mirror). Signature/salience references are Layer 1 (rule 2).
   The file is emitted only when the vault has lenses, so pre-1.4 vaults

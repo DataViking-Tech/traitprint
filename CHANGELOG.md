@@ -65,7 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   grounded facts read differently for a target role or archetype — it
   never asserts a fact absent from the vault. Persisted as `lenses.json`
   (omitted entirely when no lens exists, so an un-lensed vault is
-  byte-identical to pre-lens). A vault holds at most five lenses, and the
+  byte-identical to pre-lens). A vault holds at most twenty lenses, and the
   reserved slug `none` is the canonical-rendering escape hatch. Authored
   through first-class validated surfaces: the `vault lens
   add|update|set-default|remove` CLI group (with `--from-json` batch

@@ -312,7 +312,7 @@ class TestPositionLensSkill:
         assert "supporting" in body
         assert "suppressed" in body
         # the cap and the reserved keyword
-        assert "5 lenses" in body or "five lenses" in body
+        assert "20 lenses" in body or "twenty lenses" in body
         # override rule — a lens never invents a fact
         assert "never" in body.lower()
         # the CLI write surface

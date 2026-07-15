@@ -2394,7 +2394,9 @@ class TestLensCLI:
         assert result.exit_code == 2
         assert "--slug and --name are required" in result.output
 
-    def test_add_sixth_lens_errors(self, runner: CliRunner, vault_dir: Path) -> None:
+    def test_add_over_cap_lens_errors(
+        self, runner: CliRunner, vault_dir: Path
+    ) -> None:
         for i in range(MAX_LENSES):
             assert (
                 self._add(
@@ -2402,9 +2404,9 @@ class TestLensCLI:
                 ).exit_code
                 == 0
             )
-        result = self._add(runner, vault_dir, "--slug", "sixth", "--name", "Sixth")
+        result = self._add(runner, vault_dir, "--slug", "over-cap", "--name", "Over")
         assert result.exit_code == 1
-        assert "at most 5 lenses" in result.output
+        assert "at most 20 lenses" in result.output
 
     def test_add_reserved_slug_rejected(
         self, runner: CliRunner, vault_dir: Path
@@ -2471,7 +2473,7 @@ class TestLensCLI:
             input=json.dumps(items),
         )
         assert result.exit_code == 1
-        assert "Summary: added 5, errors 1" in result.output
+        assert "Summary: added 20, errors 1" in result.output
 
     def test_update(self, runner: CliRunner, vault_dir: Path) -> None:
         self._add(runner, vault_dir, "--slug", "pm", "--name", "Product")
