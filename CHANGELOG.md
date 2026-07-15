@@ -69,8 +69,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reserved slug `none` is the canonical-rendering escape hatch. Authored
   through first-class validated surfaces: the `vault lens
   add|update|set-default|remove` CLI group (with `--from-json` batch
-  parity), staged `add_lens`/`update_lens` proposal kinds, and — over the
-  hosted MCP server — `vault_propose`. Rendered by the lens-aware
+  parity) and staged `add_lens`/`update_lens` proposal kinds in the local
+  proposal store and CLI (`traitprint proposals add`). Hosted-MCP propose
+  support is pending: the cloud `vault_propose` kind allowlist does not
+  include the lens kinds yet — a cloud-side fix is queued separately.
+  Rendered by the lens-aware
   `get_profile_summary` (new optional `lens` param) and the `vault_lens_list`
   / `vault_lens_get` read tools on both the local and cloud servers, and
   by `vault export -f career-bundle --lens`. Lenses that reference a
@@ -149,7 +152,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Reflection→`## Lesson`, multi-line continuations) plus one
   `update_profile` proposal from profile.yml (candidate/narrative →
   JSON Resume basics; target-role archetypes are stashed in the
-  proposal rationale — no lens proposal kind exists yet). Tags
+  proposal rationale — the importer does not stage lens proposals). Tags
   resolve to existing vault skill UUIDs by exact name/taxonomy match
   (the rest become theme_tags); a `Source:` line matches a vault
   experience; UUIDs are never invented. `--dry-run` and `--json`
