@@ -332,6 +332,13 @@ class TestArtifactLink:
         with pytest.raises(ValidationError):
             ArtifactLink(url=url, label="x" * (ARTIFACT_LABEL_MAX + 1))
 
+    def test_empty_label_rejected(self) -> None:
+        # Cloud parity: an empty label is rejected, not stored — a label
+        # is either meaningful text or absent (None).
+        with pytest.raises(ValidationError):
+            ArtifactLink(url="https://example.com", label="")
+        assert ArtifactLink(url="https://example.com", label=None).label is None
+
     def test_max_links_per_entity(self) -> None:
         links = [
             {"url": f"https://example.com/{i}"} for i in range(MAX_ARTIFACT_LINKS)

@@ -78,7 +78,7 @@
       "required": ["url"],
       "properties": {
         "url": { "type": "string", "pattern": "^https://", "minLength": 9, "maxLength": 500, "description": "https-only evidence URL with content after the scheme (plain http and every other scheme are rejected)." },
-        "label": { "type": "string", "maxLength": 120, "description": "Optional short display label, e.g. 'conference talk' or 'launch post'." }
+        "label": { "type": "string", "minLength": 1, "maxLength": 120, "description": "Optional short display label, e.g. 'conference talk' or 'launch post'." }
       },
       "additionalProperties": false
     },

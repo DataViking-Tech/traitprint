@@ -195,7 +195,9 @@ class ArtifactLink(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     url: str = Field(min_length=len("https://") + 1, max_length=ARTIFACT_URL_MAX)
-    label: str | None = Field(default=None, max_length=ARTIFACT_LABEL_MAX)
+    label: str | None = Field(
+        default=None, min_length=1, max_length=ARTIFACT_LABEL_MAX
+    )
 
     @field_validator("url")
     @classmethod
