@@ -346,6 +346,24 @@ class TestArtifactLink:
         with pytest.raises(ValidationError):
             StorySchema.model_validate({"title": "T", "artifact_links": over})
 
+    def test_unknown_keys_rejected(self) -> None:
+        # Matches the JSON schema's additionalProperties: false — a typo'd
+        # ``label`` must fail loudly, not silently drop the label.
+        with pytest.raises(ValidationError):
+            ArtifactLink.model_validate(
+                {"url": "https://example.com", "lable": "typo"}
+            )
+        with pytest.raises(ValidationError):
+            ArtifactLink.model_validate(
+                {"url": "https://example.com", "verified": True}
+            )
+
+    def test_scheme_only_url_rejected(self) -> None:
+        # ``https://`` alone carries no destination; the JSON schema pins
+        # the same floor via minLength.
+        with pytest.raises(ValidationError):
+            ArtifactLink.model_validate({"url": "https://"})
+
     def test_serializes_only_set_fields(self) -> None:
         # An unset label stays absent — never ``label: null``.
         link = ArtifactLink(url="https://example.com/talk")

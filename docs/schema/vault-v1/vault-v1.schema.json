@@ -77,7 +77,7 @@
       "description": "Revision 1.6: one artifact_links[] entry on a story or experience — an evidence URL (provenance ladder rung 1, 'artifact-supported'): a public artifact evidencing the parent entity (repo, PR, talk, press, published work). url is https-only; an unset label is omitted, never null. At most 8 entries per entity; an empty list is never written.",
       "required": ["url"],
       "properties": {
-        "url": { "type": "string", "pattern": "^https://", "maxLength": 500, "description": "https-only evidence URL (plain http and every other scheme are rejected)." },
+        "url": { "type": "string", "pattern": "^https://", "minLength": 9, "maxLength": 500, "description": "https-only evidence URL with content after the scheme (plain http and every other scheme are rejected)." },
         "label": { "type": "string", "maxLength": 120, "description": "Optional short display label, e.g. 'conference talk' or 'launch post'." }
       },
       "additionalProperties": false

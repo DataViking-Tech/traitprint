@@ -28,6 +28,7 @@ from uuid import UUID, uuid4
 
 from pydantic import (
     BaseModel,
+    ConfigDict,
     Field,
     SerializerFunctionWrapHandler,
     field_validator,
@@ -185,7 +186,13 @@ class ArtifactLink(BaseModel):
     ``ARTIFACT_URL_MAX`` characters; the optional ``label`` is capped at
     ``ARTIFACT_LABEL_MAX``. Only set fields are serialized: an unset
     label never appears as ``label: null``.
+
+    Unknown keys are rejected (matching the JSON schema's
+    ``additionalProperties: false``) so a typo'd ``label`` fails loudly
+    instead of silently dropping the label.
     """
+
+    model_config = ConfigDict(extra="forbid")
 
     url: str = Field(min_length=len("https://") + 1, max_length=ARTIFACT_URL_MAX)
     label: str | None = Field(default=None, max_length=ARTIFACT_LABEL_MAX)
