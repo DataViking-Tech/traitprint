@@ -167,6 +167,48 @@ class ExperienceScope(BaseModel):
         return {k: v for k, v in data.items() if v is not None and v != []}
 
 
+# Caps for artifact links (contract revision 1.6). Links are evidence
+# pointers (repo, PR, talk, press, published artifact) — card-sized, not
+# narrative, and never more than a handful per entity.
+ARTIFACT_URL_MAX = 500
+ARTIFACT_LABEL_MAX = 120
+MAX_ARTIFACT_LINKS = 8
+
+
+class ArtifactLink(BaseModel):
+    """One evidence link on a story or experience (revision 1.6, additive).
+
+    Provenance ladder rung 1 ("artifact-supported"): a URL pointing at a
+    public artifact that evidences the parent entity — a repo, PR, talk,
+    press mention, or published work. ``url`` must be ``https://`` (plain
+    ``http`` and every other scheme are rejected) and is capped at
+    ``ARTIFACT_URL_MAX`` characters; the optional ``label`` is capped at
+    ``ARTIFACT_LABEL_MAX``. Only set fields are serialized: an unset
+    label never appears as ``label: null``.
+    """
+
+    url: str = Field(min_length=len("https://") + 1, max_length=ARTIFACT_URL_MAX)
+    label: str | None = Field(default=None, max_length=ARTIFACT_LABEL_MAX)
+
+    @field_validator("url")
+    @classmethod
+    def _https_only(cls, value: str) -> str:
+        if not value.startswith("https://"):
+            raise ValueError(
+                "artifact link urls must use the https:// scheme "
+                f"(got {value.split(':', 1)[0]!r})"
+            )
+        return value
+
+    @model_serializer(mode="wrap")
+    def _serialize_set_fields_only(
+        self, handler: SerializerFunctionWrapHandler
+    ) -> dict[str, Any]:
+        """Serialize only the set fields (an unset label stays absent)."""
+        data: dict[str, Any] = handler(self)
+        return {k: v for k, v in data.items() if v is not None}
+
+
 class ExperienceSchema(BaseModel):
     """A work experience entry.
 
@@ -190,6 +232,13 @@ class ExperienceSchema(BaseModel):
     it defaults to ``None`` and an absent scope is never serialized (no
     ``null``/empty object on write), so pre-1.5 vaults round-trip
     byte-identically. A scope with no set fields normalizes to ``None``.
+
+    ``artifact_links`` (contract revision 1.6, additive) carries up to
+    ``MAX_ARTIFACT_LINKS`` :class:`ArtifactLink` evidence URLs for the
+    role (provenance ladder rung 1). Vaults written before 1.6 omit the
+    key; it defaults to an empty list and is not emitted into
+    frontmatter when empty, so pre-1.6 vaults round-trip
+    byte-identically.
     """
 
     id: UUID = Field(default_factory=uuid4)
@@ -202,6 +251,9 @@ class ExperienceSchema(BaseModel):
     skill_ids: list[UUID] = Field(default_factory=list)
     skill_links: list[SkillLink] = Field(default_factory=list)
     scope: ExperienceScope | None = None
+    artifact_links: list[ArtifactLink] = Field(
+        default_factory=list, max_length=MAX_ARTIFACT_LINKS
+    )
     source: str = "manual"
     created_at: datetime = Field(default_factory=_now)
     updated_at: datetime = Field(default_factory=_now)
@@ -243,7 +295,14 @@ STORY_OUTCOMES = ("", "win", "failure", "learning")
 
 
 class StorySchema(BaseModel):
-    """A STAR-format story entry."""
+    """A STAR-format story entry.
+
+    ``artifact_links`` (contract revision 1.6, additive) carries up to
+    ``MAX_ARTIFACT_LINKS`` :class:`ArtifactLink` evidence URLs for the
+    story (provenance ladder rung 1). Vaults written before 1.6 omit the
+    key; it defaults to an empty list and is not emitted into frontmatter
+    when empty, so pre-1.6 vaults round-trip byte-identically.
+    """
 
     id: UUID = Field(default_factory=uuid4)
     title: str
@@ -256,6 +315,9 @@ class StorySchema(BaseModel):
     theme_tags: list[str] = Field(default_factory=list)
     skill_ids: list[UUID] = Field(default_factory=list)
     experience_id: UUID | None = None
+    artifact_links: list[ArtifactLink] = Field(
+        default_factory=list, max_length=MAX_ARTIFACT_LINKS
+    )
     source: str = "manual"
     created_at: datetime = Field(default_factory=_now)
     updated_at: datetime = Field(default_factory=_now)

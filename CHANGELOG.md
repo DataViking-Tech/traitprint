@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Artifact links (vault contract revision 1.6, additive) — provenance
+  ladder rung 1.** `stories/*.md` AND `experiences/*.md` frontmatter gain
+  an optional `artifact_links` list of evidence URLs pointing at public
+  artifacts (repo, PR, talk, press, published work). Each entry is
+  `{url, label?}`: `url` is https-only (plain `http` and every other
+  scheme are rejected) and capped at 500 characters, `label` is optional
+  and capped at 120, and an entity holds at most 8 links. Only set fields
+  are written (an unset `label` is absent, never `null`) and an empty
+  list never reaches frontmatter, so pre-1.6 vaults round-trip
+  byte-identically. `add/update_experience` and `add/update_story`
+  proposal payloads accept the key (cloud `vault_propose` lock-step from
+  day one); `get_profile_summary(depth="detailed")` and `find_story`
+  include an entity's links when present. Cloud mirrors the field 1:1 per
+  the provenance-ladder coordination spec.
 - **Experience scope block (vault contract revision 1.5, additive).**
   `experiences/*.md` frontmatter gains an optional `scope` object — the
   quantified role-scope block recruiters need for calibration:

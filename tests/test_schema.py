@@ -8,8 +8,12 @@ import pytest
 from pydantic import ValidationError
 
 from traitprint.schema import (
+    ARTIFACT_LABEL_MAX,
+    ARTIFACT_URL_MAX,
+    MAX_ARTIFACT_LINKS,
     MAX_LENSES,
     SCOPE_TEXT_MAX,
+    ArtifactLink,
     ExperienceSchema,
     ExperienceScope,
     LensSchema,
@@ -272,6 +276,85 @@ class TestExperienceScope:
         assert exp.scope is None
         exp = ExperienceSchema(title="Eng", scope=ExperienceScope())
         assert exp.scope is None
+
+
+class TestArtifactLink:
+    """Contract revision 1.6: optional evidence links (provenance rung 1)."""
+
+    def test_artifact_links_default_empty(self) -> None:
+        # Additive — pre-1.6 payloads omit the key and must keep validating.
+        assert ExperienceSchema(title="Staff Engineer").artifact_links == []
+        assert StorySchema(title="T").artifact_links == []
+
+    def test_full_and_partial_links_round_trip(self) -> None:
+        for cls, kwargs in (
+            (ExperienceSchema, {"title": "Head of Data"}),
+            (StorySchema, {"title": "T"}),
+        ):
+            entity = cls.model_validate(
+                {
+                    **kwargs,
+                    "artifact_links": [
+                        {"url": "https://github.com/org/repo", "label": "repo"},
+                        {"url": "https://example.com/talk"},
+                    ],
+                }
+            )
+            assert entity.artifact_links[0].label == "repo"
+            assert entity.artifact_links[1].label is None
+            assert cls.model_validate(entity.model_dump(mode="json")) == entity
+
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "http://example.com",
+            "ftp://example.com/file",
+            "javascript:alert(1)",
+            "//example.com",
+            "example.com",
+            "HTTPS://example.com",
+        ],
+    )
+    def test_non_https_urls_rejected(self, url: str) -> None:
+        with pytest.raises(ValidationError):
+            ArtifactLink.model_validate({"url": url})
+
+    def test_url_length_cap(self) -> None:
+        base = "https://example.com/"
+        ok = base + "x" * (ARTIFACT_URL_MAX - len(base))
+        ArtifactLink(url=ok)
+        with pytest.raises(ValidationError):
+            ArtifactLink(url=ok + "x")
+
+    def test_label_length_cap(self) -> None:
+        url = "https://example.com"
+        ArtifactLink(url=url, label="x" * ARTIFACT_LABEL_MAX)
+        with pytest.raises(ValidationError):
+            ArtifactLink(url=url, label="x" * (ARTIFACT_LABEL_MAX + 1))
+
+    def test_max_links_per_entity(self) -> None:
+        links = [
+            {"url": f"https://example.com/{i}"} for i in range(MAX_ARTIFACT_LINKS)
+        ]
+        ExperienceSchema.model_validate({"title": "Eng", "artifact_links": links})
+        StorySchema.model_validate({"title": "T", "artifact_links": links})
+        over = [*links, {"url": "https://example.com/one-too-many"}]
+        with pytest.raises(ValidationError):
+            ExperienceSchema.model_validate(
+                {"title": "Eng", "artifact_links": over}
+            )
+        with pytest.raises(ValidationError):
+            StorySchema.model_validate({"title": "T", "artifact_links": over})
+
+    def test_serializes_only_set_fields(self) -> None:
+        # An unset label stays absent — never ``label: null``.
+        link = ArtifactLink(url="https://example.com/talk")
+        assert link.model_dump(mode="json") == {"url": "https://example.com/talk"}
+        link = ArtifactLink(url="https://example.com/talk", label="talk")
+        assert link.model_dump(mode="json") == {
+            "url": "https://example.com/talk",
+            "label": "talk",
+        }
 
 
 class TestStorySchema:

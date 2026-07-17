@@ -835,6 +835,8 @@ def _handle_get_profile_summary(
     # refs skipped; experience skill_ids are contract revision 1.1+).
     # scope (contract revision 1.5) is included only when the role has one;
     # the dump carries only its set fields, so consumers never see nulls.
+    # artifact_links (contract revision 1.6) likewise appears only when the
+    # role carries evidence links.
     skill_name_by_id = {s.id: s.name for s in vault.skills}
     result["signature_experiences"] = [
         {
@@ -850,6 +852,15 @@ def _handle_get_profile_summary(
             **(
                 {"scope": e.scope.model_dump(mode="json")}
                 if e.scope is not None
+                else {}
+            ),
+            **(
+                {
+                    "artifact_links": [
+                        link.model_dump(mode="json") for link in e.artifact_links
+                    ]
+                }
+                if e.artifact_links
                 else {}
             ),
             "evidence": None,
@@ -1134,6 +1145,19 @@ def _handle_find_story(
                 "related_experience_id": (
                     str(story.experience_id) if story.experience_id else None
                 ),
+                # artifact_links (contract revision 1.6): evidence URLs ride
+                # the story only when present — same key-absent-when-empty
+                # discipline as the experience scope block.
+                **(
+                    {
+                        "artifact_links": [
+                            link.model_dump(mode="json")
+                            for link in story.artifact_links
+                        ]
+                    }
+                    if story.artifact_links
+                    else {}
+                ),
                 "match_score": _round3(score),
                 "evidence": None,
                 "disputed": story.id in disputes,
@@ -1357,7 +1381,8 @@ def create_server(store: VaultStore) -> FastMCP:
             "+ top 5 skills; 'detailed' = + top 10 skills, signature "
             "experiences (each with its scope block — reporting line, "
             "headcount, budget/hiring/decision authority, platform scale, "
-            "org context — when the role has one), and core philosophies. "
+            "org context — and its artifact_links evidence URLs, when the "
+            "role has them), and core philosophies. "
             "lens: optional positioning lens (slug or id) to project the "
             "profile through — applies headline/bio overrides, the lens's "
             "signature experiences, and skill salience (core skills lead, "
@@ -1426,7 +1451,8 @@ def create_server(store: VaultStore) -> FastMCP:
             "STAR-pattern narrative retrieval. 'Tell me about a time "
             "when…' Provide at least one filter: query (free-text, "
             "searches across all STAR fields), situation, theme, or "
-            "outcome. Structured filters take precedence over query."
+            "outcome. Structured filters take precedence over query. "
+            "Stories carrying artifact_links (evidence URLs) include them."
         )
     )
     def find_story(
