@@ -40,6 +40,7 @@ from traitprint.proposals import (
 )
 from traitprint.schema import (
     MAX_LENSES,
+    ArtifactLink,
     ExperienceScope,
     LensSchema,
     SalienceLevel,
@@ -117,6 +118,23 @@ class TestProposalStore:
         assert got.source == "mcp:sk_abc1234"
         assert got.status == "pending"
         assert got.resolved_at is None
+
+    def test_round_trip_with_artifact_links(self, vault_dir: Path) -> None:
+        # Contract revision 1.6: a staged proposal carrying artifact_links
+        # survives write→load with the payload intact.
+        store = ProposalStore(vault_dir)
+        payload = {
+            "title": "A Story",
+            "artifact_links": [
+                {"url": "https://github.com/acme/platform", "label": "repo"},
+                {"url": "https://acme.example.com/blog/migration"},
+            ],
+        }
+        lp = store.create("add_story", payload)
+        loaded, issues = store.load_all()
+        assert issues == []
+        assert loaded[0].proposal.payload == payload
+        assert loaded[0].proposal.id == lp.proposal.id
 
     def test_file_matches_contract_shape(self, vault_dir: Path) -> None:
         store = ProposalStore(vault_dir)
@@ -541,6 +559,87 @@ class TestApplyProposal:
             {"title": "A Story", "scope": {"direct_reports": 6}},
         )
         assert any("scope" in p for p in problems)
+
+    def test_artifact_links_accepted_and_applied_on_both_entities(self) -> None:
+        # Contract revision 1.6: artifact_links is part of BOTH the
+        # experience and story entity shapes (lock-step with the cloud
+        # vault_propose allowlist from day one).
+        links_payload = [
+            {"url": "https://github.com/acme/platform", "label": "repo"},
+            {"url": "https://acme.example.com/blog/migration"},
+        ]
+        expected = [
+            ArtifactLink(url="https://github.com/acme/platform", label="repo"),
+            ArtifactLink(url="https://acme.example.com/blog/migration"),
+        ]
+        for kind, payload in (
+            ("add_experience", {"title": "Head of Data"}),
+            ("add_story", {"title": "A Story"}),
+        ):
+            full = {**payload, "artifact_links": links_payload}
+            assert validate_proposal_fields(kind, None, full) == []
+            vault = VaultSchema()
+            apply_proposal(vault, ProposalSchema(kind=kind, payload=full))
+            entity = (
+                vault.experiences[0] if kind == "add_experience" else vault.stories[0]
+            )
+            assert entity.artifact_links == expected
+
+    def test_update_artifact_links_replaces_and_empty_clears(self) -> None:
+        # update_* replaces the whole list; [] clears it — same semantics
+        # as the cloud applier.
+        vault = VaultSchema()
+        apply_proposal(
+            vault,
+            ProposalSchema(
+                kind="add_story",
+                payload={
+                    "title": "A Story",
+                    "artifact_links": [{"url": "https://example.com/a"}],
+                },
+            ),
+        )
+        apply_proposal(
+            vault,
+            ProposalSchema(
+                kind="update_story",
+                target_id=vault.stories[0].id,
+                payload={"artifact_links": [{"url": "https://example.com/b"}]},
+            ),
+        )
+        assert vault.stories[0].artifact_links == [
+            ArtifactLink(url="https://example.com/b")
+        ]
+        apply_proposal(
+            vault,
+            ProposalSchema(
+                kind="update_story",
+                target_id=vault.stories[0].id,
+                payload={"artifact_links": []},
+            ),
+        )
+        assert vault.stories[0].artifact_links == []
+
+    def test_invalid_artifact_links_rejected_at_apply(self) -> None:
+        # Layer 0 hard reject: the ArtifactLink model validates the entries
+        # (https-only, url/label caps, max 8) before anything mutates.
+        vault = VaultSchema()
+        bad_payloads = [
+            [{"url": "http://example.com"}],  # not https
+            [{"url": "https://example.com/" + "x" * 500}],  # url over cap
+            [{"url": "https://example.com", "label": "x" * 121}],  # label cap
+            [{"url": f"https://example.com/{i}"} for i in range(9)],  # max 8
+        ]
+        for bad in bad_payloads:
+            with pytest.raises(ProposalApplyError):
+                apply_proposal(
+                    vault,
+                    ProposalSchema(
+                        kind="add_story",
+                        payload={"title": "S", "artifact_links": bad},
+                    ),
+                )
+        assert vault.stories == []  # nothing applied
 
     def test_update_profile_maps_basics(self) -> None:
         vault = VaultSchema()

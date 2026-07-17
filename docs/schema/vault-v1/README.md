@@ -2,7 +2,7 @@
 
 **Status:** Stable contract (Phase 0 of the
 [agent-native architecture](../../agent-native-architecture.md))
-**Contract revision:** 1.5 (additive over 1.4 — see [Versioning](#versioning))
+**Contract revision:** 1.6 (additive over 1.5 — see [Versioning](#versioning))
 **Consumers:** the `traitprint` CLI/MCP server (read+write) and the
 traitprint-cloud ingest pipeline (validate+project).
 
@@ -112,7 +112,21 @@ meaning — no contract revision tracks it.
    attestations ("verified by former manager: `direct_reports=8`") can
    attach without a schema migration — field-level attestation itself is
    out of scope for this revision. Additive — `schema_version` stays `1`.
-10. **Readers accept v0 (`vault.json`) and v1; writers emit v1 only.**
+10. **`artifact_links[]` (optional, revision 1.6) carry evidence URLs on
+   stories AND experiences** (`$defs/artifactLink`) — provenance ladder
+   rung 1 ("artifact-supported"): links to public artifacts that evidence
+   the parent entity (repo, PR, talk, press, published work). Each entry
+   is `{ url, label? }`: `url` is required, **https-only** (plain `http`
+   and every other scheme are rejected) and capped at 500 characters;
+   `label` is optional short text capped at 120 characters — an unset
+   label is absent, never `label: null`. At most **8 links per entity**.
+   On experiences the links are top-level (role-level evidence; NOT
+   inside `scope` — they evidence the role broadly). The list defaults to
+   empty and an empty list is **never written** to frontmatter, so
+   pre-1.6 vaults round-trip byte-identically. Links ride their parent
+   entity through lenses (salience/suppression unaffected). Additive —
+   `schema_version` stays `1`.
+11. **Readers accept v0 (`vault.json`) and v1; writers emit v1 only.**
    `traitprint vault migrate` converts v0→v1 in place as a single git
    commit. The lossless single-document JSON export remains available for
    v0 consumers.
@@ -128,6 +142,19 @@ they implement.
 
 ### Revision history
 
+- **1.6 (2026-07-17)** — additive: optional `artifact_links[]` on the
+  story AND experience entities (`$defs/storyFrontmatter`,
+  `$defs/experienceFrontmatter`, `$defs/artifactLink`) — provenance
+  ladder rung 1 ("artifact-supported"): evidence URLs pointing at public
+  artifacts (repo, PR, talk, press, published work; see rule 10). Each
+  entry is `{ url, label? }` with `url` https-only and ≤ 500 characters,
+  `label` optional and ≤ 120 characters, at most 8 links per entity.
+  Only set fields are written (an unset `label` is absent, never `null`)
+  and an empty list never reaches frontmatter, so pre-1.6 vaults
+  round-trip byte-identically. Experience links are top-level (role-level
+  evidence, deliberately outside `scope`). Cloud mirrors the field 1:1
+  per the provenance-ladder coordination spec. Older vaults without the
+  key remain valid; `schema_version` stays `1`.
 - **1.5 (2026-07-15)** — additive: optional `scope` on the experience
   entity (`$defs/experienceFrontmatter`, `$defs/experienceScope`) — the
   quantified role-scope block for recruiter-grade calibration

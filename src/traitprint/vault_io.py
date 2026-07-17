@@ -64,6 +64,7 @@ EXPERIENCE_FRONTMATTER_KEYS = (
     "skill_ids",
     "skill_links",
     "scope",
+    "artifact_links",
     "source",
     "created_at",
     "updated_at",
@@ -74,8 +75,10 @@ EXPERIENCE_FRONTMATTER_KEYS = (
 # revision (e.g. ``skill_links`` is additive in revision 1.2 — a 1.1 vault
 # must not gain an empty ``skill_links: []`` line on rewrite; ``scope`` is
 # additive in revision 1.5 and an unset scope is dropped from the model
-# dump itself, never serialized as null).
-_OMIT_WHEN_EMPTY = ("skill_links", "scope")
+# dump itself, never serialized as null; ``artifact_links`` is additive
+# in revision 1.6 on experiences AND stories — an empty list never
+# reaches frontmatter).
+_OMIT_WHEN_EMPTY = ("skill_links", "scope", "artifact_links")
 STORY_FRONTMATTER_KEYS = (
     "id",
     "title",
@@ -83,6 +86,7 @@ STORY_FRONTMATTER_KEYS = (
     "experience_id",
     "outcome",
     "theme_tags",
+    "artifact_links",
     "source",
     "created_at",
     "updated_at",

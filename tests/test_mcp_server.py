@@ -56,6 +56,7 @@ from traitprint.mcp_server import (
 )
 from traitprint.schema import (
     MAX_LENSES,
+    ArtifactLink,
     ExperienceSchema,
     ExperienceScope,
     LensSchema,
@@ -293,6 +294,31 @@ class TestGetProfileSummary:
         # one — the key is absent, never null.
         out = _handle_get_profile_summary(populated_store.load(), "detailed")
         assert "scope" not in out["signature_experiences"][0]
+
+    def test_detailed_experience_artifact_links_included_when_present(
+        self, populated_store: VaultStore
+    ) -> None:
+        # Contract revision 1.6: evidence links ride the experience; each
+        # entry carries only its set fields (no ``label: null``).
+        vault = populated_store.load()
+        vault.experiences[0].artifact_links = [
+            ArtifactLink(url="https://github.com/acme/platform", label="repo"),
+            ArtifactLink(url="https://acme.example.com/blog/migration"),
+        ]
+        out = _handle_get_profile_summary(vault, "detailed")
+        exp = out["signature_experiences"][0]
+        assert exp["artifact_links"] == [
+            {"url": "https://github.com/acme/platform", "label": "repo"},
+            {"url": "https://acme.example.com/blog/migration"},
+        ]
+
+    def test_detailed_experience_artifact_links_key_absent_when_empty(
+        self, populated_store: VaultStore
+    ) -> None:
+        # No links on the role: the payload shape is exactly the pre-1.6
+        # one — the key is absent, never an empty list.
+        out = _handle_get_profile_summary(populated_store.load(), "detailed")
+        assert "artifact_links" not in out["signature_experiences"][0]
 
 
 class TestSearchSkills:
@@ -585,6 +611,34 @@ class TestFindStory:
         assert set(story["related_skills"]) == {"Python", "SQL"}
         # id round-trips as a UUID string
         UUID(story["id"])
+
+    def test_story_artifact_links_included_when_present(
+        self, populated_store: VaultStore
+    ) -> None:
+        # Contract revision 1.6: evidence links ride the story; each entry
+        # carries only its set fields (no ``label: null``).
+        vault = populated_store.load()
+        story = next(
+            s for s in vault.stories if s.title == "Redshift to BigQuery Migration"
+        )
+        story.artifact_links = [
+            ArtifactLink(url="https://youtube.com/watch?v=x", label="conf talk"),
+            ArtifactLink(url="https://acme.example.com/blog/migration"),
+        ]
+        out = _handle_find_story(vault, None, "migration", None, 3)
+        assert out["stories"][0]["artifact_links"] == [
+            {"url": "https://youtube.com/watch?v=x", "label": "conf talk"},
+            {"url": "https://acme.example.com/blog/migration"},
+        ]
+
+    def test_story_artifact_links_key_absent_when_empty(
+        self, populated_store: VaultStore
+    ) -> None:
+        # No links on the story: the payload shape is exactly the pre-1.6
+        # one — the key is absent, never an empty list (see
+        # test_theme_match_returns_story's exact key-set assertion).
+        out = _handle_find_story(populated_store.load(), None, "migration", None, 3)
+        assert "artifact_links" not in out["stories"][0]
 
     def test_incomplete_stars_excluded(self, populated_store: VaultStore) -> None:
         out = _handle_find_story(populated_store.load(), "situation", None, None, 3)

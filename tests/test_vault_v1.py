@@ -20,6 +20,7 @@ from traitprint.cli import cli
 from traitprint.git_ops import commit, init_repo
 from traitprint.git_ops import log as git_log
 from traitprint.schema import (
+    ArtifactLink,
     EducationSchema,
     ExperienceSchema,
     ExperienceScope,
@@ -315,6 +316,85 @@ class TestV1RoundTrip:
         }
         loaded = store.load()
         assert loaded.experiences[0].scope == vault.experiences[0].scope
+
+    def test_vault_without_artifact_links_round_trips_byte_identically(
+        self, vault_dir: Path
+    ) -> None:
+        """Contract revision 1.6 is additive: a vault that never set
+        artifact links must read+write byte-identically — no
+        ``artifact_links`` key (and no empty list) may appear on rewrite,
+        on stories or on experiences."""
+        store = VaultStore(vault_dir)
+        store.save(_full_vault())
+        before = _tree_bytes(vault_dir)
+        loaded = store.load()
+        assert loaded.experiences[0].artifact_links == []
+        assert loaded.stories[0].artifact_links == []
+        store.save(loaded, bump_updated_at=False)
+        assert _tree_bytes(vault_dir) == before
+        for rel in (
+            "experiences/staff-engineer-acme.md",
+            "stories/redshift-to-bigquery.md",
+        ):
+            assert "artifact_links" not in (vault_dir / rel).read_text()
+
+    def test_artifact_links_round_trip_byte_identically(
+        self, vault_dir: Path
+    ) -> None:
+        """Full and partial links on both entity types survive
+        save→load→save with exact bytes."""
+        store = VaultStore(vault_dir)
+        vault = _full_vault()
+        vault.experiences[0].artifact_links = [
+            ArtifactLink(
+                url="https://github.com/acme/platform", label="platform repo"
+            ),
+            ArtifactLink(url="https://acme.example.com/eng-blog/migration"),
+        ]
+        vault.stories[0].artifact_links = [
+            ArtifactLink(url="https://youtube.com/watch?v=x", label="conf talk"),
+        ]
+        store.save(vault)
+        before = _tree_bytes(vault_dir)
+        loaded = store.load()
+        assert loaded.experiences[0].artifact_links == (
+            vault.experiences[0].artifact_links
+        )
+        assert loaded.stories[0].artifact_links == vault.stories[0].artifact_links
+        store.save(loaded, bump_updated_at=False)
+        assert _tree_bytes(vault_dir) == before
+
+    def test_artifact_link_frontmatter_carries_only_set_fields(
+        self, vault_dir: Path
+    ) -> None:
+        """An unset label never reaches the frontmatter — no
+        ``label: null`` lines."""
+        store = VaultStore(vault_dir)
+        vault = _full_vault()
+        vault.stories[0].artifact_links = [
+            ArtifactLink(url="https://example.com/artifact")
+        ]
+        store.save(vault)
+        fm, _ = parse_markdown(
+            (vault_dir / "stories" / "redshift-to-bigquery.md").read_text()
+        )
+        assert fm["artifact_links"] == [{"url": "https://example.com/artifact"}]
+
+    def test_hand_edited_artifact_links_load(self, vault_dir: Path) -> None:
+        """Agents hand-edit these files; artifact_links added by hand must
+        load — and an invalid scheme must be rejected at load."""
+        store = VaultStore(vault_dir)
+        store.save(_full_vault())
+        path = vault_dir / "experiences" / "staff-engineer-acme.md"
+        fm, body = parse_markdown(path.read_text(), path=path)
+        fm["artifact_links"] = [
+            {"url": "https://github.com/acme/platform", "label": "repo"}
+        ]
+        path.write_text(render_markdown(fm, body))
+        loaded = store.load()
+        assert loaded.experiences[0].artifact_links == [
+            ArtifactLink(url="https://github.com/acme/platform", label="repo")
+        ]
 
     def test_hand_edited_scope_loads(self, vault_dir: Path) -> None:
         """Agents hand-edit these files; a scope mapping added by hand

@@ -88,6 +88,12 @@ _SKILL_KEYS = (
 #: ``ExperienceSchema.model_validate``), matching how every other
 #: experience field is checked; ``scope: null`` (or ``{}``) clears the
 #: block on update — same semantics as the cloud applier.
+#: ``artifact_links`` is contract revision 1.6 (additive, experiences AND
+#: stories: evidence URLs, provenance ladder rung 1 — see
+#: ``$defs/artifactLink``). Shape validation (https-only, caps, max 8)
+#: happens at apply time via :class:`ArtifactLink` through the entity
+#: models; ``artifact_links: []`` clears the list on update. Kept in
+#: lock-step with the cloud ``vault_propose`` applier from day one.
 _EXPERIENCE_KEYS = (
     "id",
     "title",
@@ -98,6 +104,7 @@ _EXPERIENCE_KEYS = (
     "skill_ids",
     "skill_links",
     "scope",
+    "artifact_links",
     "source",
     "created_at",
     "updated_at",
@@ -110,6 +117,7 @@ _STORY_KEYS = (
     "experience_id",
     "outcome",
     "theme_tags",
+    "artifact_links",
     "source",
     "created_at",
     "updated_at",
@@ -928,7 +936,8 @@ def proposal_diff(
     # Dump the current entity to plain JSON values so every ``current``
     # cell is renderable and ``proposals show --json`` stays serializable —
     # model-typed fields (UUID lists, skill_links, the revision-1.5 scope
-    # block) would otherwise leak pydantic objects into the rows.
+    # block, revision-1.6 artifact_links) would otherwise leak pydantic
+    # objects into the rows.
     current_dump: dict[str, Any] | None = (
         current.model_dump(mode="json") if current is not None else None
     )
