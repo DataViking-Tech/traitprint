@@ -94,6 +94,12 @@ _SKILL_KEYS = (
 #: happens at apply time via :class:`ArtifactLink` through the entity
 #: models; ``artifact_links: []`` clears the list on update. Kept in
 #: lock-step with the cloud ``vault_propose`` applier from day one.
+#: ``bullets`` is contract revision 1.7 (additive, EXPERIENCES ONLY: the
+#: resume-bullet inventory — see ``$defs/bullet``). Shape validation
+#: (non-blank text ≤ 300, max 20, member defaults) happens at apply time
+#: via :class:`BulletSchema` through ``ExperienceSchema.model_validate``;
+#: a payload list REPLACES the inventory and ``bullets: []`` clears it on
+#: update — same semantics as the cloud applier.
 _EXPERIENCE_KEYS = (
     "id",
     "title",
@@ -105,6 +111,7 @@ _EXPERIENCE_KEYS = (
     "skill_links",
     "scope",
     "artifact_links",
+    "bullets",
     "source",
     "created_at",
     "updated_at",

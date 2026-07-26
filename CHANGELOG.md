@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Bullets in experience proposal payloads** (contract revision 1.7) —
+  `add_experience` / `update_experience` proposals now accept a
+  `bullets` list, validated at apply via `BulletSchema` through the
+  entity model (non-blank text ≤ 300 chars, at most 20; minimal agent
+  bullets gain generated ids and model defaults). A payload list
+  replaces the whole inventory and `[]` clears it — same semantics as
+  the cloud `vault_propose` applier, which gained the key in lock-step
+  (traitprint-cloud#1737).
+
 - **`vault_sync` MCP tool** — agents can now trigger cloud sync directly
   instead of handing the user a CLI command. `action='status'` reports
   local vs server head, their relation, and server ingest/quarantine
@@ -23,6 +32,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   shared with the CLI via `traitprint.credentials.resolve_credentials`.
 
 ### Changed
+
+- **`find_bullets` is no longer local-only** — its hosted mirror shipped
+  on the cloud MCP server (2026-07-26, traitprint-cloud#1736: same
+  filters, no default-lens auto-apply, same deterministic ordering and
+  per-bullet `evidenced`/`disputed` trust signals). AGENTS.md and
+  GEMINI.md no longer carry the "local-only until it ships" caveats.
 
 - **Evidence is complete-STAR only, everywhere.** `skill.unsupported_strength`
   (and the `skill.stale_evidence` freshness check) and `search_skills`'

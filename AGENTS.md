@@ -397,9 +397,9 @@ label or an integer 1-5. `find_story theme` matches `theme_tags` first,
 then body text; `get_philosophy` filters by `topic` and/or `category`.
 
 **Local ↔ hosted delta.** The two servers share the response envelope and
-the read-tool names (every local tool except `doctor` and `vault_sync` —
-and, until its hosted mirror ships, `find_bullets` — is also served
-hosted), but they are not interchangeable by swapping a URL:
+the read-tool names (every local tool except `doctor` and `vault_sync`
+is also served hosted — `find_bullets` included since its hosted mirror
+shipped 2026-07-26), but they are not interchangeable by swapping a URL:
 
 - *Hosted adds:* `find_experience`; read-only `vault_sync_status` (server
   head + ingest/quarantine state — the hosted server cannot reach a local
@@ -412,11 +412,10 @@ hosted), but they are not interchangeable by swapping a URL:
   `job_submit`).
 - *Hosted differs:* its `find_story` nulls `lesson` and never infers
   `outcome`; its `get_philosophy` has no `category` filter.
-- *Local adds:* `doctor`; `find_bullets` (the resume-bullet inventory —
-  hosted mirror rolling out, local-only until it ships); a free-text
-  `query` filter on `find_story` (at least one filter is required); real
-  `lesson` text; an inferred `outcome` when a story doesn't declare one;
-  the `category` filter on `get_philosophy`.
+- *Local adds:* `doctor`; a free-text `query` filter on `find_story` (at
+  least one filter is required); real `lesson` text; an inferred
+  `outcome` when a story doesn't declare one; the `category` filter on
+  `get_philosophy`.
 
 The workflow prompts — `fill_vault(focus?)`, `mine_story_gaps`,
 `discover_skills`, `draft_star_story(experience?)`, `audit_coherence`,

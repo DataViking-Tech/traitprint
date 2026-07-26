@@ -641,6 +641,96 @@ class TestApplyProposal:
                 )
         assert vault.stories == []  # nothing applied
 
+    def test_bullets_accepted_on_experiences_only(self) -> None:
+        # Contract revision 1.7: bullets is part of the experience shape
+        # (lock-step with the cloud vault_propose allowlist); stories must
+        # reject it as an unknown key.
+        payload = {
+            "title": "Head of Data",
+            "bullets": [{"text": "Cut deploy time 80%"}],
+        }
+        assert validate_proposal_fields("add_experience", None, payload) == []
+        problems = validate_proposal_fields(
+            "add_story",
+            None,
+            {"title": "A Story", "bullets": [{"text": "Nope"}]},
+        )
+        assert any("bullets" in p for p in problems)
+
+    def test_bullets_applied_with_model_defaults(self) -> None:
+        # A minimal agent bullet ({text} only) gains the BulletSchema
+        # defaults at apply — generated id, empty collections, source
+        # "manual" — the same fill the cloud applier's prepareBullets does.
+        vault = VaultSchema()
+        apply_proposal(
+            vault,
+            ProposalSchema(
+                kind="add_experience",
+                payload={
+                    "title": "Head of Data",
+                    "bullets": [{"text": "Cut deploy time 80%"}],
+                },
+            ),
+        )
+        bullets = vault.experiences[0].bullets
+        assert len(bullets) == 1
+        assert bullets[0].text == "Cut deploy time 80%"
+        assert isinstance(bullets[0].id, UUID)
+        assert bullets[0].story_ids == []
+        assert bullets[0].skill_ids == []
+        assert bullets[0].theme_tags == []
+        assert bullets[0].source == "manual"
+
+    def test_update_bullets_replaces_and_empty_clears(self) -> None:
+        # update_* replaces the whole inventory; [] clears it — same
+        # semantics as the cloud applier (and as artifact_links above).
+        vault = VaultSchema()
+        apply_proposal(
+            vault,
+            ProposalSchema(
+                kind="add_experience",
+                payload={"title": "Head of Data", "bullets": [{"text": "First"}]},
+            ),
+        )
+        apply_proposal(
+            vault,
+            ProposalSchema(
+                kind="update_experience",
+                target_id=vault.experiences[0].id,
+                payload={"bullets": [{"text": "Second"}]},
+            ),
+        )
+        assert [b.text for b in vault.experiences[0].bullets] == ["Second"]
+        apply_proposal(
+            vault,
+            ProposalSchema(
+                kind="update_experience",
+                target_id=vault.experiences[0].id,
+                payload={"bullets": []},
+            ),
+        )
+        assert vault.experiences[0].bullets == []
+
+    def test_invalid_bullets_rejected_at_apply(self) -> None:
+        # Layer 0 hard reject: BulletSchema validates entries (non-blank
+        # text, text cap, max 20) before anything mutates.
+        vault = VaultSchema()
+        bad_payloads: list[list[dict[str, Any]]] = [
+            [{"text": "   "}],  # blank text
+            [{"text": "x" * 301}],  # text over cap
+            [{"text": f"Bullet {i}"} for i in range(21)],  # max 20
+        ]
+        for bad in bad_payloads:
+            with pytest.raises(ProposalApplyError):
+                apply_proposal(
+                    vault,
+                    ProposalSchema(
+                        kind="add_experience",
+                        payload={"title": "E", "bullets": bad},
+                    ),
+                )
+        assert vault.experiences == []  # nothing applied
+
     def test_update_profile_maps_basics(self) -> None:
         vault = VaultSchema()
         p = ProposalSchema(
