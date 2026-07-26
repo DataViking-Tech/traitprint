@@ -88,7 +88,7 @@
       "required": ["id", "text"],
       "properties": {
         "id": { "$ref": "#/$defs/uuid" },
-        "text": { "type": "string", "minLength": 1, "maxLength": 300, "description": "The claim-sized resume line (non-blank). Narrative belongs in the experience body or the backing story." },
+        "text": { "type": "string", "minLength": 1, "maxLength": 300, "pattern": "\\S", "description": "The claim-sized resume line (non-blank — must contain a non-whitespace character, matching the model validator). Narrative belongs in the experience body or the backing story." },
         "story_ids": { "type": "array", "items": { "$ref": "#/$defs/uuid" } },
         "skill_ids": { "type": "array", "items": { "$ref": "#/$defs/uuid" } },
         "theme_tags": { "type": "array", "items": { "type": "string" } },

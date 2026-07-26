@@ -22,6 +22,7 @@ from traitprint.audit import (
 from traitprint.cli import cli
 from traitprint.git_ops import commit, init_repo
 from traitprint.schema import (
+    BulletSchema,
     EducationSchema,
     ExperienceSchema,
     LensSchema,
@@ -260,6 +261,60 @@ class TestAuditVault:
         codes = _codes(_coherent_vault())
         assert "experience.no_skills" not in codes
         assert "experience.dangling_skill" not in codes
+
+    def test_bullet_dangling_story_is_major_warning(self) -> None:
+        # Contract rule 11 (revision 1.7): bullet cross-references follow the
+        # same Layer 1 rules — the CLI audit must report them, not only the
+        # MCP dispute layer.
+        ghost = StorySchema(title="ghost", situation="s")
+        v = _coherent_vault()
+        bullet = BulletSchema(text="Cut spend 45%", story_ids=[ghost.id])
+        v.experiences[0].bullets = [bullet]
+        f = next(
+            f for f in audit_vault(v).findings if f.code == "bullet.dangling_story"
+        )
+        assert f.severity == "major"
+        assert f.item_id == str(bullet.id)
+
+    def test_bullet_dangling_skill_is_major_warning(self) -> None:
+        ghost = SkillSchema(name="ghost", category="x", proficiency=1)
+        v = _coherent_vault()
+        bullet = BulletSchema(text="Shipped the platform", skill_ids=[ghost.id])
+        v.experiences[0].bullets = [bullet]
+        f = next(
+            f for f in audit_vault(v).findings if f.code == "bullet.dangling_skill"
+        )
+        assert f.severity == "major"
+        assert f.item_id == str(bullet.id)
+
+    def test_resolving_bullet_refs_not_flagged(self) -> None:
+        v = _coherent_vault()
+        v.experiences[0].bullets = [
+            BulletSchema(
+                text="Shipped the migration",
+                story_ids=[v.stories[0].id],
+                skill_ids=[v.skills[0].id],
+            )
+        ]
+        codes = _codes(v)
+        assert "bullet.dangling_story" not in codes
+        assert "bullet.dangling_skill" not in codes
+
+    def test_bulleted_experience_is_not_thin(self) -> None:
+        # Bullets supersede accomplishments as structured role content: a role
+        # migrated to bullets-only must not read as title-and-date-only.
+        v = _coherent_vault()
+        v.experiences[0].description = ""
+        v.experiences[0].accomplishments = []
+        v.experiences[0].bullets = [BulletSchema(text="Owned the data platform")]
+        assert "experience.thin" not in _codes(v)
+
+    def test_empty_experience_is_still_thin(self) -> None:
+        v = _coherent_vault()
+        v.experiences[0].description = ""
+        v.experiences[0].accomplishments = []
+        v.experiences[0].bullets = []
+        assert "experience.thin" in _codes(v)
 
     def test_cross_story_contradiction_becomes_finding(self) -> None:
         exp = ExperienceSchema(title="Role")

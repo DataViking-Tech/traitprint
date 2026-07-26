@@ -57,11 +57,20 @@ narrative text. Constraints:
   in the schema):
   - experiences: `id, title, company, start_date, end_date,
     accomplishments, skill_ids, skill_links, scope, artifact_links,
-    source, created_at, updated_at` — `scope` is the optional quantified
-    role-scope block (reporting line, direct/indirect headcount,
-    functions owned, budget/hiring/decision authority, platform scale,
-    org context); set only the fields you know — an absent scope is
-    omitted entirely, never written as `null` or `{}`
+    bullets, source, created_at, updated_at` — `scope` is the optional
+    quantified role-scope block (reporting line, direct/indirect
+    headcount, functions owned, budget/hiring/decision authority,
+    platform scale, org context); set only the fields you know — an
+    absent scope is omitted entirely, never written as `null` or `{}`
+  - `bullets` (experiences, revision 1.7) is the structured resume-bullet
+    inventory: each entry is `{id, text, story_ids, skill_ids,
+    theme_tags, source, created_at, updated_at}` — `text` non-blank and
+    ≤ 300 chars, at most 20 bullets per experience, an empty list is
+    omitted entirely. `story_ids` are the evidence chain (a bullet with
+    no resolving story link reads as self-reported); `skill_ids` name
+    what it demonstrates. Bullets supersede the free-text
+    `accomplishments` strings; hand-edit them here — proposal support is
+    a coordinated follow-up.
   - stories: `id, title, skill_ids, experience_id, outcome, theme_tags,
     artifact_links, source, created_at, updated_at`
   - `artifact_links` (stories AND experiences) is an optional list of
@@ -379,8 +388,9 @@ label or an integer 1-5. `find_story theme` matches `theme_tags` first,
 then body text; `get_philosophy` filters by `topic` and/or `category`.
 
 **Local ↔ hosted delta.** The two servers share the response envelope and
-the read-tool names (every local tool except `doctor` is also served
-hosted), but they are not interchangeable by swapping a URL:
+the read-tool names (every local tool except `doctor` — and, until its
+hosted mirror ships, `find_bullets` — is also served hosted), but they
+are not interchangeable by swapping a URL:
 
 - *Hosted adds:* `find_experience`; a `skill` filter, a `total` count, and
   an uncapped inventory on `find_story`; the proposal tools
@@ -389,10 +399,11 @@ hosted), but they are not interchangeable by swapping a URL:
   `job_submit`).
 - *Hosted differs:* its `find_story` nulls `lesson` and never infers
   `outcome`; its `get_philosophy` has no `category` filter.
-- *Local adds:* `doctor`; a free-text `query` filter on `find_story` (at
-  least one filter is required); real `lesson` text; an inferred `outcome`
-  when a story doesn't declare one; the `category` filter on
-  `get_philosophy`.
+- *Local adds:* `doctor`; `find_bullets` (the resume-bullet inventory —
+  hosted mirror rolling out, local-only until it ships); a free-text
+  `query` filter on `find_story` (at least one filter is required); real
+  `lesson` text; an inferred `outcome` when a story doesn't declare one;
+  the `category` filter on `get_philosophy`.
 
 The workflow prompts — `fill_vault(focus?)`, `mine_story_gaps`,
 `discover_skills`, `draft_star_story(experience?)`, `audit_coherence`,

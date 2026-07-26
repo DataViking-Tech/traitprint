@@ -484,6 +484,7 @@ def _audit_philosophies(
 def _audit_experiences(
     vault: VaultSchema,
     skill_ids: set[str],
+    story_ids: set[str],
     experiences_with_story: set[str],
     out: list[Finding],
 ) -> None:
@@ -525,17 +526,52 @@ def _audit_experiences(
                     eid,
                 )
             )
-        if not exp.description and not exp.accomplishments:
+        # Bullets (contract revision 1.7) count as role content — a migrated
+        # role whose narrative lives entirely in structured bullets is not
+        # "just a title and a date range".
+        if not exp.description and not exp.accomplishments and not exp.bullets:
             out.append(
                 Finding(
                     "minor",
                     "experience.thin",
                     "experiences",
-                    f"Experience {exp.title!r} has no description and no "
-                    "accomplishments — it is just a title and a date range.",
+                    f"Experience {exp.title!r} has no description, no "
+                    "accomplishments, and no bullets — it is just a title "
+                    "and a date range.",
                     eid,
                 )
             )
+        # Bullet cross-references (contract rule 11): dangling ids are audit
+        # findings, mirroring the MCP layer's per-bullet dispute flags.
+        for bullet in exp.bullets:
+            bid = str(bullet.id)
+            excerpt = bullet.text if len(bullet.text) <= 50 else bullet.text[:49] + "…"
+            for ref in bullet.story_ids:
+                if str(ref) not in story_ids:
+                    out.append(
+                        Finding(
+                            DANGLING_REFERENCE_SEVERITY,
+                            "bullet.dangling_story",
+                            "experiences",
+                            f"Bullet {excerpt!r} on experience {exp.title!r} "
+                            f"cites evidence story {ref} that no longer exists "
+                            "in the vault.",
+                            bid,
+                        )
+                    )
+            for ref in bullet.skill_ids:
+                if str(ref) not in skill_ids:
+                    out.append(
+                        Finding(
+                            DANGLING_REFERENCE_SEVERITY,
+                            "bullet.dangling_skill",
+                            "experiences",
+                            f"Bullet {excerpt!r} on experience {exp.title!r} "
+                            f"references skill {ref} that no longer exists in "
+                            "the vault.",
+                            bid,
+                        )
+                    )
 
 
 # ── Style lint (warning-only findings) ──────────────────────────────
@@ -820,7 +856,7 @@ def audit_vault(
 
     _audit_profile(vault, findings)
     _audit_skills(vault, skills_with_evidence, findings)
-    _audit_experiences(vault, skill_ids, experiences_with_story, findings)
+    _audit_experiences(vault, skill_ids, story_ids, experiences_with_story, findings)
     _audit_story_references(vault, skill_ids, experience_ids, findings)
     _audit_philosophies(vault, story_ids, findings)
 
