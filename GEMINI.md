@@ -27,10 +27,12 @@ Read: `get_profile_summary`, `search_skills`, `find_story`,
 `find_experience`, `get_philosophy`, `vault_lens_list`, `vault_lens_get`.
 All but `find_experience` are shared with the local stdio server and use
 the same response envelope — but the servers are not identical: local
-additionally has a `doctor` tool, a free-text `query` filter on
-`find_story`, real `lesson` text, an inferred `outcome`, and a `category`
-filter on `get_philosophy`; hosted `find_story` instead has a `skill`
-filter and an uncapped `total` inventory.
+additionally has a `doctor` tool and the `find_bullets` resume-bullet
+inventory (its hosted mirror is rolling out — do not call it hosted yet),
+a free-text `query` filter on `find_story`, real `lesson` text, an
+inferred `outcome`, and a `category` filter on `get_philosophy`; hosted
+`find_story` instead has a `skill` filter and an uncapped `total`
+inventory.
 Write (staged, never direct): `vault_propose` creates a proposal the user
 must approve; `vault_list_proposals` shows pending ones; `vault_retract`
 withdraws one. Jobs (cloud-only): `jobs_search`, `jobs_match`, `job_get`,

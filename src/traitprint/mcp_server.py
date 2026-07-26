@@ -48,6 +48,7 @@ from mcp.server.fastmcp import FastMCP
 from traitprint import __version__
 from traitprint.schema import (
     RESERVED_LENS_SLUG,
+    BulletSchema,
     LensSchema,
     PhilosophySchema,
     SalienceLevel,
@@ -565,6 +566,9 @@ def _entity_updated_at(vault: VaultSchema) -> dict[UUID, datetime]:
     for group in groups:
         for item in group:
             updated[item.id] = item.updated_at
+    for exp in vault.experiences:
+        for bullet in exp.bullets:
+            updated[bullet.id] = bullet.updated_at
     return updated
 
 
@@ -640,6 +644,16 @@ def _compute_disputes(vault: VaultSchema) -> dict[UUID, dict[str, Any]]:
 
     for exp in vault.experiences:
         add(exp.id, _dangling_flags(exp.skill_ids, skill_ids, "skill_ids", "skill"))
+        # Bullets (contract revision 1.7) are referenceable claims; each is its
+        # own dispute entity so tailoring consumers see per-bullet trust state.
+        for bullet in exp.bullets:
+            bullet_flags = _dangling_flags(
+                bullet.story_ids, story_ids, "story_ids", "story"
+            )
+            bullet_flags += _dangling_flags(
+                bullet.skill_ids, skill_ids, "skill_ids", "skill"
+            )
+            add(bullet.id, bullet_flags)
 
     for phil in vault.philosophies:
         add(
@@ -693,6 +707,8 @@ def _entity_labels(vault: VaultSchema) -> dict[UUID, tuple[str, str]]:
         labels[skill.id] = ("skill", skill.name)
     for exp in vault.experiences:
         labels[exp.id] = ("experience", exp.title)
+        for bullet in exp.bullets:
+            labels[bullet.id] = ("bullet", bullet.text)
     for story in vault.stories:
         labels[story.id] = ("story", story.title)
     for phil in vault.philosophies:
@@ -773,6 +789,45 @@ def _resolve_lens(vault: VaultSchema, lens_arg: str | None) -> LensSchema | None
     return None
 
 
+def _bullet_salience(lens: LensSchema | None, bullet: BulletSchema) -> SalienceLevel:
+    """A bullet's emphasis under a lens, derived through its skill links.
+
+    Bullets carry no salience of their own — they inherit direction from the
+    lens's ``skill_salience`` transitively (one authoring surface, no
+    double-bookkeeping): a bullet is SUPPRESSED when it has skill links and
+    every one is suppressed; CORE when any link is core; SUPPORTING otherwise
+    (including unlinked bullets, and always when no lens applies).
+    """
+    if lens is None or not bullet.skill_ids:
+        return SalienceLevel.SUPPORTING
+    levels = [lens.salience_for(sid) for sid in bullet.skill_ids]
+    if all(level == SalienceLevel.SUPPRESSED for level in levels):
+        return SalienceLevel.SUPPRESSED
+    if any(level == SalienceLevel.CORE for level in levels):
+        return SalienceLevel.CORE
+    return SalienceLevel.SUPPORTING
+
+
+def _bullet_record(
+    bullet: BulletSchema,
+    story_ids: set[UUID],
+    disputes: dict[UUID, dict[str, Any]],
+) -> dict[str, Any]:
+    """The claim-sized bullet payload shared by every read surface.
+
+    ``evidenced`` is the trust signal: True only when at least one
+    ``story_id`` resolves to a vault story (a bullet with no links — or only
+    dangling ones — is a self-report, not a demonstrated claim).
+    """
+    return {
+        "id": str(bullet.id),
+        "text": bullet.text,
+        "evidenced": any(sid in story_ids for sid in bullet.story_ids),
+        "disputed": bullet.id in disputes,
+        "dispute": disputes.get(bullet.id),
+    }
+
+
 def _handle_get_profile_summary(
     vault: VaultSchema, depth: str, lens: LensSchema | None = None
 ) -> dict[str, Any]:
@@ -836,8 +891,28 @@ def _handle_get_profile_summary(
     # scope (contract revision 1.5) is included only when the role has one;
     # the dump carries only its set fields, so consumers never see nulls.
     # artifact_links (contract revision 1.6) likewise appears only when the
-    # role carries evidence links.
+    # role carries evidence links. bullets (contract revision 1.7) appear
+    # only when the role has visible ones — under a lens a bullet inherits
+    # emphasis through its skill links (core leads, all-suppressed hidden),
+    # so a suppressed bullet leaves no trace, matching suppressed skills.
     skill_name_by_id = {s.id: s.name for s in vault.skills}
+    vault_story_ids = {s.id for s in vault.stories}
+    _summary_rank = {
+        SalienceLevel.CORE: 0,
+        SalienceLevel.SUPPORTING: 1,
+    }
+
+    def _visible_bullets(e: Any) -> list[dict[str, Any]]:
+        kept = [
+            (b, _bullet_salience(lens, b))
+            for b in e.bullets
+            if _bullet_salience(lens, b) != SalienceLevel.SUPPRESSED
+        ]
+        kept.sort(key=lambda pair: _summary_rank[pair[1]])  # stable: vault order
+        return [
+            _bullet_record(b, vault_story_ids, disputes) for b, _level in kept[:5]
+        ]
+
     result["signature_experiences"] = [
         {
             "title": e.title,
@@ -861,6 +936,11 @@ def _handle_get_profile_summary(
                     ]
                 }
                 if e.artifact_links
+                else {}
+            ),
+            **(
+                {"bullets": bullets_visible}
+                if (bullets_visible := _visible_bullets(e))
                 else {}
             ),
             "evidence": None,
@@ -950,6 +1030,77 @@ def _handle_vault_lens_get(vault: VaultSchema, slug_or_id: str) -> dict[str, Any
         # disputed (the title/name resolves to None above for the broken ref).
         "disputed": dispute is not None,
         "dispute": dispute,
+    }
+
+
+def _handle_find_bullets(
+    vault: VaultSchema,
+    query: str | None,
+    skill: str | None,
+    lens: LensSchema | None,
+    limit: int,
+) -> dict[str, Any]:
+    """Query the vault-wide bullet inventory (contract revision 1.7).
+
+    The tailoring surface: every experience's bullets, filterable by
+    free-text ``query`` (bullet text + theme tags), by ``skill`` name
+    (case-insensitive substring over the linked skills), and projectable
+    through a ``lens``. NO default lens is auto-applied — the inventory
+    stays complete unless a lens is explicitly requested, because hiding
+    suppressed bullets silently would defeat "inventory" (a tailoring agent
+    must be able to see everything it may draw from).
+
+    With a lens: all-suppressed bullets drop out, and each match carries its
+    derived ``emphasis`` (core/supporting via skill links). Ordering is
+    deterministic: emphasis (core first), evidenced before self-reported,
+    newest first, id tiebreak.
+    """
+    disputes = _compute_disputes(vault)
+    vault_story_ids = {s.id for s in vault.stories}
+    skill_name_by_id = {s.id: s.name for s in vault.skills}
+    q = (query or "").strip().lower()
+    skill_q = (skill or "").strip().lower()
+
+    matches: list[tuple[tuple[int, int, float, str], dict[str, Any]]] = []
+    for exp in vault.experiences:
+        for bullet in exp.bullets:
+            emphasis = _bullet_salience(lens, bullet)
+            if lens is not None and emphasis == SalienceLevel.SUPPRESSED:
+                continue
+            names = [
+                skill_name_by_id[sid]
+                for sid in bullet.skill_ids
+                if sid in skill_name_by_id
+            ]
+            if skill_q and not any(skill_q in n.lower() for n in names):
+                continue
+            haystack = " ".join([bullet.text, *bullet.theme_tags]).lower()
+            if q and q not in haystack:
+                continue
+            record = {
+                **_bullet_record(bullet, vault_story_ids, disputes),
+                "experience_id": str(exp.id),
+                "experience_title": exp.title,
+                "skills": names,
+                "theme_tags": bullet.theme_tags,
+                "story_ids": [str(sid) for sid in bullet.story_ids],
+            }
+            if lens is not None:
+                record["emphasis"] = emphasis.value
+            sort_key = (
+                0 if emphasis == SalienceLevel.CORE else 1,
+                0 if record["evidenced"] else 1,
+                -bullet.updated_at.timestamp(),
+                str(bullet.id),
+            )
+            matches.append((sort_key, record))
+
+    matches.sort(key=lambda pair: pair[0])
+    records = [record for _key, record in matches]
+    return {
+        "bullets": records[:limit],
+        "total": len(records),
+        **({"lens": lens.slug} if lens is not None else {}),
     }
 
 
@@ -1254,9 +1405,10 @@ Serving context: you received this workflow over MCP. If you have shell
 access, run the `traitprint` commands above yourself. If not, do reads with
 the MCP tools (`doctor` to orient on vault phase and freshness,
 `get_profile_summary` with depth="detailed", `search_skills`, `find_story`,
-`get_philosophy`, and `vault_lens_list` / `vault_lens_get` for positioning
-lenses) and hand the user the exact `traitprint` command for every write
-instead of running it."""
+`get_philosophy`, `find_bullets` for the resume-bullet inventory, and
+`vault_lens_list` / `vault_lens_get` for positioning lenses) and hand the
+user the exact `traitprint` command for every write instead of running
+it."""
 
 # Optional user customization: a ``custom.md`` at the vault root is the
 # user-owned instruction layer (never written by the package, survives pip
@@ -1423,6 +1575,34 @@ def create_server(store: VaultStore) -> FastMCP:
         if not lens.strip():
             raise ValueError("lens (slug or id) must be non-empty")
         return _envelope(_handle_vault_lens_get(store.load(), lens))
+
+    @mcp.tool(
+        description=(
+            "Query the resume-bullet inventory: claim-sized, referenceable "
+            "bullet points on experiences, each optionally backed by stories "
+            "(evidenced=true) and tagged with the skills it demonstrates. "
+            "Built for resume tailoring — select and order bullet ids "
+            "instead of regenerating prose. Filters: query (free-text over "
+            "bullet text + theme tags), skill (name substring over linked "
+            "skills), lens (slug or id — projects the inventory through a "
+            "positioning lens: bullets whose skills are all suppressed drop "
+            "out and each match carries a derived emphasis). NO default "
+            "lens is auto-applied: without an explicit lens the inventory "
+            "is complete."
+        )
+    )
+    def find_bullets(
+        query: str | None = None,
+        skill: str | None = None,
+        lens: str | None = None,
+        limit: int = 20,
+    ) -> dict[str, Any]:
+        limit = max(1, min(limit, 50))
+        vault = store.load()
+        # Explicit-only lens projection (no default auto-apply) — pass the
+        # arg through _resolve_lens only when the caller named one.
+        resolved = _resolve_lens(vault, lens) if lens else None
+        return _envelope(_handle_find_bullets(vault, query, skill, resolved, limit))
 
     @mcp.tool(
         description=(

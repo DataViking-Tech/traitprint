@@ -65,6 +65,7 @@ EXPERIENCE_FRONTMATTER_KEYS = (
     "skill_links",
     "scope",
     "artifact_links",
+    "bullets",
     "source",
     "created_at",
     "updated_at",
@@ -77,8 +78,9 @@ EXPERIENCE_FRONTMATTER_KEYS = (
 # additive in revision 1.5 and an unset scope is dropped from the model
 # dump itself, never serialized as null; ``artifact_links`` is additive
 # in revision 1.6 on experiences AND stories — an empty list never
-# reaches frontmatter).
-_OMIT_WHEN_EMPTY = ("skill_links", "scope", "artifact_links")
+# reaches frontmatter; ``bullets`` is additive in revision 1.7 on
+# experiences).
+_OMIT_WHEN_EMPTY = ("skill_links", "scope", "artifact_links", "bullets")
 STORY_FRONTMATTER_KEYS = (
     "id",
     "title",
@@ -172,6 +174,10 @@ def _normalize_yaml_value(value: Any) -> Any:
         return value.isoformat()
     if isinstance(value, list):
         return [_normalize_yaml_value(v) for v in value]
+    if isinstance(value, dict):
+        # Nested mappings (bullets, skill_links, …) can carry the same
+        # YAML-native date coercions as top-level keys.
+        return {k: _normalize_yaml_value(v) for k, v in value.items()}
     return value
 
 

@@ -21,6 +21,7 @@ from traitprint.git_ops import commit, init_repo
 from traitprint.git_ops import log as git_log
 from traitprint.schema import (
     ArtifactLink,
+    BulletSchema,
     EducationSchema,
     ExperienceSchema,
     ExperienceScope,
@@ -395,6 +396,78 @@ class TestV1RoundTrip:
         assert loaded.experiences[0].artifact_links == [
             ArtifactLink(url="https://github.com/acme/platform", label="repo")
         ]
+
+    def test_vault_without_bullets_round_trips_byte_identically(
+        self, vault_dir: Path
+    ) -> None:
+        """Contract revision 1.7 is additive: a vault that never set
+        bullets must read+write byte-identically — no ``bullets`` key
+        (and no empty list) may appear on rewrite."""
+        store = VaultStore(vault_dir)
+        store.save(_full_vault())
+        before = _tree_bytes(vault_dir)
+        loaded = store.load()
+        assert loaded.experiences[0].bullets == []
+        store.save(loaded, bump_updated_at=False)
+        assert _tree_bytes(vault_dir) == before
+        text = (vault_dir / "experiences" / "staff-engineer-acme.md").read_text()
+        assert "bullets" not in text
+
+    def test_bullets_round_trip_byte_identically(self, vault_dir: Path) -> None:
+        """Bullets (evidence links, skill links, tags) survive
+        save→load→save with exact bytes."""
+        store = VaultStore(vault_dir)
+        vault = _full_vault()
+        story_id = vault.stories[0].id
+        skill_id = vault.skills[0].id
+        vault.experiences[0].bullets = [
+            BulletSchema(
+                text="Cut warehouse spend 45% migrating Redshift to BigQuery",
+                story_ids=[story_id],
+                skill_ids=[skill_id],
+                theme_tags=["cost", "migration"],
+            ),
+            BulletSchema(text="Owned the on-call rotation redesign"),
+        ]
+        store.save(vault)
+        before = _tree_bytes(vault_dir)
+        loaded = store.load()
+        assert loaded.experiences[0].bullets == vault.experiences[0].bullets
+        store.save(loaded, bump_updated_at=False)
+        assert _tree_bytes(vault_dir) == before
+
+    def test_hand_edited_bullets_load(self, vault_dir: Path) -> None:
+        """Agents hand-edit these files; bullets added by hand must load —
+        including YAML-native (unquoted) timestamps inside the nested
+        mappings — and blank text must be rejected at load."""
+        store = VaultStore(vault_dir)
+        store.save(_full_vault())
+        path = vault_dir / "experiences" / "staff-engineer-acme.md"
+        fm, body = parse_markdown(path.read_text(), path=path)
+        fm["bullets"] = [
+            {
+                "id": str(uuid4()),
+                "text": "Shipped the data platform rewrite",
+                "story_ids": [],
+                "skill_ids": [],
+                "theme_tags": [],
+                "source": "manual",
+                # Unquoted in YAML -> loads as datetime; the reader must
+                # still produce a valid model.
+                "created_at": "2026-07-01T00:00:00+00:00",
+                "updated_at": "2026-07-01T00:00:00+00:00",
+            }
+        ]
+        path.write_text(render_markdown(fm, body))
+        loaded = store.load()
+        assert loaded.experiences[0].bullets[0].text == (
+            "Shipped the data platform rewrite"
+        )
+
+        fm["bullets"][0]["text"] = "   "
+        path.write_text(render_markdown(fm, body))
+        with pytest.raises(Exception, match="non-blank"):
+            store.load()
 
     def test_hand_edited_scope_loads(self, vault_dir: Path) -> None:
         """Agents hand-edit these files; a scope mapping added by hand

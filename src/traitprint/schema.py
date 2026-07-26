@@ -218,6 +218,48 @@ class ArtifactLink(BaseModel):
         return {k: v for k, v in data.items() if v is not None}
 
 
+# Caps for resume bullets (contract revision 1.7). A bullet is a
+# claim-sized, referenceable resume line — narrative belongs in the
+# experience body or the backing story.
+BULLET_TEXT_MAX = 300
+MAX_BULLETS = 20
+
+
+class BulletSchema(BaseModel):
+    """One resume bullet on an experience (contract revision 1.7, additive).
+
+    The claim-sized middle layer between evidence and rendering:
+    ``story (evidence) -> bullet (claim) -> resume line (per-job selection)``.
+    Bullets form a referenceable inventory — resume tailoring (Traitprint's
+    own tooling or any agent over MCP) selects and orders bullet *ids*
+    instead of regenerating prose.
+
+    ``story_ids`` is the evidence chain: a bullet with resolving story
+    links is *demonstrated*; one without is *self-reported* (surfaced as
+    ``evidenced: false`` on the read surface — the same trust signal as an
+    ``evidence_count: 0`` skill). ``skill_ids`` name what the bullet
+    demonstrates and let lenses re-weight bullets transitively through
+    skill salience. Dangling references flag the bullet ``disputed`` via
+    the standard ``dangling_reference`` machinery.
+    """
+
+    id: UUID = Field(default_factory=uuid4)
+    text: str = Field(min_length=1, max_length=BULLET_TEXT_MAX)
+    story_ids: list[UUID] = Field(default_factory=list)
+    skill_ids: list[UUID] = Field(default_factory=list)
+    theme_tags: list[str] = Field(default_factory=list)
+    source: str = "manual"
+    created_at: datetime = Field(default_factory=_now)
+    updated_at: datetime = Field(default_factory=_now)
+
+    @field_validator("text")
+    @classmethod
+    def _validate_text(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("bullet text must be non-blank")
+        return value
+
+
 class ExperienceSchema(BaseModel):
     """A work experience entry.
 
@@ -248,6 +290,16 @@ class ExperienceSchema(BaseModel):
     key; it defaults to an empty list and is not emitted into
     frontmatter when empty, so pre-1.6 vaults round-trip
     byte-identically.
+
+    ``bullets`` (contract revision 1.7, additive) is the structured
+    resume-bullet inventory for the role — up to ``MAX_BULLETS``
+    :class:`BulletSchema` entries, each a referenceable claim optionally
+    backed by stories (``story_ids``) and tagged with the skills it
+    demonstrates. Bullets supersede the free-text ``accomplishments``
+    strings as the structured inventory; ``accomplishments`` remains
+    valid legacy text. Vaults written before 1.7 omit the key; it
+    defaults to an empty list and is not emitted into frontmatter when
+    empty, so pre-1.7 vaults round-trip byte-identically.
     """
 
     id: UUID = Field(default_factory=uuid4)
@@ -263,6 +315,7 @@ class ExperienceSchema(BaseModel):
     artifact_links: list[ArtifactLink] = Field(
         default_factory=list, max_length=MAX_ARTIFACT_LINKS
     )
+    bullets: list[BulletSchema] = Field(default_factory=list, max_length=MAX_BULLETS)
     source: str = "manual"
     created_at: datetime = Field(default_factory=_now)
     updated_at: datetime = Field(default_factory=_now)
