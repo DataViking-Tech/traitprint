@@ -32,6 +32,7 @@ from traitprint.mcp_server import (
     SERVER_NAME,
     SERVER_VERSION,
     _audit_coherence_prompt,
+    _bullet_salience,
     _coerce_min_proficiency,
     _compute_disputes,
     _deepen_story_prompt,
@@ -40,6 +41,7 @@ from traitprint.mcp_server import (
     _envelope,
     _fill_vault_prompt,
     _flag_order_key,
+    _handle_find_bullets,
     _handle_find_story,
     _handle_get_philosophy,
     _handle_get_profile_summary,
@@ -57,6 +59,7 @@ from traitprint.mcp_server import (
 from traitprint.schema import (
     MAX_LENSES,
     ArtifactLink,
+    BulletSchema,
     ExperienceSchema,
     ExperienceScope,
     LensSchema,
@@ -1146,6 +1149,7 @@ class TestServerRegistration:
             "get_profile_summary",
             "search_skills",
             "find_story",
+            "find_bullets",
             "get_philosophy",
             "vault_lens_list",
             "vault_lens_get",
@@ -1430,6 +1434,7 @@ class TestStdioRoundTrip:
             "get_profile_summary",
             "search_skills",
             "find_story",
+            "find_bullets",
             "get_philosophy",
             "vault_lens_list",
             "vault_lens_get",
@@ -1785,3 +1790,196 @@ class TestLensRenderGoldenFixture:
         assert [
             e["title"] for e in out["signature_experiences"]
         ] == exp["signature_experience_titles"]
+
+
+# ── Resume-bullet inventory (contract revision 1.7) ─────────────────
+
+
+class TestBullets:
+    """The bullet inventory: evidence chain, lens emphasis, find_bullets."""
+
+    def _vault(self) -> dict[str, Any]:
+        """One vault, two roles, four bullets across the emphasis space."""
+        arch = SkillSchema(
+            name="Data Architecture", category="technical", proficiency=4
+        )
+        prod = SkillSchema(
+            name="Product Management", category="business", proficiency=5
+        )
+        story = StorySchema(
+            title="Big Migration", situation="s", task="t", action="a", result="r"
+        )
+        b_core = BulletSchema(
+            text="Redesigned the platform architecture across 3 teams",
+            story_ids=[story.id],
+            skill_ids=[arch.id],
+            theme_tags=["architecture"],
+        )
+        b_suppressed = BulletSchema(
+            text="Drove the product roadmap for the data suite",
+            skill_ids=[prod.id],
+        )
+        b_plain = BulletSchema(text="Ran the weekly ops review")
+        b_dangling = BulletSchema(
+            text="Cut spend 45% in the warehouse migration",
+            story_ids=[uuid4()],  # dangling evidence link
+        )
+        exp_a = ExperienceSchema(
+            title="Staff Engineer",
+            company="Acme",
+            start_date="2021-01",
+            bullets=[b_core, b_suppressed, b_plain],
+        )
+        exp_b = ExperienceSchema(
+            title="Engineering Manager",
+            company="Acme",
+            start_date="2023-01",
+            bullets=[b_dangling],
+        )
+        lens = LensSchema(
+            slug="ic-architecture",
+            name="IC / Architecture",
+            skill_salience={
+                arch.id: SalienceLevel.CORE,
+                prod.id: SalienceLevel.SUPPRESSED,
+            },
+            is_default=True,
+        )
+        vault = VaultSchema(
+            profile=ProfileSchema(display_name="W"),
+            skills=[arch, prod],
+            stories=[story],
+            experiences=[exp_a, exp_b],
+            lenses=[lens],
+        )
+        return {
+            "vault": vault,
+            "lens": lens,
+            "story": story,
+            "bullets": {
+                "core": b_core,
+                "suppressed": b_suppressed,
+                "plain": b_plain,
+                "dangling": b_dangling,
+            },
+        }
+
+    def test_bullet_salience_derives_through_skill_links(self) -> None:
+        fx = self._vault()
+        lens = fx["lens"]
+        b = fx["bullets"]
+        assert _bullet_salience(lens, b["core"]) is SalienceLevel.CORE
+        assert _bullet_salience(lens, b["suppressed"]) is SalienceLevel.SUPPRESSED
+        # Unlinked bullets are supporting under any lens; everything is
+        # supporting with no lens at all.
+        assert _bullet_salience(lens, b["plain"]) is SalienceLevel.SUPPORTING
+        assert _bullet_salience(None, b["core"]) is SalienceLevel.SUPPORTING
+
+    def test_mixed_links_core_wins_over_suppressed(self) -> None:
+        fx = self._vault()
+        lens = fx["lens"]
+        arch_id = fx["vault"].skills[0].id
+        prod_id = fx["vault"].skills[1].id
+        mixed = BulletSchema(text="x", skill_ids=[arch_id, prod_id])
+        # Any core link leads even when another link is suppressed —
+        # all-suppressed is the only hiding condition.
+        assert _bullet_salience(lens, mixed) is SalienceLevel.CORE
+
+    def test_dangling_bullet_refs_flag_the_bullet_disputed(self) -> None:
+        fx = self._vault()
+        disputes = _compute_disputes(fx["vault"])
+        dangling = fx["bullets"]["dangling"]
+        assert dangling.id in disputes
+        flag = disputes[dangling.id]["flags"][0]
+        assert flag["type"] == "dangling_reference"
+        assert flag["detail"]["field"] == "story_ids"
+        assert flag["detail"]["target"] == "story"
+        # Clean bullets stay undisputed; the roll-up labels the entity as a
+        # bullet with its text.
+        assert fx["bullets"]["core"].id not in disputes
+        rollup = _handle_get_profile_summary(fx["vault"], "detailed")["disputes"]
+        entry = next(
+            e for e in rollup["entities"] if e["entity_id"] == str(dangling.id)
+        )
+        assert entry["kind"] == "bullet"
+        assert entry["label"] == dangling.text
+
+    def test_find_bullets_full_inventory_ignores_default_lens(self) -> None:
+        # The vault's lens is is_default=True, but find_bullets must NOT
+        # auto-apply it: the inventory stays complete (4 bullets, including
+        # the one whose only skill is suppressed under that lens).
+        fx = self._vault()
+        out = _handle_find_bullets(fx["vault"], None, None, None, 20)
+        assert out["total"] == 4
+        assert "lens" not in out
+        texts = {b["text"] for b in out["bullets"]}
+        assert fx["bullets"]["suppressed"].text in texts
+        # Every record carries the evidence signal.
+        by_text = {b["text"]: b for b in out["bullets"]}
+        assert by_text[fx["bullets"]["core"].text]["evidenced"] is True
+        # A dangling-only evidence link is NOT evidenced (and is disputed).
+        assert by_text[fx["bullets"]["dangling"].text]["evidenced"] is False
+        assert by_text[fx["bullets"]["dangling"].text]["disputed"] is True
+
+    def test_find_bullets_lens_projection(self) -> None:
+        fx = self._vault()
+        lens = _resolve_lens(fx["vault"], "ic-architecture")
+        out = _handle_find_bullets(fx["vault"], None, None, lens, 20)
+        assert out["lens"] == "ic-architecture"
+        texts = [b["text"] for b in out["bullets"]]
+        # The all-suppressed bullet is hidden; the core bullet leads.
+        assert fx["bullets"]["suppressed"].text not in texts
+        assert texts[0] == fx["bullets"]["core"].text
+        assert out["bullets"][0]["emphasis"] == "core"
+        assert all("emphasis" in b for b in out["bullets"])
+
+    def test_find_bullets_filters(self) -> None:
+        fx = self._vault()
+        # skill: name substring over linked skills.
+        out = _handle_find_bullets(fx["vault"], None, "architecture", None, 20)
+        assert [b["text"] for b in out["bullets"]] == [fx["bullets"]["core"].text]
+        # query: free text over bullet text + theme tags.
+        out = _handle_find_bullets(fx["vault"], "warehouse", None, None, 20)
+        assert [b["text"] for b in out["bullets"]] == [
+            fx["bullets"]["dangling"].text
+        ]
+        out = _handle_find_bullets(fx["vault"], "architecture", None, None, 20)
+        # matches the theme tag AND the other bullet's text substring
+        assert fx["bullets"]["core"].text in [b["text"] for b in out["bullets"]]
+
+    def test_profile_summary_bullets_are_lens_aware(self) -> None:
+        fx = self._vault()
+        vault = fx["vault"]
+        lens = _resolve_lens(vault, "ic-architecture")
+        out = _handle_get_profile_summary(vault, "detailed", lens)
+        staff = next(
+            e for e in out["signature_experiences"] if e["title"] == "Staff Engineer"
+        )
+        texts = [b["text"] for b in staff["bullets"]]
+        # Suppressed hidden, core first, and each entry carries the trust
+        # signals.
+        assert fx["bullets"]["suppressed"].text not in texts
+        assert texts[0] == fx["bullets"]["core"].text
+        assert staff["bullets"][0]["evidenced"] is True
+        assert staff["bullets"][0]["disputed"] is False
+
+    def test_profile_summary_omits_bullets_when_none_visible(self) -> None:
+        fx = self._vault()
+        vault = fx["vault"]
+        # An experience with no bullets never gains the key (canonical and
+        # lens renderings alike).
+        bare = ExperienceSchema(title="Old Role", company="X", start_date="2019-01")
+        vault.experiences.append(bare)
+        out = _handle_get_profile_summary(vault, "detailed")
+        old = next(
+            (e for e in out["signature_experiences"] if e["title"] == "Old Role"),
+            None,
+        )
+        if old is not None:  # only 3 signature slots; assert only if present
+            assert "bullets" not in old
+
+    def test_bullet_text_validation(self) -> None:
+        with pytest.raises(ValueError, match="non-blank"):
+            BulletSchema(text="   ")
+        with pytest.raises(ValueError):
+            BulletSchema(text="x" * 301)

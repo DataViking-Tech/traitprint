@@ -162,7 +162,7 @@ Traitprint is designed so an AI agent does most of the heavy lifting — both
 *reading* your vault and *helping you fill it out and keep it honest*. The MCP
 server exposes two kinds of primitive:
 
-**Seven read-only query tools.** They share the hosted cloud server's
+**Eight read-only query tools.** They share the hosted cloud server's
 response envelope, and every tool except `doctor` is served hosted too —
 but the surfaces are not identical (the hosted server layers proposal and
 jobs tools on top, and a few filters differ); the full local ↔ hosted
@@ -173,6 +173,7 @@ delta lives in [`AGENTS.md`](AGENTS.md):
 | `get_profile_summary` | a one-shot identity primer — headline, bio, top skills; optional `lens` renders it through a positioning lens |
 | `search_skills` | "what do they know about X?" — taxonomy- and graph-aware skill search |
 | `find_story` | "tell me about a time when…" — STAR narrative retrieval by free-text query, situation, theme, or outcome |
+| `find_bullets` | the resume-bullet inventory — referenceable, story-backed bullet points to select from when tailoring; filter by query, skill, or lens |
 | `get_philosophy` | "what's their stance on X?" — filter by topic and/or category |
 | `vault_lens_list` | which positioning lenses exist, and which is the default |
 | `vault_lens_get` | one lens in full — salience map, signature content, overrides |
@@ -350,9 +351,10 @@ coaching workflows compose instead of starting from scratch each time.
 
 - **Local vault** — a plain JSON + markdown file tree on your laptop,
   versioned with git.
-- **MCP server (stdio)** — seven query tools (`get_profile_summary`,
-  `search_skills`, `find_story`, `get_philosophy`, `vault_lens_list`,
-  `vault_lens_get`, and local-only `doctor`) and eight workflow prompts
+- **MCP server (stdio)** — eight query tools (`get_profile_summary`,
+  `search_skills`, `find_story`, `find_bullets`, `get_philosophy`,
+  `vault_lens_list`, `vault_lens_get`, and local-only `doctor`) and
+  eight workflow prompts
   (`fill_vault`, `mine_story_gaps`, `discover_skills`, `draft_star_story`,
   `audit_coherence`, `position_lens`, `deepen_story`, `improve_profile`).
 - **Agent Skills** — the same workflows as SKILL.md skills under

@@ -24,7 +24,8 @@ to the hosted MCP tools otherwise.
 ## Hosted MCP tools
 
 Read: `get_profile_summary`, `search_skills`, `find_story`,
-`find_experience`, `get_philosophy`, `vault_lens_list`, `vault_lens_get`.
+`find_experience`, `find_bullets`, `get_philosophy`, `vault_lens_list`,
+`vault_lens_get`.
 All but `find_experience` are shared with the local stdio server and use
 the same response envelope — but the servers are not identical: local
 additionally has a `doctor` tool, a free-text `query` filter on

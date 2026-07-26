@@ -2,7 +2,7 @@
 
 **Status:** Stable contract (Phase 0 of the
 [agent-native architecture](../../agent-native-architecture.md))
-**Contract revision:** 1.6 (additive over 1.5 — see [Versioning](#versioning))
+**Contract revision:** 1.7 (additive over 1.6 — see [Versioning](#versioning))
 **Consumers:** the `traitprint` CLI/MCP server (read+write) and the
 traitprint-cloud ingest pipeline (validate+project).
 
@@ -126,7 +126,27 @@ meaning — no contract revision tracks it.
    pre-1.6 vaults round-trip byte-identically. Links ride their parent
    entity through lenses (salience/suppression unaffected). Additive —
    `schema_version` stays `1`.
-11. **Readers accept v0 (`vault.json`) and v1; writers emit v1 only.**
+11. **An experience's `bullets[]` (optional, revision 1.7) are its
+   structured resume-bullet inventory** (`$defs/bullet`): claim-sized,
+   referenceable bullet points that resume tailoring (Traitprint tooling
+   or agents over MCP) selects by *id* instead of regenerating prose.
+   Each entry is `{ id, text, story_ids[], skill_ids[], theme_tags[],
+   source, created_at, updated_at }`: `text` is required, non-blank, and
+   capped at **300 characters** (narrative belongs in the body or the
+   backing story); `story_ids[]` is the **evidence chain** (a bullet with
+   at least one resolving story link is *demonstrated*; one without is
+   *self-reported*); `skill_ids[]` name what the bullet demonstrates and
+   let positioning lenses re-weight bullets transitively through skill
+   salience (a bullet whose linked skills are all `suppressed` is hidden
+   under that lens; any `core` link leads). At most **20 bullets per
+   experience**. Dangling `story_ids`/`skill_ids` are audit findings
+   (`dangling_reference`), never parse errors. Bullets supersede the
+   free-text `accomplishments[]` strings as the structured inventory;
+   `accomplishments` remains valid legacy text. The list defaults to
+   empty and an empty list is **never written** to frontmatter, so
+   pre-1.7 vaults round-trip byte-identically. Additive —
+   `schema_version` stays `1`.
+12. **Readers accept v0 (`vault.json`) and v1; writers emit v1 only.**
    `traitprint vault migrate` converts v0→v1 in place as a single git
    commit. The lossless single-document JSON export remains available for
    v0 consumers.
@@ -142,6 +162,19 @@ they implement.
 
 ### Revision history
 
+- **1.7 (2026-07-26)** — additive: optional `bullets[]` on the experience
+  entity (`$defs/experienceFrontmatter`, `$defs/bullet`) — the structured
+  resume-bullet inventory (see rule 11). Each entry is `{ id, text,
+  story_ids[], skill_ids[], theme_tags[], source, created_at,
+  updated_at }`: `text` required, non-blank, ≤ 300 characters; at most 20
+  bullets per experience. `story_ids[]` form the evidence chain
+  (resolving link ⇒ demonstrated, none ⇒ self-reported); `skill_ids[]`
+  drive transitive lens emphasis (all-suppressed hidden, any-core leads).
+  Bullets supersede `accomplishments[]` as the structured inventory
+  (`accomplishments` remains valid legacy text). An empty list never
+  reaches frontmatter, so pre-1.7 vaults round-trip byte-identically.
+  Cloud mirrors the inventory 1:1 (bullet coordination, in tandem).
+  Older vaults without the key remain valid; `schema_version` stays `1`.
 - **1.6 (2026-07-17)** — additive: optional `artifact_links[]` on the
   story AND experience entities (`$defs/storyFrontmatter`,
   `$defs/experienceFrontmatter`, `$defs/artifactLink`) — provenance

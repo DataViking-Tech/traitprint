@@ -79,7 +79,7 @@ narrative text. Constraints:
   skills the story evidences; an experience's `skill_ids` are the skills
   exercised in that role, and its optional `skill_links` entries annotate
   per-role emphasis on top of that list. (Both are additive, optional
-  keys; the current vault contract revision is 1.6 — `traitprint
+  keys; the current vault contract revision is 1.7 — `traitprint
   proposals contract --json` prints the live contract.) A dangling
   UUID does not break parsing — it surfaces as an audit finding. Never
   fabricate UUIDs; copy them from `traitprint vault list` output.
@@ -358,10 +358,17 @@ Client config (Claude Desktop, Cursor, Zed, …):
   "env": {"TRAITPRINT_VAULT_DIR": "/home/you/.traitprint"}}}}
 ```
 
-Seven read-only tools: `get_profile_summary`, `vault_lens_list`,
-`vault_lens_get`, `search_skills`, `find_story`, `get_philosophy`, and
+Eight read-only tools: `get_profile_summary`, `vault_lens_list`,
+`vault_lens_get`, `search_skills`, `find_story`, `find_bullets`,
+`get_philosophy`, and
 `doctor` (session-start orientation: vault phase + freshness findings,
 each naming the fix skill; local-only, no hosted counterpart).
+`find_bullets` queries the resume-bullet inventory (contract revision
+1.7): claim-sized bullet points on experiences, each optionally backed by
+stories (`evidenced`) and tagged with the skills it demonstrates — built
+so tailoring selects bullet *ids* instead of regenerating prose. Filter
+by `query`, `skill`, and an optional `lens` (no default lens is
+auto-applied: the inventory stays complete unless a lens is named).
 `get_profile_summary` takes an optional `lens` (slug or id) to project
 the profile through a positioning lens; pass `lens="none"` to force the
 canonical rendering. Every tool returns a

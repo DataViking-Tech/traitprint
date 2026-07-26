@@ -9,6 +9,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Resume-bullet inventory (vault contract revision 1.7, additive).**
+  `experiences/*.md` frontmatter gains an optional `bullets` list — the
+  claim-sized middle layer between evidence and rendering
+  (`story → bullet → resume line`). Each entry is
+  `{id, text, story_ids, skill_ids, theme_tags, source, created_at,
+  updated_at}`: `text` is required, non-blank, capped at 300 characters;
+  at most 20 bullets per experience. `story_ids` form the **evidence
+  chain** (a bullet with a resolving story link is demonstrated; one
+  without is self-reported, surfaced as `evidenced: false`);
+  `skill_ids` name what the bullet demonstrates. Dangling references
+  flag the bullet `disputed` via the standard `dangling_reference`
+  machinery (each bullet is its own dispute entity, kind `bullet`).
+  Bullets supersede the free-text `accomplishments` strings as the
+  structured inventory; `accomplishments` remains valid legacy text. An
+  empty list never reaches frontmatter, so pre-1.7 vaults round-trip
+  byte-identically. Proposal support (`bullets` in experience payloads)
+  is deferred to the cloud-coordinated follow-up.
+- **`find_bullets` MCP tool** — queries the vault-wide bullet inventory
+  for resume tailoring: filter by free-text `query` (bullet text + theme
+  tags), `skill` (name substring over linked skills), and an optional
+  `lens`. Bullets inherit lens emphasis transitively through their skill
+  links (any `core` link leads; all-suppressed bullets are hidden under
+  that lens) — no per-bullet salience bookkeeping. No default lens is
+  auto-applied: without an explicit `lens` the inventory is complete.
+  `get_profile_summary` (detailed) now carries each signature
+  experience's visible bullets (core-first, capped at 5, omitted when
+  none), lens-aware like the rest of the summary.
+
 - **Artifact links (vault contract revision 1.6, additive) — provenance
   ladder rung 1.** `stories/*.md` AND `experiences/*.md` frontmatter gain
   an optional `artifact_links` list of evidence URLs pointing at public
