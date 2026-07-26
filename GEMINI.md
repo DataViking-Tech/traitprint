@@ -40,7 +40,9 @@ inventory.
 Write (staged, never direct): `vault_propose` creates a proposal the user
 must approve; `vault_list_proposals` shows pending ones; `vault_retract`
 withdraws one. Jobs (cloud-only): `jobs_search`, `jobs_match`, `job_get`,
-`resume_tailor`, `job_submit`.
+`resume_tailor`, `job_submit`. Trust (cloud-only): `scan_profile` re-runs
+the hosted trust-layer scan (contradictions + evidence gaps; rate-capped,
+acknowledged findings are not re-raised).
 Tools are scope-filtered per session — if a tool is missing, the user
 granted a narrower scope. OAuth grants also freeze the scope set at
 consent time: a tool gated on a scope added *after* the user connected

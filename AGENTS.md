@@ -403,10 +403,12 @@ hosted), but they are not interchangeable by swapping a URL:
 
 - *Hosted adds:* `find_experience`; read-only `vault_sync_status` (server
   head + ingest/quarantine state — the hosted server cannot reach a local
-  vault, so mutating sync stays local); a `skill` filter, a `total` count,
-  and an uncapped inventory on `find_story`; the proposal tools
-  (`vault_propose`, `vault_list_proposals`, `vault_retract`); and the jobs
-  tools (`jobs_match`, `jobs_search`, `job_get`, `resume_tailor`,
+  vault, so mutating sync stays local); `scan_profile` (re-runs the hosted
+  trust-layer scan: contradictions + evidence gaps; rate-capped); a
+  `skill` filter, a `total` count, and an uncapped inventory on
+  `find_story`; the proposal tools (`vault_propose`,
+  `vault_list_proposals`, `vault_retract`); and the jobs tools
+  (`jobs_match`, `jobs_search`, `job_get`, `resume_tailor`,
   `job_submit`).
 - *Hosted differs:* its `find_story` nulls `lesson` and never infers
   `outcome`; its `get_philosophy` has no `category` filter.
