@@ -130,6 +130,34 @@ class TestAuditVault:
             f for f in audit_vault(v).findings if f.code == "skill.unsupported_strength"
         )
         assert f.severity == "major"
+        assert f.fix_skill == "traitprint-mine-story-gaps"
+
+    def test_incomplete_star_story_does_not_count_as_evidence(self) -> None:
+        # Evidence is COMPLETE-STAR stories only (find_story's retrievable
+        # set, shared with the hosted scanner) — a draft story linked to the
+        # skill must not silence the finding.
+        skill = SkillSchema(name="Rust", category="technical", proficiency=5)
+        v = VaultSchema(
+            profile=ProfileSchema(headline="h", summary="s"),
+            skills=[skill],
+            experiences=[ExperienceSchema(title="Eng", description="d")],
+            stories=[
+                StorySchema(
+                    title="Draft", situation="only a situation", skill_ids=[skill.id]
+                )
+            ],
+        )
+        assert "skill.unsupported_strength" in _codes(v)
+
+    def test_complete_star_story_clears_unsupported_strength(self) -> None:
+        skill = SkillSchema(name="Rust", category="technical", proficiency=5)
+        v = VaultSchema(
+            profile=ProfileSchema(headline="h", summary="s"),
+            skills=[skill],
+            experiences=[ExperienceSchema(title="Eng", description="d")],
+            stories=[_strong_story(skill_ids=[skill.id])],
+        )
+        assert "skill.unsupported_strength" not in _codes(v)
 
     def test_weak_skill_without_evidence_not_flagged(self) -> None:
         v = VaultSchema(

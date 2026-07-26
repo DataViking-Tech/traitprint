@@ -74,7 +74,7 @@ convention; cross-links (`skill_ids`, `experience_id`,
 
 `1` familiar · `2` working · `3` proficient · `4` expert · `5` authority.
 Rate from demonstrated evidence, not self-report. Skills at 4-5 with no
-linked story are flagged as unsupported by the audit.
+complete STAR story linked are flagged as unsupported by the audit.
 
 ## CLI quick reference
 

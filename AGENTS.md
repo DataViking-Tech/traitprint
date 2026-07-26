@@ -99,8 +99,9 @@ narrative text. Constraints:
 
 `1` familiar · `2` working · `3` proficient · `4` expert · `5` authority.
 Rate from demonstrated evidence, not self-report. Skills at 4-5 with no
-linked story are flagged as unsupported by the audit. (Legacy v0 vaults
-used a ten-point scale; `traitprint vault migrate` remaps `ceil(x/2)`.)
+complete STAR story linked are flagged as unsupported by the audit — a
+draft story does not count as evidence. (Legacy v0 vaults used a
+ten-point scale; `traitprint vault migrate` remaps `ceil(x/2)`.)
 
 ## CLI reference
 

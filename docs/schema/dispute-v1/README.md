@@ -141,6 +141,28 @@ title/description matches the part-time pattern
 | Local | experiences in the in-memory vault (dates are local) |
 | Cloud | the trust-layer contradiction scanner (`contradiction-scanner`); MCP layer symmetrizes the persisted rows |
 
+## Evidence gaps are NOT disputes
+
+A strong skill claim (proficiency 4-5) with **no complete-STAR story** behind
+it is an advisory **evidence gap**, not a dispute — on both servers:
+
+- **Local** surfaces it as the `skill.unsupported_strength` audit finding
+  (`traitprint vault audit`), never in `dispute`.
+- **Cloud** persists it as a `trait_flags` row with flag_type `unsupported`
+  and **no** dangling reason prefix (the prefix is what marks vault-git's
+  dangling rows, which DO become `dangling_reference` disputes). The MCP
+  reshape layer excludes these evidence-gap rows from the dispute surface;
+  the cloud web vault presents them as a story-mining backlog.
+
+The gap is already visible on MCP records as `evidenced: false` /
+`evidence_count: 0`, so the dispute surface would only duplicate it — and
+re-conflating the two would mark a large slice of a healthy profile
+"disputed" for what is a to-do list. (Cloud's pre-2026-07 scanner emitted
+these as contradiction self-pairs — `entities: [id, id]` — which wrongly
+surfaced as disputes; the local server never emitted them, so the exclusion
+is also a cross-server parity fix. Hosted reshape additionally drops any
+legacy self-pair contradiction row it still encounters.)
+
 ## `disputes` roll-up (`get_profile_summary`)
 
 `get_profile_summary` additionally returns a vault-wide inventory, mirroring the

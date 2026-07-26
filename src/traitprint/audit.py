@@ -307,9 +307,12 @@ def _audit_freshness(
             )
 
     # Strong skills whose ONLY evidence is stale (skills with NO evidence
-    # already surface as skill.unsupported_strength).
+    # already surface as skill.unsupported_strength). Complete-STAR stories
+    # only — the same evidence definition as skills_with_evidence.
     stories_by_skill: dict[str, list[datetime]] = {}
     for story in vault.stories:
+        if not (story.situation and story.task and story.action and story.result):
+            continue
         for ref in story.skill_ids:
             stories_by_skill.setdefault(str(ref), []).append(story.updated_at)
     for skill in vault.skills:
@@ -443,9 +446,10 @@ def _audit_skills(
                     "skill.unsupported_strength",
                     "skills",
                     f"Skill {skill.name!r} is claimed at {skill.proficiency}/5 "
-                    "but no story demonstrates it. Strong claims read as more "
-                    "credible with a STAR story behind them.",
+                    "but no complete STAR story demonstrates it. Strong claims "
+                    "read as more credible with a story behind them.",
                     str(skill.id),
+                    fix_skill="traitprint-mine-story-gaps",
                 )
             )
 
@@ -836,8 +840,16 @@ def audit_vault(
     skill_ids = {str(s.id) for s in vault.skills}
     experience_ids = {str(e.id) for e in vault.experiences}
     story_ids = {str(s.id) for s in vault.stories}
+    # Evidence = COMPLETE-STAR stories only (all four sections present) —
+    # the same retrievable set find_story serves, and the definition the
+    # hosted scanner shares (traitprint-cloud _evidence.ts). A draft story
+    # that cannot be served as evidence must not silence
+    # skill.unsupported_strength.
     skills_with_evidence = {
-        str(ref) for story in vault.stories for ref in story.skill_ids
+        str(ref)
+        for story in vault.stories
+        if story.situation and story.task and story.action and story.result
+        for ref in story.skill_ids
     }
     experiences_with_story = {
         str(story.experience_id) for story in vault.stories if story.experience_id

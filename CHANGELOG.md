@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Audit evidence is complete-STAR only.** `skill.unsupported_strength`
+  (and the `skill.stale_evidence` freshness check) now count only stories
+  with all four STAR sections as evidence — the same retrievable set
+  `find_story` serves and the definition the hosted scanner shares. A
+  strong skill whose only linked story is an incomplete draft is now
+  flagged instead of silently passing. The finding also names
+  `traitprint-mine-story-gaps` as its `fix_skill`, and its message reads
+  "no complete STAR story demonstrates it". Evidence gaps remain audit
+  findings, never disputes — now stated normatively in
+  `docs/schema/dispute-v1/` ("Evidence gaps are NOT disputes"), matching
+  the hosted scanner's reclassification of its proficiency check from
+  contradiction self-pairs to one-sided `unsupported` flags.
+
 ### Added
 
 - **Resume-bullet inventory (vault contract revision 1.7, additive).**
