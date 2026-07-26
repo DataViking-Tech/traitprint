@@ -353,9 +353,16 @@ def _skill_matches(
 def _story_evidence_by_skill(
     stories: list[StorySchema],
 ) -> dict[UUID, dict[str, Any]]:
-    """Return {skill_id: {count, top}} aggregated across stories."""
+    """Return {skill_id: {count, top}} aggregated across stories.
+
+    Complete-STAR stories only (``StorySchema.is_complete_star``) — the same
+    set ``find_story`` serves and the audit accepts, so ``evidence_count``
+    can never disagree with ``skill.unsupported_strength``.
+    """
     evidence: dict[UUID, dict[str, Any]] = {}
     for story in stories:
+        if not story.is_complete_star():
+            continue
         snippet = _first_sentence(story.result) or _first_sentence(story.situation)
         for sid in story.skill_ids:
             entry = evidence.setdefault(sid, {"count": 0, "top": None})
@@ -1241,9 +1248,7 @@ def _handle_find_story(
     if query and not (situation or theme or outcome):
         situation = query
 
-    complete = [
-        s for s in vault.stories if s.situation and s.task and s.action and s.result
-    ]
+    complete = [s for s in vault.stories if s.is_complete_star()]
     if not complete:
         return {"stories": []}
 

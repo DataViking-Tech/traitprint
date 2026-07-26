@@ -54,6 +54,7 @@ from traitprint.mcp_server import (
     _mine_story_gaps_prompt,
     _position_lens_prompt,
     _resolve_lens,
+    _story_evidence_by_skill,
     create_server,
 )
 from traitprint.schema import (
@@ -322,6 +323,31 @@ class TestGetProfileSummary:
         # one — the key is absent, never an empty list.
         out = _handle_get_profile_summary(populated_store.load(), "detailed")
         assert "artifact_links" not in out["signature_experiences"][0]
+
+
+class TestStoryEvidence:
+    def test_draft_story_is_not_evidence(self) -> None:
+        # Evidence is complete-STAR only (StorySchema.is_complete_star) —
+        # a draft must not inflate evidence_count while find_story returns
+        # nothing and the audit flags the skill unsupported.
+        skill_id = uuid4()
+        draft = StorySchema(title="Draft", situation="s", skill_ids=[skill_id])
+        assert _story_evidence_by_skill([draft]) == {}
+
+    def test_complete_story_counts_once_alongside_draft(self) -> None:
+        skill_id = uuid4()
+        draft = StorySchema(title="Draft", situation="s", skill_ids=[skill_id])
+        complete = StorySchema(
+            title="Full",
+            situation="s",
+            task="t",
+            action="a",
+            result="Shipped it.",
+            skill_ids=[skill_id],
+        )
+        out = _story_evidence_by_skill([complete, draft])
+        assert out[skill_id]["count"] == 1
+        assert out[skill_id]["top"] == "Shipped it."
 
 
 class TestSearchSkills:

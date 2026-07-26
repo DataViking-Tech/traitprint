@@ -311,7 +311,7 @@ def _audit_freshness(
     # only — the same evidence definition as skills_with_evidence.
     stories_by_skill: dict[str, list[datetime]] = {}
     for story in vault.stories:
-        if not (story.situation and story.task and story.action and story.result):
+        if not story.is_complete_star():
             continue
         for ref in story.skill_ids:
             stories_by_skill.setdefault(str(ref), []).append(story.updated_at)
@@ -840,7 +840,7 @@ def audit_vault(
     skill_ids = {str(s.id) for s in vault.skills}
     experience_ids = {str(e.id) for e in vault.experiences}
     story_ids = {str(s.id) for s in vault.stories}
-    # Evidence = COMPLETE-STAR stories only (all four sections present) —
+    # Evidence = COMPLETE-STAR stories only (StorySchema.is_complete_star) —
     # the same retrievable set find_story serves, and the definition the
     # hosted scanner shares (traitprint-cloud _evidence.ts). A draft story
     # that cannot be served as evidence must not silence
@@ -848,7 +848,7 @@ def audit_vault(
     skills_with_evidence = {
         str(ref)
         for story in vault.stories
-        if story.situation and story.task and story.action and story.result
+        if story.is_complete_star()
         for ref in story.skill_ids
     }
     experiences_with_story = {

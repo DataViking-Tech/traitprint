@@ -9,9 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Audit evidence is complete-STAR only.** `skill.unsupported_strength`
-  (and the `skill.stale_evidence` freshness check) now count only stories
-  with all four STAR sections as evidence — the same retrievable set
+- **Evidence is complete-STAR only, everywhere.** `skill.unsupported_strength`
+  (and the `skill.stale_evidence` freshness check) and `search_skills`'
+  `evidence_count`/`top_evidence` now count only stories with all four
+  STAR sections as evidence — via the new shared predicate
+  `StorySchema.is_complete_star()`, the same retrievable set
   `find_story` serves and the definition the hosted scanner shares. A
   strong skill whose only linked story is an incomplete draft is now
   flagged instead of silently passing. The finding also names
