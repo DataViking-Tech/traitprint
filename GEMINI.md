@@ -24,10 +24,14 @@ to the hosted MCP tools otherwise.
 ## Hosted MCP tools
 
 Read: `get_profile_summary`, `search_skills`, `find_story`,
-`find_experience`, `get_philosophy`, `vault_lens_list`, `vault_lens_get`.
-All but `find_experience` are shared with the local stdio server and use
-the same response envelope — but the servers are not identical: local
-additionally has a `doctor` tool and the `find_bullets` resume-bullet
+`find_experience`, `get_philosophy`, `vault_lens_list`, `vault_lens_get`,
+`vault_sync_status` (server head + ingest/quarantine state).
+All but `find_experience` and `vault_sync_status` are shared with the
+local stdio server and use the same response envelope — but the servers
+are not identical: local additionally has a `doctor` tool, the
+`vault_sync` cloud-sync trigger (status/push/pull; the hosted server
+cannot reach a local vault, so it serves only the read-only
+`vault_sync_status`), and the `find_bullets` resume-bullet
 inventory (its hosted mirror is rolling out — do not call it hosted yet),
 a free-text `query` filter on `find_story`, real `lesson` text, an
 inferred `outcome`, and a `category` filter on `get_philosophy`; hosted
@@ -36,7 +40,9 @@ inventory.
 Write (staged, never direct): `vault_propose` creates a proposal the user
 must approve; `vault_list_proposals` shows pending ones; `vault_retract`
 withdraws one. Jobs (cloud-only): `jobs_search`, `jobs_match`, `job_get`,
-`resume_tailor`, `job_submit`.
+`resume_tailor`, `job_submit`. Trust (cloud-only): `scan_profile` re-runs
+the hosted trust-layer scan (contradictions + evidence gaps; rate-capped,
+acknowledged findings are not re-raised).
 Tools are scope-filtered per session — if a tool is missing, the user
 granted a narrower scope. OAuth grants also freeze the scope set at
 consent time: a tool gated on a scope added *after* the user connected
@@ -74,7 +80,7 @@ convention; cross-links (`skill_ids`, `experience_id`,
 
 `1` familiar · `2` working · `3` proficient · `4` expert · `5` authority.
 Rate from demonstrated evidence, not self-report. Skills at 4-5 with no
-linked story are flagged as unsupported by the audit.
+complete STAR story linked are flagged as unsupported by the audit.
 
 ## CLI quick reference
 

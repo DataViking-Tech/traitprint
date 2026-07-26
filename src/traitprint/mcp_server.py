@@ -353,9 +353,16 @@ def _skill_matches(
 def _story_evidence_by_skill(
     stories: list[StorySchema],
 ) -> dict[UUID, dict[str, Any]]:
-    """Return {skill_id: {count, top}} aggregated across stories."""
+    """Return {skill_id: {count, top}} aggregated across stories.
+
+    Complete-STAR stories only (``StorySchema.is_complete_star``) — the same
+    set ``find_story`` serves and the audit accepts, so ``evidence_count``
+    can never disagree with ``skill.unsupported_strength``.
+    """
     evidence: dict[UUID, dict[str, Any]] = {}
     for story in stories:
+        if not story.is_complete_star():
+            continue
         snippet = _first_sentence(story.result) or _first_sentence(story.situation)
         for sid in story.skill_ids:
             entry = evidence.setdefault(sid, {"count": 0, "top": None})
@@ -1104,6 +1111,116 @@ def _handle_find_bullets(
     }
 
 
+def _handle_vault_sync(store: VaultStore, action: str) -> dict[str, Any]:
+    """Run a sync-v1 action against the hosted remote (``vault_sync`` tool).
+
+    Wraps the same engine the CLI's ``traitprint sync`` commands use
+    (:mod:`traitprint.gitsync` with the stored credentials). Mutating
+    actions transport already-committed git history only — vault WRITES
+    still go through the audited CLI/proposals channel — so agents may
+    call push/pull directly without per-run confirmation (decision
+    2026-07-26). Recoverable protocol outcomes (non-fast-forward,
+    schema violations, merge conflicts) return structured data the agent
+    can act on; auth/transport failures raise tool errors.
+    """
+    if action not in ("status", "push", "pull"):
+        raise ValueError("action must be one of: status, push, pull")
+
+    try:
+        from traitprint.gitsync import (
+            GitSyncClient,
+            GitSyncError,
+            NonFastForwardError,
+            SchemaViolationError,
+            SyncAuthError,
+            sync_pull,
+            sync_push,
+            sync_status,
+        )
+    except ImportError as exc:  # pragma: no cover - depends on install extras
+        raise ValueError(
+            "Cloud sync needs the cloud extras: pip install 'traitprint[cloud]'"
+        ) from exc
+
+    from traitprint.credentials import resolve_credentials
+
+    creds = resolve_credentials(store.directory)
+    if creds is None:
+        raise ValueError(
+            "Not signed in to Traitprint cloud. Ask the user to run "
+            "'traitprint login' (or set TRAITPRINT_API_TOKEN)."
+        )
+
+    client = GitSyncClient.from_credentials(creds)
+    try:
+        with client:
+            if action == "status":
+                st = sync_status(store.directory, client)
+                return {
+                    "action": "status",
+                    "local_head": st.local_head,
+                    "server_head": st.server_head,
+                    "relation": st.relation,
+                    "ingest_status": st.ingest.status or None,
+                    "quarantined": st.ingest.quarantined,
+                }
+            if action == "push":
+                try:
+                    out = sync_push(store.directory, client)
+                except NonFastForwardError as exc:
+                    return {
+                        "action": "push",
+                        "pushed": False,
+                        "server_head": exc.server_head,
+                        "error": {
+                            "code": "non_fast_forward",
+                            "message": str(exc),
+                            "hint": exc.hint,
+                        },
+                    }
+                except SchemaViolationError as exc:
+                    return {
+                        "action": "push",
+                        "pushed": False,
+                        "error": {
+                            "code": "schema_violation",
+                            "message": str(exc),
+                            "hint": exc.hint,
+                        },
+                        "violations": [v.as_dict() for v in exc.violations],
+                    }
+                return {
+                    "action": "push",
+                    "pushed": out.pushed,
+                    "head": out.head or None,
+                    "server_head": out.server_head,
+                    "commits": out.commits,
+                    "ingest_status": (
+                        (out.ingest.status or None) if out.ingest else None
+                    ),
+                    "warnings": [w.as_dict() for w in out.warnings],
+                }
+            out_pull = sync_pull(store.directory, client)
+            payload: dict[str, Any] = {
+                "action": "pull",
+                "fetched": out_pull.fetched,
+                "result": out_pull.mode,
+                "conflicts": out_pull.conflicts,
+                "head": out_pull.head or None,
+            }
+            if out_pull.mode == "conflicts":
+                payload["hint"] = (
+                    "Merge left in progress: resolve the listed files in the "
+                    "vault, commit, then vault_sync(action='push')."
+                )
+            return payload
+    except SyncAuthError as exc:
+        raise ValueError(str(exc)) from exc
+    except GitSyncError as exc:
+        hint = exc.hint if getattr(exc, "hint", "") else ""
+        raise ValueError(str(exc) + (f" {hint}" if hint else "")) from exc
+
+
 def _graph_expansion(
     direct_ids: set[UUID],
     neighbor_index: dict[UUID, dict[UUID, float]],
@@ -1241,9 +1358,7 @@ def _handle_find_story(
     if query and not (situation or theme or outcome):
         situation = query
 
-    complete = [
-        s for s in vault.stories if s.situation and s.task and s.action and s.result
-    ]
+    complete = [s for s in vault.stories if s.is_complete_star()]
     if not complete:
         return {"stories": []}
 
@@ -1406,9 +1521,10 @@ access, run the `traitprint` commands above yourself. If not, do reads with
 the MCP tools (`doctor` to orient on vault phase and freshness,
 `get_profile_summary` with depth="detailed", `search_skills`, `find_story`,
 `get_philosophy`, `find_bullets` for the resume-bullet inventory, and
-`vault_lens_list` / `vault_lens_get` for positioning lenses) and hand the
-user the exact `traitprint` command for every write instead of running
-it."""
+`vault_lens_list` / `vault_lens_get` for positioning lenses), use
+`vault_sync` for cloud sync (status/push/pull — it moves committed history
+only), and hand the user the exact `traitprint` command for every other
+write instead of running it."""
 
 # Optional user customization: a ``custom.md`` at the vault root is the
 # user-owned instruction layer (never written by the package, survives pip
@@ -1603,6 +1719,27 @@ def create_server(store: VaultStore) -> FastMCP:
         # arg through _resolve_lens only when the caller named one.
         resolved = _resolve_lens(vault, lens) if lens else None
         return _envelope(_handle_find_bullets(vault, query, skill, resolved, limit))
+
+    @mcp.tool(
+        description=(
+            "Sync the vault with the hosted Traitprint remote (sync-v1: git "
+            "bundles over HTTPS) — the same engine as 'traitprint sync'. "
+            "action='status' reports local vs server head, their relation, "
+            "and server ingest state; 'push' commits pending hand edits and "
+            "uploads local commits; 'pull' fetches server commits and "
+            "fast-forwards or merges. Sync moves already-committed history "
+            "only — vault writes still go through the audited CLI/proposals "
+            "channel. Recoverable outcomes come back as data: on push "
+            "error.code 'non_fast_forward', pull first, then push again; on "
+            "pull result 'conflicts', resolve the listed files, commit, then "
+            "push. Requires the cloud extras and a signed-in user "
+            "('traitprint login' or TRAITPRINT_API_TOKEN)."
+        )
+    )
+    def vault_sync(
+        action: Literal["status", "push", "pull"] = "status",
+    ) -> dict[str, Any]:
+        return _envelope(_handle_vault_sync(store, action))
 
     @mcp.tool(
         description=(

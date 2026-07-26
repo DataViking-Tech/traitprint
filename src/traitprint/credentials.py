@@ -36,6 +36,30 @@ class Credentials(BaseModel):
     model_config = {"extra": "ignore"}
 
 
+def resolve_credentials(vault_dir: str | Path) -> Credentials | None:
+    """Resolve the effective sync credentials for a vault directory.
+
+    ``TRAITPRINT_API_TOKEN`` wins over the stored file token (the file's
+    email/api_url metadata is reused when present, then
+    ``TRAITPRINT_API_URL``, then the default URL). Returns ``None`` when no
+    usable token exists — callers decide how to surface that (the CLI
+    raises a ClickException, the MCP ``vault_sync`` tool a tool error).
+    """
+    stored = CredentialsStore(vault_dir).load()
+    env_token = os.environ.get("TRAITPRINT_API_TOKEN")
+    if env_token:
+        api_url = (
+            (stored.api_url if stored else None)
+            or os.environ.get("TRAITPRINT_API_URL")
+            or DEFAULT_API_URL
+        )
+        email = stored.email if stored else ""
+        return Credentials(api_url=api_url, email=email, token=env_token)
+    if stored is None or not stored.token:
+        return None
+    return stored
+
+
 class CredentialsStore:
     """Read and write ``<vault>/.credentials`` with restrictive permissions."""
 

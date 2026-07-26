@@ -384,6 +384,17 @@ class StorySchema(BaseModel):
     created_at: datetime = Field(default_factory=_now)
     updated_at: datetime = Field(default_factory=_now)
 
+    def is_complete_star(self) -> bool:
+        """True when all four STAR sections are present.
+
+        This is THE evidence predicate: the retrievable set ``find_story``
+        serves, the set ``search_skills`` counts as ``evidence_count``, and
+        the set the audit accepts against ``skill.unsupported_strength`` —
+        shared with the hosted scanner's ``_evidence.ts``. A draft story is
+        not evidence anywhere.
+        """
+        return bool(self.situation and self.task and self.action and self.result)
+
     @field_validator("outcome")
     @classmethod
     def _validate_outcome(cls, value: str) -> str:

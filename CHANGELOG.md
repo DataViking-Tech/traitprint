@@ -9,6 +9,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`vault_sync` MCP tool** — agents can now trigger cloud sync directly
+  instead of handing the user a CLI command. `action='status'` reports
+  local vs server head, their relation, and server ingest/quarantine
+  state; `'push'` commits pending hand edits and uploads local commits;
+  `'pull'` fetches and fast-forwards or merges. Wraps the same sync-v1
+  engine as `traitprint sync` (cloud extras + `traitprint login`
+  required). Sync moves already-committed history only — vault writes
+  still go through the audited CLI/proposals channel — so push/pull need
+  no per-run confirmation. Recoverable outcomes return as data
+  (`non_fast_forward`, `schema_violation`, pull `conflicts` with a
+  resolution hint) instead of hard errors. Credentials resolution is now
+  shared with the CLI via `traitprint.credentials.resolve_credentials`.
+
+### Changed
+
+- **Evidence is complete-STAR only, everywhere.** `skill.unsupported_strength`
+  (and the `skill.stale_evidence` freshness check) and `search_skills`'
+  `evidence_count`/`top_evidence` now count only stories with all four
+  STAR sections as evidence — via the new shared predicate
+  `StorySchema.is_complete_star()`, the same retrievable set
+  `find_story` serves and the definition the hosted scanner shares. A
+  strong skill whose only linked story is an incomplete draft is now
+  flagged instead of silently passing. The finding also names
+  `traitprint-mine-story-gaps` as its `fix_skill`, and its message reads
+  "no complete STAR story demonstrates it". Evidence gaps remain audit
+  findings, never disputes — now stated normatively in
+  `docs/schema/dispute-v1/` ("Evidence gaps are NOT disputes"), matching
+  the hosted scanner's reclassification of its proficiency check from
+  contradiction self-pairs to one-sided `unsupported` flags.
+
+### Added
+
 - **Resume-bullet inventory (vault contract revision 1.7, additive).**
   `experiences/*.md` frontmatter gains an optional `bullets` list — the
   claim-sized middle layer between evidence and rendering
