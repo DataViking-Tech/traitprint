@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
 import shutil
 import sys
 from pathlib import Path
@@ -4082,31 +4081,14 @@ def _require_cloud_extras() -> None:
 
 
 def _require_credentials(store: VaultStore) -> Credentials:
-    from traitprint.credentials import (
-        DEFAULT_API_URL,
-        Credentials,
-        CredentialsStore,
-    )
+    from traitprint.credentials import resolve_credentials
 
-    stored = CredentialsStore(store.directory).load()
-
-    env_token = os.environ.get("TRAITPRINT_API_TOKEN")
-    if env_token:
-        # Env token wins over file token; reuse file's email/api_url metadata
-        # when present so output stays informative.
-        api_url = (
-            (stored.api_url if stored else None)
-            or os.environ.get("TRAITPRINT_API_URL")
-            or DEFAULT_API_URL
-        )
-        email = stored.email if stored else ""
-        return Credentials(api_url=api_url, email=email, token=env_token)
-
-    if stored is None or not stored.token:
+    creds = resolve_credentials(store.directory)
+    if creds is None:
         raise click.ClickException(
             "Not logged in. Run 'traitprint login' or set TRAITPRINT_API_TOKEN."
         )
-    return stored
+    return creds
 
 
 def _render_plan(plan: SyncPlan) -> str:

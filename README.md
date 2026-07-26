@@ -162,11 +162,13 @@ Traitprint is designed so an AI agent does most of the heavy lifting — both
 *reading* your vault and *helping you fill it out and keep it honest*. The MCP
 server exposes two kinds of primitive:
 
-**Eight read-only query tools.** They share the hosted cloud server's
-response envelope, and every tool except `doctor` is served hosted too —
-but the surfaces are not identical (the hosted server layers proposal and
-jobs tools on top, and a few filters differ); the full local ↔ hosted
-delta lives in [`AGENTS.md`](AGENTS.md):
+**Nine tools** — eight read-only queries plus the `vault_sync`
+cloud-sync trigger (status/push/pull, the CLI's sync-v1 engine). They
+share the hosted cloud server's response envelope, and every query tool
+except `doctor` is served hosted too — but the surfaces are not
+identical (the hosted server layers proposal and jobs tools on top,
+`vault_sync` stays local, and a few filters differ); the full local ↔
+hosted delta lives in [`AGENTS.md`](AGENTS.md):
 
 | Tool | "Ask it…" |
 |---|---|
@@ -351,9 +353,10 @@ coaching workflows compose instead of starting from scratch each time.
 
 - **Local vault** — a plain JSON + markdown file tree on your laptop,
   versioned with git.
-- **MCP server (stdio)** — eight query tools (`get_profile_summary`,
+- **MCP server (stdio)** — nine tools (`get_profile_summary`,
   `search_skills`, `find_story`, `find_bullets`, `get_philosophy`,
-  `vault_lens_list`, `vault_lens_get`, and local-only `doctor`) and
+  `vault_lens_list`, `vault_lens_get`, local-only `doctor`, and the
+  local-only `vault_sync` cloud-sync trigger) and
   eight workflow prompts
   (`fill_vault`, `mine_story_gaps`, `discover_skills`, `draft_star_story`,
   `audit_coherence`, `position_lens`, `deepen_story`, `improve_profile`).

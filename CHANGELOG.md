@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`vault_sync` MCP tool** — agents can now trigger cloud sync directly
+  instead of handing the user a CLI command. `action='status'` reports
+  local vs server head, their relation, and server ingest/quarantine
+  state; `'push'` commits pending hand edits and uploads local commits;
+  `'pull'` fetches and fast-forwards or merges. Wraps the same sync-v1
+  engine as `traitprint sync` (cloud extras + `traitprint login`
+  required). Sync moves already-committed history only — vault writes
+  still go through the audited CLI/proposals channel — so push/pull need
+  no per-run confirmation. Recoverable outcomes return as data
+  (`non_fast_forward`, `schema_violation`, pull `conflicts` with a
+  resolution hint) instead of hard errors. Credentials resolution is now
+  shared with the CLI via `traitprint.credentials.resolve_credentials`.
+
 ### Changed
 
 - **Evidence is complete-STAR only, everywhere.** `skill.unsupported_strength`

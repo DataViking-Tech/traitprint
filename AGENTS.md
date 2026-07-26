@@ -368,11 +368,19 @@ Client config (Claude Desktop, Cursor, Zed, …):
   "env": {"TRAITPRINT_VAULT_DIR": "/home/you/.traitprint"}}}}
 ```
 
-Eight read-only tools: `get_profile_summary`, `vault_lens_list`,
+Nine tools. Read-only: `get_profile_summary`, `vault_lens_list`,
 `vault_lens_get`, `search_skills`, `find_story`, `find_bullets`,
 `get_philosophy`, and
 `doctor` (session-start orientation: vault phase + freshness findings,
-each naming the fix skill; local-only, no hosted counterpart).
+each naming the fix skill; local-only, no hosted counterpart). Plus
+`vault_sync` (status/push/pull against the hosted remote — the CLI's
+sync-v1 engine; local-only). Sync moves already-committed git history
+only, so agents may call push/pull directly — vault WRITES still go
+through the audited CLI/proposals channel. Recoverable outcomes come
+back as data (`error.code "non_fast_forward"` → pull, then push again;
+pull `result "conflicts"` → resolve the listed files, commit, push);
+it needs the cloud extras and a signed-in user (`traitprint login` or
+`TRAITPRINT_API_TOKEN`).
 `find_bullets` queries the resume-bullet inventory (contract revision
 1.7): claim-sized bullet points on experiences, each optionally backed by
 stories (`evidenced`) and tagged with the skills it demonstrates — built
@@ -389,12 +397,14 @@ label or an integer 1-5. `find_story theme` matches `theme_tags` first,
 then body text; `get_philosophy` filters by `topic` and/or `category`.
 
 **Local ↔ hosted delta.** The two servers share the response envelope and
-the read-tool names (every local tool except `doctor` — and, until its
-hosted mirror ships, `find_bullets` — is also served hosted), but they
-are not interchangeable by swapping a URL:
+the read-tool names (every local tool except `doctor` and `vault_sync` —
+and, until its hosted mirror ships, `find_bullets` — is also served
+hosted), but they are not interchangeable by swapping a URL:
 
-- *Hosted adds:* `find_experience`; a `skill` filter, a `total` count, and
-  an uncapped inventory on `find_story`; the proposal tools
+- *Hosted adds:* `find_experience`; read-only `vault_sync_status` (server
+  head + ingest/quarantine state — the hosted server cannot reach a local
+  vault, so mutating sync stays local); a `skill` filter, a `total` count,
+  and an uncapped inventory on `find_story`; the proposal tools
   (`vault_propose`, `vault_list_proposals`, `vault_retract`); and the jobs
   tools (`jobs_match`, `jobs_search`, `job_get`, `resume_tailor`,
   `job_submit`).

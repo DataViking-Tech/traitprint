@@ -48,6 +48,7 @@ from traitprint.mcp_server import (
     _handle_search_skills,
     _handle_vault_lens_get,
     _handle_vault_lens_list,
+    _handle_vault_sync,
     _improve_profile_prompt,
     _map_proficiency,
     _meets_proficiency,
@@ -323,6 +324,155 @@ class TestGetProfileSummary:
         # one — the key is absent, never an empty list.
         out = _handle_get_profile_summary(populated_store.load(), "detailed")
         assert "artifact_links" not in out["signature_experiences"][0]
+
+
+class _StubSyncClient:
+    """Stands in for GitSyncClient — no HTTP, just the context protocol."""
+
+    @classmethod
+    def from_credentials(cls, _creds: object) -> _StubSyncClient:
+        return cls()
+
+    def __enter__(self) -> _StubSyncClient:
+        return self
+
+    def __exit__(self, *_exc: object) -> bool:
+        return False
+
+
+class TestVaultSync:
+    """vault_sync tool handler — wraps the CLI's gitsync engine."""
+
+    @pytest.fixture(autouse=True)
+    def _signed_in(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from traitprint.credentials import Credentials
+
+        monkeypatch.setattr(
+            "traitprint.credentials.resolve_credentials",
+            lambda _d: Credentials(
+                api_url="https://api.example", email="e@x", token="tok"
+            ),
+        )
+        monkeypatch.setattr("traitprint.gitsync.GitSyncClient", _StubSyncClient)
+
+    def test_rejects_unknown_action(self, populated_store: VaultStore) -> None:
+        with pytest.raises(ValueError, match="status, push, pull"):
+            _handle_vault_sync(populated_store, "force")
+
+    def test_not_signed_in_is_a_tool_error(
+        self, populated_store: VaultStore, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(
+            "traitprint.credentials.resolve_credentials", lambda _d: None
+        )
+        with pytest.raises(ValueError, match="traitprint login"):
+            _handle_vault_sync(populated_store, "status")
+
+    def test_status_maps_outcome(
+        self, populated_store: VaultStore, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from traitprint import gitsync
+
+        st = gitsync.StatusOutcome(
+            local_head="a" * 40,
+            server_head="b" * 40,
+            relation="diverged",
+            ingest=gitsync.IngestReport(
+                status="quarantined",
+                quarantined=[{"file": "stories/x.md", "reason": "dangling"}],
+            ),
+        )
+        monkeypatch.setattr("traitprint.gitsync.sync_status", lambda _d, _c: st)
+        out = _handle_vault_sync(populated_store, "status")
+        assert out == {
+            "action": "status",
+            "local_head": "a" * 40,
+            "server_head": "b" * 40,
+            "relation": "diverged",
+            "ingest_status": "quarantined",
+            "quarantined": [{"file": "stories/x.md", "reason": "dangling"}],
+        }
+
+    def test_push_non_fast_forward_is_structured_not_raised(
+        self, populated_store: VaultStore, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from traitprint import gitsync
+
+        def _raise(_d: object, _c: object) -> object:
+            raise gitsync.NonFastForwardError(
+                "server is ahead", "b" * 40, "pull first, then push"
+            )
+
+        monkeypatch.setattr("traitprint.gitsync.sync_push", _raise)
+        out = _handle_vault_sync(populated_store, "push")
+        assert out["pushed"] is False
+        assert out["server_head"] == "b" * 40
+        assert out["error"]["code"] == "non_fast_forward"
+        assert "pull first" in out["error"]["hint"]
+
+    def test_push_maps_outcome_and_warnings(
+        self, populated_store: VaultStore, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from traitprint import gitsync
+
+        po = gitsync.PushOutcome(
+            pushed=True,
+            head="a" * 40,
+            server_head="a" * 40,
+            ingest=gitsync.IngestReport(status="clean"),
+            commits=2,
+            warnings=[
+                gitsync.PushWarning(
+                    file="proposals/add-skill.json",
+                    pointer="/payload/proficiency",
+                    message="m",
+                    hint="h",
+                )
+            ],
+        )
+        monkeypatch.setattr("traitprint.gitsync.sync_push", lambda _d, _c: po)
+        out = _handle_vault_sync(populated_store, "push")
+        assert out["pushed"] is True
+        assert out["commits"] == 2
+        assert out["ingest_status"] == "clean"
+        assert out["warnings"] == [
+            {
+                "file": "proposals/add-skill.json",
+                "pointer": "/payload/proficiency",
+                "message": "m",
+                "hint": "h",
+            }
+        ]
+
+    def test_pull_conflicts_carry_a_resolution_hint(
+        self, populated_store: VaultStore, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from traitprint import gitsync
+
+        pl = gitsync.PullOutcome(
+            fetched=True,
+            mode="conflicts",
+            conflicts=["stories/x.md"],
+            head="a" * 40,
+            server_head="b" * 40,
+        )
+        monkeypatch.setattr("traitprint.gitsync.sync_pull", lambda _d, _c: pl)
+        out = _handle_vault_sync(populated_store, "pull")
+        assert out["result"] == "conflicts"
+        assert out["conflicts"] == ["stories/x.md"]
+        assert "resolve the listed files" in out["hint"]
+
+    def test_auth_failure_raises_tool_error(
+        self, populated_store: VaultStore, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from traitprint import gitsync
+
+        def _raise(_d: object, _c: object) -> object:
+            raise gitsync.SyncAuthError("token expired", "log in again")
+
+        monkeypatch.setattr("traitprint.gitsync.sync_status", _raise)
+        with pytest.raises(ValueError, match="token expired"):
+            _handle_vault_sync(populated_store, "status")
 
 
 class TestStoryEvidence:
@@ -1180,6 +1330,7 @@ class TestServerRegistration:
             "vault_lens_list",
             "vault_lens_get",
             "doctor",
+            "vault_sync",
         }
 
     def test_doctor_tool_reports_phase_and_findings(
@@ -1465,6 +1616,7 @@ class TestStdioRoundTrip:
             "vault_lens_list",
             "vault_lens_get",
             "doctor",
+            "vault_sync",
         }
 
         # The seeded vault carries no lenses, so the inventory is empty.
