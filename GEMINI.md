@@ -24,15 +24,15 @@ to the hosted MCP tools otherwise.
 ## Hosted MCP tools
 
 Read: `get_profile_summary`, `search_skills`, `find_story`,
-`find_experience`, `get_philosophy`, `vault_lens_list`, `vault_lens_get`,
-`vault_sync_status` (server head + ingest/quarantine state).
+`find_experience`, `get_philosophy`, `find_bullets` (the resume-bullet
+inventory), `vault_lens_list`, `vault_lens_get`, `vault_sync_status`
+(server head + ingest/quarantine state).
 All but `find_experience` and `vault_sync_status` are shared with the
 local stdio server and use the same response envelope — but the servers
 are not identical: local additionally has a `doctor` tool, the
 `vault_sync` cloud-sync trigger (status/push/pull; the hosted server
 cannot reach a local vault, so it serves only the read-only
-`vault_sync_status`), and the `find_bullets` resume-bullet
-inventory (its hosted mirror is rolling out — do not call it hosted yet),
+`vault_sync_status`),
 a free-text `query` filter on `find_story`, real `lesson` text, an
 inferred `outcome`, and a `category` filter on `get_philosophy`; hosted
 `find_story` instead has a `skill` filter and an uncapped `total`
