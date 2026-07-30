@@ -141,7 +141,7 @@ def docs() -> dict[str, str]:
 def live_server_names(
     tmp_path_factory: pytest.TempPathFactory,
 ) -> tuple[frozenset[str], frozenset[str]]:
-    """(tool names, prompt names) from the real FastMCP registry.
+    """(tool names, prompt names) from the real MCP server registry.
 
     ``create_server`` never touches the vault at registration time, so an
     uninitialized store on an empty directory is enough to enumerate.

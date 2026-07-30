@@ -1,17 +1,19 @@
-"""FastMCP stdio server exposing the local vault to AI agents.
+"""MCP stdio server exposing the local vault to AI agents.
 
 Response schemas share the cloud MCP server's envelope
 (``supabase/functions/mcp-server/index.ts`` in the cloud repo); the
 tool-level local ↔ hosted delta is documented in ``AGENTS.md`` ("MCP
-stdio server"). Seven tools are exposed:
+stdio server"). Nine tools are exposed:
 
 - ``get_profile_summary``
 - ``vault_lens_list``
 - ``vault_lens_get``
 - ``search_skills``
 - ``find_story``
+- ``find_bullets``
 - ``get_philosophy``
 - ``doctor`` (local-only; no cloud counterpart)
+- ``vault_sync`` (local-only; status/push/pull against the hosted remote)
 
 Every tool returns a ``{"result": <payload>, "meta": {...}}`` envelope.
 
@@ -30,20 +32,20 @@ agent a ready-made workflow for helping the user build out, tighten, and
 position their vault. Their canonical text lives in the Agent Skills
 (``skills/<name>/SKILL.md``); each prompt is a thin wrapper that reads the
 skill body at serve time so prompt and skill cannot drift. The cloud server
-mirrors six of the tools (all but the local-only ``doctor``) and maintains
+mirrors the query tools (all but the local-only ``doctor`` and
+``vault_sync``) and maintains
 its own adapted prompt bodies that route writes through ``vault_propose``.
 """
 
 from __future__ import annotations
 
 import re
-import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal
 from uuid import UUID
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server import MCPServer
 
 from traitprint import __version__
 from traitprint.schema import (
@@ -77,7 +79,7 @@ PROFICIENCY_ORDER = {label: i for i, label in enumerate(PROFICIENCY_LABELS)}
 
 ProficiencyLabel = Literal["familiar", "working", "proficient", "expert", "authority"]
 
-# Mirrors traitprint.schema.PhilosophyCategory (Literal so FastMCP emits
+# Mirrors traitprint.schema.PhilosophyCategory (Literal so the SDK emits
 # a clean enum in the tool schema).
 PhilosophyCategoryLabel = Literal[
     "leadership",
@@ -1512,7 +1514,7 @@ def _handle_get_philosophy(
 # string builders so they unit-test without an MCP client.
 
 # Appended to every prompt: skill bodies assume a shell; MCP clients may
-# not have one, but they do have the seven read tools.
+# not have one, but they do have the read tools.
 _MCP_SERVING_NOTE = """
 
 ---
@@ -1628,18 +1630,16 @@ def _improve_profile_prompt(focus: str = "", vault_dir: Path | None = None) -> s
 # ── Server factory ──────────────────────────────────────────────────
 
 
-def create_server(store: VaultStore) -> FastMCP:
-    """Build a FastMCP instance bound to ``store``.
+def create_server(store: VaultStore) -> MCPServer:
+    """Build an MCPServer instance bound to ``store``.
 
     Each tool loads the vault fresh so that edits to the vault file
     tree between tool calls are picked up without restarting the server.
     """
     taxonomy = load_taxonomy()
-    mcp = FastMCP(SERVER_NAME)
-    # FastMCP does not forward a version to the underlying MCPServer,
-    # so it falls back to the MCP-SDK package version.  Set it
-    # explicitly so ``serverInfo.version`` reports *our* version.
-    mcp._mcp_server.version = SERVER_VERSION
+    # ``version`` is forwarded to ``serverInfo.version`` so clients see
+    # *our* version (SDK >= 2.0 accepts it in the constructor).
+    mcp = MCPServer(SERVER_NAME, version=SERVER_VERSION)
 
     @mcp.tool(
         description=(
@@ -1923,13 +1923,10 @@ def create_server(store: VaultStore) -> FastMCP:
 def run_stdio(store: VaultStore) -> None:
     """Run the MCP server over stdio (blocking).
 
-    Forces stdout into line-buffered mode so every JSON-RPC response
-    (each terminated by ``\\n``) flushes immediately. Without this,
-    Python's default block buffering on non-TTY stdout can hang the
-    client waiting for a response that is sitting in a buffer.
+    The SDK's ``stdio_server`` (>= 2.0) claims fd 1 for the wire itself,
+    flushing each JSON-RPC message and redirecting stray handler stdout
+    to stderr — so no manual line-buffering setup is needed here.
     """
-    if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(line_buffering=True)
     create_server(store).run(transport="stdio")
 
 
