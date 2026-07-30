@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **MCP SDK 2.0 / spec 2026-07-28** — the local stdio server now runs on
+  the official `mcp` Python SDK 2.x (pinned `mcp>=2.0,<3`), which speaks
+  both the 2026-07-28 revision (`server/discover` handshake, stateless
+  `_meta`) and 2025-11-25 (`initialize`) so older clients keep working.
+  Code changes: `FastMCP` → `MCPServer`, the server version is passed via
+  the constructor (drops the `_mcp_server.version` workaround), and the
+  manual stdout line-buffering setup in `run_stdio` is gone — the SDK's
+  stdio transport now claims fd 1 itself and redirects stray handler
+  output to stderr. Tool/prompt registration and the response envelope
+  (`RESPONSE_CONTRACT_VERSION`) are unchanged.
+
 ### Added
 
 - **Bullets in experience proposal payloads** (contract revision 1.7) —

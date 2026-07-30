@@ -1,4 +1,4 @@
-"""Tests for the FastMCP stdio server.
+"""Tests for the MCP stdio server.
 
 Covers:
 - Tool registration (list_tools returns every registered tool; the
@@ -1338,7 +1338,7 @@ class TestServerRegistration:
     ) -> None:
         server = create_server(populated_store)
         result = asyncio.run(server.call_tool("doctor", {}))
-        payload = json.loads(result[0][0].text)  # type: ignore[union-attr]
+        payload = json.loads(result.content[0].text)  # type: ignore[union-attr]
         body = payload["result"]
         assert body["phase"]["phase"] in (
             "first-run",
@@ -1352,8 +1352,7 @@ class TestServerRegistration:
     def test_server_version_in_init_options(self, populated_store: VaultStore) -> None:
         """serverInfo.version must report *our* version, not the MCP SDK."""
         server = create_server(populated_store)
-        opts = server._mcp_server.create_initialization_options()
-        assert opts.server_version == SERVER_VERSION
+        assert server.version == SERVER_VERSION
 
 
 # ── Prompts ─────────────────────────────────────────────────────────
@@ -1560,10 +1559,13 @@ class TestPromptCustomization:
 # ── JSON-RPC round-trip over stdio ──────────────────────────────────
 
 
-async def _stdio_roundtrip(vault_dir: Path) -> tuple[list[str], dict[str, str]]:
+async def _stdio_roundtrip(
+    vault_dir: Path,
+) -> tuple[list[str], dict[str, str], str]:
     """Spawn ``traitprint mcp-serve`` and invoke each tool once.
 
-    Returns (tool names, {tool_name: envelope_result_json}).
+    Returns (tool names, {tool_name: envelope_result_json},
+    serverInfo.version from the handshake).
     """
     venv_bin = Path(__file__).resolve().parent.parent / ".venv" / "bin"
     exe = venv_bin / "traitprint" if venv_bin.exists() else Path("traitprint")
@@ -1577,7 +1579,7 @@ async def _stdio_roundtrip(vault_dir: Path) -> tuple[list[str], dict[str, str]]:
         stdio_client(params) as (read, write),
         ClientSession(read, write) as session,
     ):
-        await session.initialize()
+        init = await session.initialize()
         listed = await session.list_tools()
         names = [t.name for t in listed.tools]
 
@@ -1597,7 +1599,7 @@ async def _stdio_roundtrip(vault_dir: Path) -> tuple[list[str], dict[str, str]]:
         r = await session.call_tool("vault_lens_list", {})
         results["vault_lens_list"] = r.content[0].text  # type: ignore[union-attr]
 
-    return names, results
+    return names, results, init.server_info.version
 
 
 @pytest.mark.skipif(
@@ -1606,7 +1608,11 @@ async def _stdio_roundtrip(vault_dir: Path) -> tuple[list[str], dict[str, str]]:
 )
 class TestStdioRoundTrip:
     def test_tools_callable_via_jsonrpc(self, populated_store: VaultStore) -> None:
-        names, results = asyncio.run(_stdio_roundtrip(populated_store.directory))
+        names, results, server_version = asyncio.run(
+            _stdio_roundtrip(populated_store.directory)
+        )
+        # serverInfo.version on the wire is *our* version, not the SDK's.
+        assert server_version == SERVER_VERSION
         assert set(names) == {
             "get_profile_summary",
             "search_skills",

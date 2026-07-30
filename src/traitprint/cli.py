@@ -3864,13 +3864,14 @@ def export_cmd(
 def mcp_serve(ctx: click.Context) -> None:
     """Run the Traitprint MCP server over stdio.
 
-    Exposes seven tools (get_profile_summary, vault_lens_list,
-    vault_lens_get, search_skills, find_story, get_philosophy, and the
-    local-only doctor) sharing the hosted MCP server's response envelope
+    Exposes nine tools (get_profile_summary, vault_lens_list,
+    vault_lens_get, search_skills, find_story, find_bullets,
+    get_philosophy, and the local-only doctor and vault_sync) sharing
+    the hosted MCP server's response envelope
     (the tool-level local/hosted delta is documented in AGENTS.md), plus
-    six prompts (fill_vault, mine_story_gaps, discover_skills,
-    draft_star_story, audit_coherence, position_lens) served verbatim
-    from the bundled Agent Skills.
+    eight prompts (fill_vault, mine_story_gaps, discover_skills,
+    draft_star_story, audit_coherence, position_lens, deepen_story,
+    improve_profile) served verbatim from the bundled Agent Skills.
     """
     from traitprint.mcp_server import run_stdio
 
