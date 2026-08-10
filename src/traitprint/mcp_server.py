@@ -874,6 +874,9 @@ def _handle_get_profile_summary(
     result["top_skills"] = [
         {
             "name": s.name,
+            # Vault skill id — the value vault_propose's skill_ids takes
+            # (hosted-mirror: cloud's top_skills carries `id` the same way).
+            "id": str(s.id),
             "proficiency": _map_proficiency(s.proficiency),
             "evidence": None,
             "disputed": s.id in disputes,
@@ -911,6 +914,14 @@ def _handle_get_profile_summary(
         SalienceLevel.SUPPORTING: 1,
     }
 
+    def _visible_skill_ids(e: Any) -> list[UUID]:
+        return [
+            sid
+            for sid in e.skill_ids
+            if sid in skill_name_by_id
+            and (lens is None or lens.salience_for(sid) != SalienceLevel.SUPPRESSED)
+        ]
+
     def _visible_bullets(e: Any) -> list[dict[str, Any]]:
         kept = [
             (b, _bullet_salience(lens, b))
@@ -927,12 +938,12 @@ def _handle_get_profile_summary(
             "title": e.title,
             "organization": e.company or None,
             "period": _period(e.start_date, e.end_date),
+            # Filtered ONCE via _visible_skill_ids so names and ids stay
+            # index-aligned — a lens-suppressed skill drops its id too.
             "related_skills": [
-                skill_name_by_id[sid]
-                for sid in e.skill_ids
-                if sid in skill_name_by_id
-                and (lens is None or lens.salience_for(sid) != SalienceLevel.SUPPRESSED)
+                skill_name_by_id[sid] for sid in _visible_skill_ids(e)
             ],
+            "related_skill_ids": [str(sid) for sid in _visible_skill_ids(e)],
             **(
                 {"scope": e.scope.model_dump(mode="json")}
                 if e.scope is not None
@@ -1290,6 +1301,12 @@ def _handle_search_skills(
         matches.append(
             {
                 "name": skill.name,
+                # Vault skill id — the value vault_propose's skill_ids takes
+                # (hosted-mirror: cloud's search_skills reports resolvable ids
+                # via query_interpretation.matched_taxonomy; local skill
+                # references are the vault skill entity ids, so the id rides
+                # each match directly).
+                "id": str(skill.id),
                 "canonical_name": skill.name,
                 "proficiency": prof,
                 "years_active": None,
@@ -1396,9 +1413,13 @@ def _handle_find_story(
 
     stories_out: list[dict[str, Any]] = []
     for story, score, story_outcome in scored[:limit]:
-        related_skills = [
-            skill_name_by_id[sid] for sid in story.skill_ids if sid in skill_name_by_id
-        ]
+        # Names AND ids, filtered ONCE so the two lists stay index-aligned
+        # (hosted-mirror: cloud's find_story returns related_skill_ids the
+        # same way). The ids are what vault_propose's skill_ids takes, so a
+        # caller who only sees a skill NAME here has a path to the UUID a
+        # write needs without a second search_skills round trip.
+        linked = [sid for sid in story.skill_ids if sid in skill_name_by_id]
+        related_skills = [skill_name_by_id[sid] for sid in linked]
         stories_out.append(
             {
                 "id": str(story.id),
@@ -1410,6 +1431,7 @@ def _handle_find_story(
                 "lesson": story.lesson or None,
                 "outcome": story_outcome,
                 "related_skills": related_skills,
+                "related_skill_ids": [str(sid) for sid in linked],
                 "related_experience_id": (
                     str(story.experience_id) if story.experience_id else None
                 ),
@@ -1747,7 +1769,8 @@ def create_server(store: VaultStore) -> MCPServer:
             "ranked matches with proficiency and evidence. Proficiency "
             "labels: familiar (1), working (2), proficient (3), expert "
             "(4), authority (5); min_proficiency accepts any of the five "
-            "labels or an integer 1-5."
+            "labels or an integer 1-5. Each match carries `id` — the "
+            "vault skill UUID vault_propose's skill_ids takes."
         )
     )
     def search_skills(
@@ -1769,7 +1792,9 @@ def create_server(store: VaultStore) -> MCPServer:
             "when…' Provide at least one filter: query (free-text, "
             "searches across all STAR fields), situation, theme, or "
             "outcome. Structured filters take precedence over query. "
-            "Stories carrying artifact_links (evidence URLs) include them."
+            "Stories carrying artifact_links (evidence URLs) include them. "
+            "related_skill_ids (index-aligned with related_skills) are the "
+            "vault skill UUIDs vault_propose's skill_ids takes."
         )
     )
     def find_story(

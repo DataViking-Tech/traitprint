@@ -290,6 +290,30 @@ class TestValidateProposalFields:
             "payload: must not be empty"
         ]
 
+    # 2026-08-09 bug report, item 4 (hosted-mirror): a bare "must be a JSON
+    # object" cost the caller a round trip to infer the schema — the error now
+    # names the received type and the per-kind expected shape.
+    def test_non_object_payload_names_type_and_expected_shape(self) -> None:
+        problems = validate_proposal_fields(
+            "update_story", uuid4(), [{"body": "## Lesson\nx"}]
+        )
+        assert len(problems) == 1
+        assert "must be a JSON object" in problems[0]
+        assert "got array" in problems[0]
+        # The expected shape for THIS kind, not a generic hint.
+        assert "update_story -> {" in problems[0]
+        assert "body" in problems[0]
+
+    def test_non_object_payload_reports_each_json_type(self) -> None:
+        for payload, expected in [
+            (None, "got null"),
+            ("a string", "got string"),
+            (42, "got number"),
+            (True, "got boolean"),
+        ]:
+            problems = validate_proposal_fields("add_skill", None, payload)
+            assert any(expected in p for p in problems), (payload, problems)
+
     def test_profile_basics_keys_checked(self) -> None:
         problems = validate_proposal_fields(
             "update_profile", None, {"basics": {"display_name": "Ada"}}

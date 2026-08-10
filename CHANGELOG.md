@@ -22,6 +22,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Skill ids on MCP read surfaces** (hosted-mirror of traitprint-cloud
+  PR #1740, 2026-08-09 bug report item 3) — `find_story` stories carry
+  `related_skill_ids` (index-aligned with `related_skills`),
+  `get_profile_summary` adds `top_skills[].id` and
+  `signature_experiences[].related_skill_ids`, and `search_skills`
+  matches carry `id`. These are the vault skill UUIDs `vault_propose`'s
+  `skill_ids` takes, closing the "I know the skill name but not the id a
+  write needs" dead end without a second lookup. Additive only.
+
+- **Typed payload validation errors** (hosted-mirror of the same PR,
+  bug report item 4) — rejecting a non-object proposal `payload` now
+  names the received JSON type and the per-kind expected field shape
+  (`payload: must be a JSON object, got array. Expected for
+  update_story -> { ... } (* = required)`) instead of the bare
+  "must be a JSON object".
+
 - **Bullets in experience proposal payloads** (contract revision 1.7) —
   `add_experience` / `update_experience` proposals now accept a
   `bullets` list, validated at apply via `BulletSchema` through the

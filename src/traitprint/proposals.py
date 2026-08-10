@@ -182,6 +182,35 @@ PROPOSAL_PAYLOAD_KEYS: dict[str, tuple[str, ...]] = {
     "update_lens": _LENS_KEYS,
 }
 
+def payload_shape_help(kind: str) -> str:
+    """``kind -> { field*, field, ... }`` for one kind (``*`` = required).
+
+    Hosted-mirror of cloud's ``payloadShapeHelp`` — used to name the expected
+    shape in the payload-type rejection so the caller does not need a second
+    round trip to infer the schema.
+    """
+    required = set(_REQUIRED_ADD_KEYS.get(kind, ()))
+    fields = ", ".join(
+        f"{key}*" if key in required else key for key in PROPOSAL_PAYLOAD_KEYS[kind]
+    )
+    return f"{kind} -> {{ {fields} }}"
+
+
+def _json_type_name(value: Any) -> str:
+    """JSON type name for a value, for "got X" in validation errors."""
+    if value is None:
+        return "null"
+    if isinstance(value, bool):
+        return "boolean"
+    if isinstance(value, list):
+        return "array"
+    if isinstance(value, (int, float)):
+        return "number"
+    if isinstance(value, str):
+        return "string"
+    return type(value).__name__
+
+
 #: Minimum fields an add_* / update_profile payload must carry.
 _REQUIRED_ADD_KEYS: dict[str, tuple[str, ...]] = {
     "add_skill": ("name", "proficiency"),
@@ -355,7 +384,13 @@ def validate_proposal_fields(
         return [f"kind: must be one of {', '.join(PROPOSAL_KINDS)}; got {kind!r}"]
 
     if not isinstance(payload, dict):
-        problems.append("payload: must be a JSON object")
+        # Name the received type and the exact shape THIS kind wants — a bare
+        # "must be a JSON object" costs a round trip to infer the schema
+        # (2026-08-09 bug report, item 4; mirrors cloud validateProposalArgs).
+        problems.append(
+            f"payload: must be a JSON object, got {_json_type_name(payload)}. "
+            f"Expected for {payload_shape_help(kind)} (* = required)"
+        )
         return problems
     if not payload:
         problems.append("payload: must not be empty")
