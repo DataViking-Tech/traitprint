@@ -224,11 +224,15 @@ class TestGetProfileSummary:
         for skill in out["top_skills"]:
             assert set(skill) == {
                 "name",
+                "id",
                 "proficiency",
                 "evidence",
                 "disputed",
                 "dispute",
             }
+            # Hosted-mirror: the id is the vault skill UUID vault_propose's
+            # skill_ids takes.
+            assert UUID(skill["id"])
             assert skill["disputed"] is False
             assert skill["dispute"] is None
         assert "signature_experiences" not in out
@@ -255,12 +259,17 @@ class TestGetProfileSummary:
             "organization",
             "period",
             "related_skills",
+            "related_skill_ids",
             "evidence",
             "disputed",
             "dispute",
         }
         assert exp["title"] == "Staff Data Engineer"
         assert set(exp["related_skills"]) == {"Python", "SQL"}
+        # Index-aligned with related_skills (filtered once, hosted-mirror).
+        assert len(exp["related_skill_ids"]) == len(exp["related_skills"])
+        for sid in exp["related_skill_ids"]:
+            assert UUID(sid)
 
     def test_related_skills_skip_dangling_refs(
         self, populated_store: VaultStore
@@ -513,8 +522,10 @@ class TestSearchSkills:
         assert top["match_distance"] == 0.0
         assert top["evidence_count"] == 1
         assert top["top_evidence"]  # has a snippet from the story
+        assert UUID(top["id"])  # vault skill id, hosted-mirror
         assert set(top) == {
             "name",
+            "id",
             "canonical_name",
             "proficiency",
             "years_active",
@@ -778,6 +789,7 @@ class TestFindStory:
             "lesson",
             "outcome",
             "related_skills",
+            "related_skill_ids",
             "related_experience_id",
             "match_score",
             "evidence",
