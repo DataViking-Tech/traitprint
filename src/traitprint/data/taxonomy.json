@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "lineage": "canonical",
   "skills": [
     {
@@ -22,9 +22,66 @@
       "category": "domain"
     },
     {
+      "id": "593ae71c-fef8-5fec-9ada-acaf5ba5538e",
+      "name": "Academic Advising",
+      "category": "domain",
+      "subcategory": "Education Administration",
+      "aliases": [
+        "Student Advising",
+        "Academic Counseling",
+        "Student Success Advising"
+      ],
+      "neighbors": {
+        "Higher Education": 0.4,
+        "Mentoring": 0.3,
+        "Student Success": 0.3
+      }
+    },
+    {
+      "id": "4b368d14-49f4-5261-84aa-76fd61ef8012",
+      "name": "Academic Publishing",
+      "category": "domain",
+      "subcategory": "Academia",
+      "aliases": [
+        "Scholarly Publishing",
+        "Journal Publishing"
+      ],
+      "neighbors": {
+        "Academic Writing": 0.2,
+        "Editing": 0.3,
+        "Peer Review": 0.2
+      }
+    },
+    {
+      "id": "d315b421-5866-54bf-bf57-8d02517b761a",
+      "name": "Academic Service",
+      "category": "domain",
+      "subcategory": "Academia",
+      "aliases": [
+        "Institutional Service",
+        "Committee Service",
+        "Committee Work",
+        "Shared Governance"
+      ],
+      "neighbors": {
+        "Facilitation": 0.5
+      }
+    },
+    {
       "id": "8080e1be-5f71-5fe6-998b-957c8467102e",
       "name": "Academic Writing",
-      "category": "soft"
+      "category": "soft",
+      "subcategory": "Content",
+      "neighbors": {
+        "Academic Publishing": 0.2,
+        "Editing": 0.4,
+        "Grant Writing": 0.3,
+        "LaTeX": 0.3,
+        "Literature Review": 0.3,
+        "Philosophy": 0.5,
+        "Writing": 0.2,
+        "Writing Instruction": 0.4
+      }
     },
     {
       "id": "8be6738c-36b5-5164-a61a-d5ec232eea96",
@@ -43,15 +100,22 @@
       "aliases": [
         "a11y",
         "ADA Compliance",
-        "WCAG"
-      ]
+        "WCAG",
+        "WCAG Compliance",
+        "Accessibility Compliance",
+        "Section 508",
+        "Digital Accessibility"
+      ],
+      "neighbors": {
+        "E-Learning Development": 0.4,
+        "Universal Design for Learning": 0.3
+      }
     },
     {
       "id": "72f50d0a-9800-5aac-85b5-67481d8802cf",
       "name": "Account Management",
       "category": "soft",
       "neighbors": {
-        "C": 0.2,
         "Technical Account Management": 0.2
       }
     },
@@ -71,18 +135,12 @@
     {
       "id": "034f6d6e-28f3-55cf-a51a-679a8f4fd6d1",
       "name": "Account Research",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "35a19f20-6ed8-5594-9681-fff31c2260c2",
       "name": "Account-Based Marketing",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "74b59012-b514-547c-b8ec-a7019580f5d1",
@@ -99,7 +157,6 @@
       "name": "Accounting",
       "category": "domain",
       "neighbors": {
-        "C": 0.2,
         "Lease Accounting": 0.2,
         "Technical Accounting": 0.2
       }
@@ -107,17 +164,37 @@
     {
       "id": "b2975e4e-c338-5898-aff9-ed4648c2a612",
       "name": "Accounts Payable",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "41a97fd7-2d46-5fb7-ad62-286c179f1781",
       "name": "Accounts Receivable",
+      "category": "domain"
+    },
+    {
+      "id": "cacd944c-54d2-5d8f-973c-d16409c8593b",
+      "name": "Accreditation",
       "category": "domain",
+      "subcategory": "Education Administration",
+      "aliases": [
+        "Program Accreditation",
+        "Accreditation Compliance",
+        "Accreditation Management"
+      ],
       "neighbors": {
-        "C": 0.2
+        "Regulatory Compliance": 0.3
+      }
+    },
+    {
+      "id": "f44588c9-79da-5c1a-9e44-75a679fa7ff8",
+      "name": "Action Research",
+      "category": "technical",
+      "subcategory": "Research Methods",
+      "aliases": [
+        "Practitioner Research"
+      ],
+      "neighbors": {
+        "Research Design": 0.2
       }
     },
     {
@@ -158,11 +235,36 @@
       ]
     },
     {
+      "id": "cd7d4f4e-9fd5-56fc-abe2-06673fbcd2c5",
+      "name": "Admissions",
+      "category": "domain",
+      "subcategory": "Education Administration",
+      "aliases": [
+        "College Admissions",
+        "Admissions Counseling",
+        "Admissions Management"
+      ],
+      "neighbors": {
+        "Enrollment Management": 0.2,
+        "Slate": 0.2
+      }
+    },
+    {
       "id": "bf87ca60-e5c3-5d31-a01a-658a8857aa5e",
       "name": "Adobe Analytics",
       "category": "tool",
       "neighbors": {
         "Analytics": 0.2
+      }
+    },
+    {
+      "id": "f47609f3-951d-59cd-a29f-9fdbc7daf127",
+      "name": "Adobe Captivate",
+      "category": "tool",
+      "subcategory": "Education Tools",
+      "neighbors": {
+        "E-Learning Development": 0.2,
+        "Instructional Design": 0.3
       }
     },
     {
@@ -180,10 +282,7 @@
     {
       "id": "dadef8a4-fff5-54b3-86b7-d606a27acbb4",
       "name": "Adobe Target",
-      "category": "tool",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "tool"
     },
     {
       "id": "80ca6e86-5ca8-5cef-9b94-b48b4e9fd494",
@@ -204,18 +303,27 @@
     {
       "id": "d7227970-068d-55f3-be93-2bdc7fea8de6",
       "name": "AdTech",
+      "category": "domain"
+    },
+    {
+      "id": "254a4888-d279-5d59-a825-7dccc01ff636",
+      "name": "Adult Education",
       "category": "domain",
+      "subcategory": "Education",
+      "aliases": [
+        "Adult Learning",
+        "Andragogy",
+        "Continuing Education"
+      ],
       "neighbors": {
-        "C": 0.2
+        "Instructional Design": 0.4,
+        "Training and Development": 0.2
       }
     },
     {
       "id": "706d025b-1e57-5fd8-a126-b9814f9c27b1",
       "name": "Adversarial Machine Learning",
-      "category": "technical",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "technical"
     },
     {
       "id": "19ad5cfc-a999-5f7e-b582-cc57ad408bd5",
@@ -225,10 +333,7 @@
     {
       "id": "47009369-e2da-56aa-a8e8-4c05447e5e4f",
       "name": "Advocacy",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "01a36c46-3fcd-5b74-a6be-fa4982682faa",
@@ -271,10 +376,7 @@
     {
       "id": "376c87a2-9b26-50ef-bd0c-e5184a453f2b",
       "name": "Airtable",
-      "category": "tool",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "tool"
     },
     {
       "id": "3d42bab8-3a39-5b7d-8db8-170e0a578b6b",
@@ -289,15 +391,24 @@
     {
       "id": "f8d9a173-dfe8-5d45-8767-ba2704b5143f",
       "name": "Algorithms",
-      "category": "technical",
-      "neighbors": {
-        "Go": 0.2
-      }
+      "category": "technical"
     },
     {
       "id": "ba74e8b1-ae67-51db-812b-0f664e9c442f",
       "name": "Alteryx",
       "category": "tool"
+    },
+    {
+      "id": "daf290be-00e2-5fc5-8116-2309730e51dc",
+      "name": "Alumni Relations",
+      "category": "domain",
+      "subcategory": "Education Administration",
+      "aliases": [
+        "Alumni Engagement"
+      ],
+      "neighbors": {
+        "Fundraising": 0.3
+      }
     },
     {
       "id": "8cf29739-8d4b-5a2a-845c-4788583969f9",
@@ -335,7 +446,11 @@
     {
       "id": "d94efbc0-91f8-590c-956f-4e5a0f198322",
       "name": "American Politics",
-      "category": "domain"
+      "category": "domain",
+      "subcategory": "Academic Disciplines",
+      "neighbors": {
+        "Political Science": 0.2
+      }
     },
     {
       "id": "491182d0-d732-51e3-afa0-4c2c13e4c9c0",
@@ -428,10 +543,7 @@
     {
       "id": "afea65b6-5712-5bbc-a31e-295de071d641",
       "name": "Anomaly Detection",
-      "category": "technical",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "technical"
     },
     {
       "id": "4ebe79b4-ee75-5c4c-a88f-5781f82280f1",
@@ -458,12 +570,18 @@
       }
     },
     {
+      "id": "c07c88e0-2859-57d1-8fa2-8979dad11159",
+      "name": "Anthropology",
+      "category": "domain",
+      "subcategory": "Academic Disciplines",
+      "neighbors": {
+        "Ethnography": 0.2
+      }
+    },
+    {
       "id": "836c94a4-3a01-5e34-b18e-64d5820e219e",
       "name": "Anti-Money Laundering",
-      "category": "domain",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "1484cef2-3613-5aae-9f01-1604c1c7274f",
@@ -511,10 +629,7 @@
     {
       "id": "b3ea4faf-0e6f-55b0-bf79-4dfd46b1521a",
       "name": "Apache Iceberg",
-      "category": "tool",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "tool"
     },
     {
       "id": "7e37d008-be8a-5a7d-9d84-cd5aae570a25",
@@ -592,7 +707,6 @@
       "name": "Architecture",
       "category": "technical",
       "neighbors": {
-        "C": 0.2,
         "Component Architecture": 0.2,
         "Computer Architecture": 0.2,
         "Data Architecture": 0.2,
@@ -602,6 +716,19 @@
         "Service-Oriented Architecture": 0.2,
         "Solution Architecture": 0.2,
         "Systems Architecture": 0.2
+      }
+    },
+    {
+      "id": "35f962e0-af41-5a7a-82a0-053dae749e92",
+      "name": "Archival Research",
+      "category": "technical",
+      "subcategory": "Research Methods",
+      "aliases": [
+        "Primary Source Research"
+      ],
+      "neighbors": {
+        "Fieldwork": 0.5,
+        "History": 0.3
       }
     },
     {
@@ -629,6 +756,20 @@
       "category": "domain"
     },
     {
+      "id": "f1eb3b56-8d4f-5025-9604-f1fd36a10cea",
+      "name": "Articulate Storyline",
+      "category": "tool",
+      "subcategory": "Education Tools",
+      "aliases": [
+        "Articulate 360",
+        "Storyline 360"
+      ],
+      "neighbors": {
+        "E-Learning Development": 0.2,
+        "Instructional Design": 0.3
+      }
+    },
+    {
       "id": "05989ee7-82ee-53d8-9599-978059a054b6",
       "name": "Artificial Intelligence",
       "category": "domain"
@@ -641,10 +782,7 @@
     {
       "id": "a8199191-9757-5868-b4b4-0b24c51966e3",
       "name": "ASC 606",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "ca8a7007-a3ef-5856-adb3-7a2c648baa87",
@@ -689,6 +827,15 @@
       }
     },
     {
+      "id": "80e7850c-f5dd-5c0b-a4ec-0524ae33febb",
+      "name": "ATLAS.ti",
+      "category": "tool",
+      "subcategory": "Research Tools",
+      "neighbors": {
+        "Qualitative Research": 0.2
+      }
+    },
+    {
       "id": "d5c8dc94-3492-5694-bf35-e10b6ffcba09",
       "name": "Attention to Detail",
       "category": "soft",
@@ -698,18 +845,12 @@
     {
       "id": "9d47025c-32c2-547a-95b5-6d61e4900234",
       "name": "Attribution",
-      "category": "domain",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "aef11a46-dc3b-5c26-98d8-69c5edb52375",
       "name": "Audio Processing",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "f47582ea-ead7-5f57-95d7-5129d452d714",
@@ -724,10 +865,7 @@
     {
       "id": "255c6e3e-7b2c-5131-a192-566c33414973",
       "name": "Auditoria",
-      "category": "tool",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "tool"
     },
     {
       "id": "ed39959e-a876-5a8e-9470-fbb3c42a61e6",
@@ -743,18 +881,12 @@
     {
       "id": "10db2a6c-7588-5554-a382-e4ee74e47767",
       "name": "Authentication",
-      "category": "technical",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "technical"
     },
     {
       "id": "8dac67ac-2078-5425-a3f6-7a2e11342608",
       "name": "Authorization",
-      "category": "technical",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "technical"
     },
     {
       "id": "c73b6637-d014-5568-bead-d6804e5f1273",
@@ -1121,10 +1253,7 @@
     {
       "id": "d8c525e2-75dd-50b8-9de1-5dfb6d3c0111",
       "name": "Backend Development",
-      "category": "technical",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "technical"
     },
     {
       "id": "5bbee4eb-7fae-5bbb-9ddc-158a3786814d",
@@ -1154,9 +1283,18 @@
     {
       "id": "55cccc82-cea0-5976-bd67-fe77ea3fcf22",
       "name": "Billing Operations",
+      "category": "domain"
+    },
+    {
+      "id": "994442c9-76a0-5320-aece-f6d105cec138",
+      "name": "Biology",
       "category": "domain",
+      "subcategory": "Academic Disciplines",
+      "aliases": [
+        "Molecular Biology"
+      ],
       "neighbors": {
-        "R": 0.2
+        "Neuroscience": 0.4
       }
     },
     {
@@ -1168,6 +1306,30 @@
       "neighbors": {
         "ESLint": 0.4,
         "Prettier": 0.4
+      }
+    },
+    {
+      "id": "612d7dca-2ae5-531a-9359-4c4b90639f7a",
+      "name": "Blackboard",
+      "category": "tool",
+      "subcategory": "Education Tools",
+      "aliases": [
+        "Blackboard Learn"
+      ],
+      "neighbors": {
+        "Learning Management Systems": 0.2
+      }
+    },
+    {
+      "id": "6e0405c6-834a-5670-be1a-2171717d9694",
+      "name": "Blended Learning",
+      "category": "domain",
+      "subcategory": "Education",
+      "aliases": [
+        "Hybrid Learning"
+      ],
+      "neighbors": {
+        "Online Teaching": 0.2
       }
     },
     {
@@ -1186,6 +1348,18 @@
       }
     },
     {
+      "id": "dfafac37-5d30-54e1-ac5d-cc8131304cb8",
+      "name": "Board Governance",
+      "category": "domain",
+      "aliases": [
+        "Board Relations"
+      ],
+      "neighbors": {
+        "Educational Leadership": 0.3,
+        "Stakeholder Management": 0.3
+      }
+    },
+    {
       "id": "d309f1cc-2e9a-5a65-949a-ddb1946ab4fc",
       "name": "Bootstrap",
       "category": "tool",
@@ -1198,18 +1372,12 @@
     {
       "id": "fa9cb9fc-f663-5ed8-bc1f-aa23d9d827e7",
       "name": "Brand Management",
-      "category": "domain",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "cf766671-c044-5d48-a9ce-788186ae30cd",
       "name": "Brex",
-      "category": "tool",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "tool"
     },
     {
       "id": "3bd49257-b193-5612-a66f-18588f146edb",
@@ -1224,10 +1392,7 @@
     {
       "id": "beca6840-29eb-53af-8680-30d11c9bff0c",
       "name": "Builder mentality",
-      "category": "soft",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "674b5c26-74b6-5c11-9a9f-0c972e6ab09c",
@@ -1248,18 +1413,12 @@
     {
       "id": "c09808fc-33dc-5b22-a83c-a412aa5f13ba",
       "name": "Burp Suite",
-      "category": "tool",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "tool"
     },
     {
       "id": "27385edf-c72a-5045-a99c-1b2bbf6aa282",
       "name": "Business Acumen",
-      "category": "soft",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "412d33a1-1879-5b40-b31c-7d593e7ca5d2",
@@ -1279,18 +1438,12 @@
     {
       "id": "26eb7b0a-5489-5398-af5c-6e2b96692c9f",
       "name": "Business Intelligence",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "83d2abab-9fad-531a-8cf8-bdf2dc575a06",
       "name": "Business Operations",
-      "category": "domain",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "2786b66a-58f2-5c77-b0cf-9285a38265e5",
@@ -1299,197 +1452,8 @@
       "subcategory": "Programming Languages",
       "onet_element_id": "T-C",
       "neighbors": {
-        "ASC 606": 0.2,
-        "Account Management": 0.2,
-        "Account Research": 0.2,
-        "Account-Based Marketing": 0.2,
-        "Accounting": 0.2,
-        "Accounts Payable": 0.2,
-        "Accounts Receivable": 0.2,
-        "AdTech": 0.2,
-        "Adversarial Machine Learning": 0.2,
-        "Advocacy": 0.2,
-        "Anomaly Detection": 0.2,
-        "Apache Iceberg": 0.2,
-        "Architecture": 0.2,
-        "Audio Processing": 0.2,
-        "Authentication": 0.2,
-        "Backend Development": 0.2,
-        "Business Acumen": 0.2,
-        "Business Intelligence": 0.2,
         "C++": 0.2,
-        "CRM": 0.2,
-        "CUDA": 0.2,
-        "Campaign Management": 0.2,
-        "Candidate Experience": 0.2,
-        "Canva": 0.2,
-        "Capacity Planning": 0.2,
-        "Causal Inference": 0.2,
-        "Change Management": 0.2,
-        "Channel Management": 0.2,
-        "Chaos Engineering": 0.2,
-        "Client Management": 0.2,
-        "Cloud Infrastructure": 0.2,
-        "Coachability": 0.2,
-        "Coalition Building": 0.2,
-        "Code Quality": 0.2,
-        "Cold Calling": 0.2,
-        "Collections": 0.2,
-        "Communications": 0.2,
-        "Community Building": 0.2,
-        "Compensation": 0.2,
-        "Competitive Analysis": 0.2,
-        "Compliance": 0.2,
-        "Concurrency": 0.2,
-        "Consultative Selling": 0.2,
-        "Consulting": 0.2,
-        "Container Orchestration": 0.2,
-        "Content Creation": 0.2,
-        "Content Moderation": 0.2,
-        "Context Engineering": 0.2,
-        "Continuous Learning": 0.2,
-        "Contract Negotiation": 0.2,
-        "Conversion Rate Optimization": 0.2,
-        "Cost Optimization": 0.2,
-        "Coupa": 0.2,
-        "Creative Direction": 0.2,
-        "Crisis Management": 0.2,
-        "Cross-Platform Development": 0.2,
-        "Curation": 0.2,
-        "Curiosity": 0.2,
-        "Curriculum Design": 0.2,
-        "Customer Marketing": 0.2,
-        "Customer Success": 0.2,
-        "Customer Support": 0.2,
-        "Cybersecurity": 0.2,
-        "DHCP": 0.2,
-        "Data Governance": 0.2,
-        "Data Infrastructure": 0.2,
-        "Data Science": 0.2,
-        "Data Structures": 0.2,
-        "Data-Driven Decision Making": 0.2,
-        "Deal Structuring": 0.2,
-        "Decision Making": 0.2,
-        "Detection Engineering": 0.2,
-        "Disaster Recovery": 0.2,
-        "Discovery": 0.2,
-        "Discretion": 0.2,
-        "Documentation": 0.2,
-        "Due Diligence": 0.2,
-        "Economics": 0.2,
-        "Electron": 0.2,
-        "Email Outreach": 0.2,
-        "Escalation Management": 0.2,
-        "Excel": 0.2,
-        "Execution": 0.2,
-        "Executive Presence": 0.2,
-        "Facilitation": 0.2,
-        "Feedback": 0.2,
-        "Financial Analysis": 0.2,
-        "Financial Modeling": 0.2,
-        "Financial Planning": 0.2,
-        "Financial Reporting": 0.2,
-        "Financial Services": 0.2,
-        "Forecasting": 0.2,
-        "Forensics": 0.2,
-        "Fraud Detection": 0.2,
-        "Full-Cycle Recruiting": 0.2,
-        "Full-Stack Development": 0.2,
-        "GPU/Accelerator Programming": 0.2,
-        "Goal Achievement": 0.2,
-        "Google Workspace": 0.2,
-        "Healthcare": 0.2,
-        "IT Risk Governance": 0.2,
-        "Influencer Marketing": 0.2,
-        "Infrastructure": 0.2,
-        "Infrastructure Engineering": 0.2,
-        "Infrastructure as Code": 0.2,
-        "Intellectual Curiosity": 0.2,
-        "Intellectual Property": 0.2,
-        "Interaction Design": 0.2,
-        "Intercom": 0.2,
-        "Job Architecture": 0.2,
-        "Lifecycle Marketing": 0.2,
-        "Market Research": 0.2,
-        "Mergers and Acquisitions": 0.2,
-        "Metrics Design": 0.2,
-        "Microsoft Excel": 0.2,
-        "Microsoft Office": 0.2,
-        "Mobile Device Management": 0.2,
-        "Motion Graphics": 0.2,
-        "Music Industry Knowledge": 0.2,
-        "Music Information Retrieval": 0.2,
-        "Offensive Security": 0.2,
-        "Open Source": 0.2,
-        "Operational Excellence": 0.2,
-        "Oracle": 0.2,
-        "Outreach": 0.2,
-        "Pattern Recognition": 0.2,
-        "Performance Management": 0.2,
-        "Policy Development": 0.2,
-        "Pricing Strategy": 0.2,
-        "Privacy": 0.2,
-        "Probabilistic Modeling": 0.2,
-        "Process Improvement": 0.2,
-        "Procurement": 0.2,
-        "Product Demonstrations": 0.2,
-        "Product Design": 0.2,
-        "Product Development": 0.2,
-        "Product Knowledge": 0.2,
-        "Product Marketing": 0.2,
-        "Product Operations": 0.2,
-        "Product Sense": 0.2,
-        "Product Strategy": 0.2,
-        "Product-Led Growth": 0.2,
-        "Production Ownership": 0.2,
-        "Programming": 0.0,
-        "Prospecting": 0.2,
-        "Public Policy": 0.2,
-        "Qualification": 0.2,
-        "Recommendation Systems": 0.2,
-        "Reconciliation": 0.2,
-        "Recruitment": 0.2,
-        "Regulatory Compliance": 0.2,
-        "Research": 0.2,
-        "Resourcefulness": 0.2,
-        "Revenue Recognition": 0.2,
-        "Robotics": 0.2,
-        "Root Cause Analysis": 0.2,
-        "Salesforce": 0.2,
-        "Scalability": 0.2,
-        "Scheduling": 0.2,
-        "Scope Management": 0.2,
-        "Scripting": 0.2,
-        "Secure Coding": 0.2,
-        "Secure Design": 0.2,
-        "Security": 0.2,
-        "Security Engineering": 0.2,
-        "Security Operations": 0.2,
-        "Signal Processing": 0.2,
-        "Social Media Marketing": 0.2,
-        "Social Selling": 0.2,
-        "Solutions Architecture": 0.2,
-        "Sourcing": 0.2,
-        "Statistical Analysis": 0.2,
-        "Strategic Planning": 0.2,
-        "Strategic Sourcing": 0.2,
-        "Supply Chain Management": 0.2,
-        "Systems Security": 0.2,
-        "Technical Communication": 0.2,
-        "Technical Presentations": 0.2,
-        "Technical Program Management": 0.2,
-        "Technical Sales": 0.2,
-        "Technical Support": 0.2,
-        "Threat Intelligence": 0.2,
-        "Time Series Forecasting": 0.2,
-        "Transparency": 0.2,
-        "Variance Analysis": 0.2,
-        "Venture Capital": 0.2,
-        "Video Production": 0.2,
-        "Vulnerability Research": 0.2,
-        "WebRTC": 0.2,
-        "Workforce Planning": 0.2,
-        "macOS": 0.2
+        "Programming": 0.0
       }
     },
     {
@@ -1541,25 +1505,28 @@
     {
       "id": "4d499444-4790-5d80-bac0-c57d2f2a9b91",
       "name": "Campaign Management",
-      "category": "soft",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "11a7812c-7e9b-5601-ae7b-cf5bfd90dfbe",
       "name": "Candidate Experience",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "ada5b3b8-fa89-5118-adf3-06605b71d315",
       "name": "Canva",
+      "category": "tool"
+    },
+    {
+      "id": "7749b88d-9019-5a31-b503-b887e23af73b",
+      "name": "Canvas LMS",
       "category": "tool",
+      "subcategory": "Education Tools",
+      "aliases": [
+        "Instructure Canvas"
+      ],
       "neighbors": {
-        "C": 0.2
+        "Learning Management Systems": 0.2
       }
     },
     {
@@ -1575,10 +1542,7 @@
     {
       "id": "2d22be8e-68a8-515e-8ca8-5227441a1a2d",
       "name": "Capacity Planning",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "a7ac2759-09f9-5a13-aef6-406f296f3006",
@@ -1603,10 +1567,7 @@
     {
       "id": "dee02ee8-f270-5914-86fc-b71f2b120dc2",
       "name": "Causal Inference",
-      "category": "technical",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "technical"
     },
     {
       "id": "9a4998c9-d635-5f57-9f2d-7ec304cf8f2b",
@@ -1653,26 +1614,17 @@
     {
       "id": "3e480999-5b42-5f43-a367-1f90b0ee0dba",
       "name": "Change Management",
-      "category": "soft",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "0a52e3e8-0d91-5fbe-8282-6e95268595b0",
       "name": "Channel Management",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "676f137b-a50d-515c-ae68-c79cb5b94bbc",
       "name": "Chaos Engineering",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "7f1a8ab4-166b-51ef-a5ac-d76e5d8b61a8",
@@ -1726,7 +1678,23 @@
     {
       "id": "856daf86-1254-55ed-8b8f-2e0b603eeee0",
       "name": "Civic Education",
-      "category": "domain"
+      "category": "domain",
+      "subcategory": "Education"
+    },
+    {
+      "id": "af3001cb-60eb-5af2-a9c1-d962fe01eaa8",
+      "name": "Classroom Management",
+      "category": "domain",
+      "subcategory": "Education",
+      "aliases": [
+        "Behavior Management",
+        "PBIS"
+      ],
+      "neighbors": {
+        "Pedagogy": 0.2,
+        "Student Engagement": 0.4,
+        "Trauma-Informed Teaching": 0.4
+      }
     },
     {
       "id": "c2aefa9d-4c86-55e8-be0f-a99ad396e14b",
@@ -1743,10 +1711,7 @@
     {
       "id": "d9f65815-fc3c-5161-82d0-1df4024afe7a",
       "name": "Client Management",
-      "category": "soft",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "59d1b525-a1f3-58fa-bcb5-45e2ad0a6339",
@@ -1775,10 +1740,7 @@
     {
       "id": "00ecfc3e-f44e-55a6-a412-19deb721e0cc",
       "name": "Cloud Infrastructure",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "bbd96117-e8d3-5397-bc4d-ed7dc97e2b22",
@@ -1807,18 +1769,12 @@
     {
       "id": "14f0f92b-3b39-5883-9f4d-7e481e5b67bc",
       "name": "Coachability",
-      "category": "soft",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "f73fa73c-f53c-5bbf-9d9b-a414a06246ea",
       "name": "Coalition Building",
-      "category": "soft",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "379d6c36-6ace-539a-86df-0ce82d29269f",
@@ -1835,36 +1791,24 @@
     {
       "id": "58c0fe52-aa4c-5d2c-b5e0-e0792f233c15",
       "name": "Code Quality",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "15f8e4ea-2e93-5e6a-926a-f144a5e89e51",
       "name": "Code Review",
       "category": "soft",
       "subcategory": "Collaboration",
-      "onet_element_id": "T-CODEREVIEW",
-      "aliases": [
-        "Peer Review"
-      ]
+      "onet_element_id": "T-CODEREVIEW"
     },
     {
       "id": "bbfd6a63-a1f6-5bb3-9e8a-4494073046d7",
       "name": "Cold Calling",
-      "category": "soft",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "1f5fc2db-2f62-5de6-9aff-8d1f8bd179d0",
       "name": "Collections",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "14693d11-0877-50e2-82cd-ba7ee885af44",
@@ -1882,6 +1826,7 @@
         "Written Communication"
       ],
       "neighbors": {
+        "Family Engagement": 0.5,
         "Presentation Skills": 0.2
       }
     },
@@ -1890,33 +1835,23 @@
       "name": "Communications",
       "category": "domain",
       "neighbors": {
-        "C": 0.2,
         "Executive Communications": 0.2
       }
     },
     {
       "id": "20ebcc33-9793-5c6a-a40e-3c294dd3f136",
       "name": "Community Building",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "e8257971-f853-5880-aea2-cb9d47a4b949",
       "name": "Compensation",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "d3576b68-27cb-5207-acfb-267250fe88bb",
       "name": "Competitive Analysis",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "a5d5cc3f-12ed-5e2a-81b7-a5f3b11236e6",
@@ -1935,9 +1870,23 @@
       "name": "Compliance",
       "category": "domain",
       "neighbors": {
-        "C": 0.2,
         "PCI DSS Compliance": 0.2,
+        "Research Administration": 0.4,
+        "Research Ethics": 0.4,
         "SOX 2 Compliance": 0.2
+      }
+    },
+    {
+      "id": "92535f00-dc69-51b3-bc60-062fb2dc0129",
+      "name": "Compliance Training",
+      "category": "domain",
+      "aliases": [
+        "Compliance Training Design"
+      ],
+      "neighbors": {
+        "Instructional Design": 0.3,
+        "Regulatory Compliance": 0.3,
+        "Training and Development": 0.2
       }
     },
     {
@@ -1973,9 +1922,33 @@
     {
       "id": "d282a4e1-8065-575f-9904-0de8251da4bd",
       "name": "Concurrency",
-      "category": "technical",
+      "category": "technical"
+    },
+    {
+      "id": "680bc01c-2c59-5ad1-8305-f7ca0ab057a9",
+      "name": "Conference Organization",
+      "category": "domain",
+      "subcategory": "Academia",
+      "aliases": [
+        "Workshop Organization",
+        "Conference Planning"
+      ],
       "neighbors": {
-        "C": 0.2
+        "Event Management": 0.2
+      }
+    },
+    {
+      "id": "8022b735-0263-581f-86c4-f86d95c13123",
+      "name": "Conference Presentation",
+      "category": "soft",
+      "subcategory": "Communication",
+      "aliases": [
+        "Academic Presentations",
+        "Invited Talks"
+      ],
+      "neighbors": {
+        "Presentation Skills": 0.1,
+        "Science Communication": 0.4
       }
     },
     {
@@ -1990,6 +1963,8 @@
       "subcategory": "Social",
       "onet_element_id": "T-CONFLICTRES",
       "neighbors": {
+        "Crisis Intervention": 0.4,
+        "School Counseling": 0.5,
         "Teamwork": 0.4
       }
     },
@@ -2018,32 +1993,38 @@
     {
       "id": "14e10889-6b6f-5b5b-8af3-c3f702cc500c",
       "name": "Consultative Selling",
-      "category": "soft",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "815c3415-7441-576e-a451-c61842a7035f",
       "name": "Consulting",
       "category": "domain",
       "neighbors": {
-        "C": 0.2,
         "Technical Consulting": 0.2
       }
     },
     {
       "id": "ce0d1671-32f0-5a72-a5df-d08dc9040b65",
       "name": "Container Orchestration",
-      "category": "technical",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "technical"
     },
     {
       "id": "136f982d-9020-5050-92f7-30b386560f2c",
       "name": "Containerization",
       "category": "domain"
+    },
+    {
+      "id": "ba03a2d8-fc30-57bd-8462-af668361c930",
+      "name": "Content Analysis",
+      "category": "technical",
+      "subcategory": "Research Methods",
+      "aliases": [
+        "Thematic Analysis",
+        "Discourse Analysis"
+      ],
+      "neighbors": {
+        "Qualitative Research": 0.2
+      }
     },
     {
       "id": "2c24e0fb-0544-5d41-ab0c-c400ddf8210d",
@@ -2055,7 +2036,6 @@
       "name": "Content Creation",
       "category": "soft",
       "neighbors": {
-        "C": 0.2,
         "Technical Content Creation": 0.2
       }
     },
@@ -2070,23 +2050,20 @@
     {
       "id": "dadb6f31-17c9-5bb9-a803-bdb0148f53be",
       "name": "Content Moderation",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "bb81ab85-eb3e-54e5-a7d0-c3d0bdbeebbf",
       "name": "Content Strategy",
-      "category": "domain"
+      "category": "domain",
+      "neighbors": {
+        "Science Communication": 0.5
+      }
     },
     {
       "id": "0500e167-c38f-5c6b-9ade-e0b91c60a84b",
       "name": "Context Engineering",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "f7d61065-905e-56ab-b0c2-df69312e5960",
@@ -2102,10 +2079,7 @@
     {
       "id": "1e670fac-202c-570f-8a5c-f91f80a7cb3f",
       "name": "Continuous Learning",
-      "category": "soft",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "a98178a0-9c8f-551e-a3f7-b5bfd1156538",
@@ -2115,10 +2089,7 @@
     {
       "id": "c70acf90-52fe-5b91-b4cf-28e264d60f59",
       "name": "Contract Negotiation",
-      "category": "soft",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "6f3a9638-08e6-54ac-8fab-a564257c37cf",
@@ -2133,10 +2104,7 @@
     {
       "id": "4c48bba6-7e4c-5833-a041-8e5d1c9b4702",
       "name": "Conversion Rate Optimization",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "b5633f6b-35a7-5992-b59b-d952e814f862",
@@ -2161,10 +2129,7 @@
     {
       "id": "bab68277-473c-5f1e-b287-6a657b4eb681",
       "name": "Cost Optimization",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "764be97a-ebf5-5c26-9f82-b5076649262a",
@@ -2176,9 +2141,20 @@
     {
       "id": "1443cc2f-c90a-588c-9628-f72cd5f0729d",
       "name": "Coupa",
-      "category": "tool",
+      "category": "tool"
+    },
+    {
+      "id": "a9357189-e6f1-5dfa-9a85-117f48f3559e",
+      "name": "Course Development",
+      "category": "domain",
+      "subcategory": "Education",
+      "aliases": [
+        "Course Design",
+        "Syllabus Design"
+      ],
       "neighbors": {
-        "C": 0.2
+        "Curriculum Design": 0.2,
+        "Instructional Design": 0.3
       }
     },
     {
@@ -2194,10 +2170,7 @@
     {
       "id": "168a0cab-2584-5937-8e9e-eb357e9a2f38",
       "name": "Creative Direction",
-      "category": "soft",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "c3ccb76e-b6ac-5a24-a375-b865659c43a8",
@@ -2211,12 +2184,23 @@
       ]
     },
     {
+      "id": "79019bb6-ff20-5ff1-a418-acb4dfbaf1b3",
+      "name": "Crisis Intervention",
+      "category": "domain",
+      "aliases": [
+        "De-escalation",
+        "Crisis De-escalation",
+        "Safety Planning"
+      ],
+      "neighbors": {
+        "Conflict Resolution": 0.4,
+        "School Counseling": 0.2
+      }
+    },
+    {
       "id": "181e7d27-422d-57e5-bc69-6e4e24e9dbaa",
       "name": "Crisis Management",
-      "category": "soft",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "b1cc487c-8ce0-55e3-ab71-d1c1eda64b7b",
@@ -2231,10 +2215,7 @@
     {
       "id": "0c348e83-98c7-5298-863f-12a8f902c0c9",
       "name": "CRM",
-      "category": "tool",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "tool"
     },
     {
       "id": "e6b06363-ad93-52e5-a575-b1fe3f0e13ef",
@@ -2246,10 +2227,7 @@
     {
       "id": "f030d8a3-60b4-521f-995c-06ce2902e4de",
       "name": "Cross-Platform Development",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "736c4117-881f-5920-b2c4-896131eb3845",
@@ -2275,9 +2253,18 @@
     {
       "id": "36401059-e222-551c-b9d6-1e6ab5e4e660",
       "name": "CUDA",
-      "category": "tool",
+      "category": "tool"
+    },
+    {
+      "id": "27f5efa6-c801-5566-a33d-f303ee6b4eba",
+      "name": "Culturally Responsive Teaching",
+      "category": "domain",
+      "subcategory": "Education",
+      "aliases": [
+        "Inclusive Teaching"
+      ],
       "neighbors": {
-        "C": 0.2
+        "Pedagogy": 0.2
       }
     },
     {
@@ -2285,24 +2272,27 @@
       "name": "Curation",
       "category": "soft",
       "neighbors": {
-        "C": 0.2,
         "Data Curation": 0.2
       }
     },
     {
       "id": "1c35d0a0-3dc5-556a-8695-12430a962372",
       "name": "Curiosity",
-      "category": "soft",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "1eeeea2f-4a0d-5d81-b323-52c16d059c8a",
       "name": "Curriculum Design",
       "category": "domain",
+      "subcategory": "Education",
+      "aliases": [
+        "Curriculum Development",
+        "Curriculum Planning"
+      ],
       "neighbors": {
-        "C": 0.2
+        "Course Development": 0.2,
+        "Instructional Design": 0.2,
+        "STEM Education": 0.4
       }
     },
     {
@@ -2324,10 +2314,7 @@
     {
       "id": "c38b4498-0e64-55f0-ac51-4d42827327d5",
       "name": "Customer Marketing",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "6c113fb4-c3b3-5571-8012-2d6bf9f6c858",
@@ -2337,26 +2324,17 @@
     {
       "id": "1a325eea-00bc-54f4-a3e8-94c6a4c7db07",
       "name": "Customer Success",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "6c5f5f31-4c3c-516c-8fa8-906d0f6f423c",
       "name": "Customer Support",
-      "category": "soft",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "268979bb-4228-5deb-8632-96295f03184b",
       "name": "Cybersecurity",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "78ab7fa3-055d-5cfb-9d47-49c3bfca1049",
@@ -2405,7 +2383,12 @@
       "onet_element_id": "T-DATAANALYSIS",
       "aliases": [
         "Data Analytics"
-      ]
+      ],
+      "neighbors": {
+        "Institutional Research": 0.2,
+        "Program Evaluation": 0.3,
+        "Quantitative Research": 0.2
+      }
     },
     {
       "id": "c4e67112-d142-5cd7-a66f-497c806751da",
@@ -2433,7 +2416,12 @@
     {
       "id": "59877d6c-22cb-53cb-9d1e-448bba529551",
       "name": "Data Collection",
-      "category": "domain"
+      "category": "domain",
+      "subcategory": "Research Methods",
+      "neighbors": {
+        "Fieldwork": 0.3,
+        "REDCap": 0.2
+      }
     },
     {
       "id": "72103d5f-0d93-57e1-afcc-4eae3c74d88d",
@@ -2461,26 +2449,17 @@
     {
       "id": "9cbca1e7-5002-5460-abed-efd980f5e14e",
       "name": "Data Governance",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "ad142b7d-4ec1-5f07-8ab0-624d13d64d59",
       "name": "Data Infrastructure",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "0c1ca261-2ab6-536f-aeb4-e5d00b0c6ae6",
       "name": "Data Integration",
-      "category": "technical",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "technical"
     },
     {
       "id": "c03232bb-1baa-581f-9f3a-cdcab529bb5d",
@@ -2493,10 +2472,7 @@
     {
       "id": "44af0dd3-ceea-5be0-ab0e-d423844c171d",
       "name": "Data Loss Prevention",
-      "category": "domain",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "fba6fdf6-79b3-5263-a739-818d06942f65",
@@ -2506,10 +2482,7 @@
     {
       "id": "e7b81805-4121-5bca-b7a3-09467c25a2e4",
       "name": "Data Migration",
-      "category": "domain",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "fb16acd1-be58-53f5-824c-05a005ce7fdc",
@@ -2541,10 +2514,7 @@
     {
       "id": "9dee8f94-31e3-5aea-9ea4-2eaf185cb7c8",
       "name": "Data Science",
-      "category": "technical",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "technical"
     },
     {
       "id": "f0db4926-b9b8-5fd5-83b7-887d85d5bcf9",
@@ -2557,10 +2527,7 @@
     {
       "id": "1584aa6c-763c-55e8-ab61-99b7ef770d35",
       "name": "Data Structures",
-      "category": "technical",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "technical"
     },
     {
       "id": "e05d597a-8147-5c87-8d9f-682bab557138",
@@ -2577,18 +2544,12 @@
     {
       "id": "18db10dc-1ead-52c0-babf-a10eea842a1d",
       "name": "Data Warehousing",
-      "category": "domain",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "a2105f12-0bd4-5de0-a99b-3310203eadfe",
       "name": "Data-Driven Decision Making",
-      "category": "soft",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "ed689a64-09f9-50a5-bcb9-66e4f9e47446",
@@ -2654,18 +2615,12 @@
     {
       "id": "5d2579fc-b902-5264-8029-28b9cb7861f7",
       "name": "Deal Structuring",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "58c4cae8-1c49-5b9f-86fd-ec8371762f6b",
       "name": "Decision Making",
-      "category": "soft",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "ba524e52-3024-55b0-8366-0f5beb946b2b",
@@ -2687,10 +2642,7 @@
     {
       "id": "a68c86cd-f393-57f9-9f0d-72b0988f90e7",
       "name": "Demand Generation",
-      "category": "domain",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "10438de7-c68a-5dfc-a4fb-1c5ad5af4b39",
@@ -2740,10 +2692,7 @@
     {
       "id": "b85c1a4e-5944-5c85-a3d5-92aaf96a2513",
       "name": "Detection Engineering",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "3c5a5fc1-7ecf-5d89-a014-c3ef6b60b7a2",
@@ -2753,10 +2702,7 @@
     {
       "id": "c9b72af1-8b42-54b1-89e9-bc7e7596e4dc",
       "name": "Developer Relations",
-      "category": "domain",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "84ffba6a-7ab4-5200-92c0-123ce4e96591",
@@ -2793,10 +2739,7 @@
     {
       "id": "90f103da-b62e-5ca5-aac4-555ffe072389",
       "name": "DHCP",
-      "category": "technical",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "technical"
     },
     {
       "id": "d7c67c4b-253e-51af-aa5c-8689f5beb899",
@@ -2804,6 +2747,20 @@
       "category": "technical",
       "neighbors": {
         "Privacy": 0.2
+      }
+    },
+    {
+      "id": "2d13dd9d-b8dd-5dba-a83c-53799449b9fb",
+      "name": "Differentiated Instruction",
+      "category": "domain",
+      "subcategory": "Education",
+      "aliases": [
+        "Differentiation",
+        "Scaffolded Instruction"
+      ],
+      "neighbors": {
+        "Pedagogy": 0.2,
+        "Special Education": 0.3
       }
     },
     {
@@ -2822,26 +2779,17 @@
     {
       "id": "b19f5579-8242-5355-8cb2-87792d24ac27",
       "name": "Disaster Recovery",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "37babfcc-94e8-55b3-a8a5-45b9dff564f9",
       "name": "Discovery",
-      "category": "soft",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "726637cb-9bb1-5c63-8b41-56f8c1d8cdc0",
       "name": "Discretion",
-      "category": "soft",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "d0c52e02-ed65-5727-91f1-3a9325618ba9",
@@ -2858,10 +2806,7 @@
     {
       "id": "a1eb4e09-13ae-5efb-bdbc-b94bbd557248",
       "name": "Diversity",
-      "category": "domain",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "44c6150f-6107-51db-b64f-ef9e6ab1329f",
@@ -2917,7 +2862,6 @@
       "name": "Documentation",
       "category": "soft",
       "neighbors": {
-        "C": 0.2,
         "Technical Documentation": 0.2
       }
     },
@@ -2948,10 +2892,7 @@
     {
       "id": "b8c9f2de-f033-51aa-ab24-88b7d0f7569e",
       "name": "Due Diligence",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "f291e4a4-b00c-5c7d-9db5-b1ba04098add",
@@ -2974,6 +2915,38 @@
       ]
     },
     {
+      "id": "0ab0b87f-33df-53a5-9b7f-79d6afaa771a",
+      "name": "E-Learning Development",
+      "category": "domain",
+      "subcategory": "Education",
+      "aliases": [
+        "eLearning Development",
+        "Online Course Development",
+        "Digital Learning"
+      ],
+      "neighbors": {
+        "Accessibility": 0.4,
+        "Adobe Captivate": 0.2,
+        "Articulate Storyline": 0.2,
+        "EdTech": 0.3,
+        "Instructional Design": 0.2,
+        "Online Teaching": 0.3
+      }
+    },
+    {
+      "id": "75a4ec38-bfa8-5ba6-8a2d-489c95507897",
+      "name": "Early Childhood Education",
+      "category": "domain",
+      "subcategory": "Education",
+      "aliases": [
+        "Pre-K Education"
+      ],
+      "neighbors": {
+        "Literacy Instruction": 0.4,
+        "Seesaw": 0.4
+      }
+    },
+    {
       "id": "094bd201-a76a-56da-8df9-0b677de7b5d7",
       "name": "eBPF",
       "category": "technical"
@@ -2988,7 +2961,6 @@
       "name": "Economics",
       "category": "domain",
       "neighbors": {
-        "C": 0.2,
         "Labor Economics": 0.2
       }
     },
@@ -3000,7 +2972,13 @@
     {
       "id": "7e213d0e-cb8c-53b0-88a8-0032f5dd2524",
       "name": "Editing",
-      "category": "soft"
+      "category": "soft",
+      "neighbors": {
+        "Academic Publishing": 0.3,
+        "Academic Writing": 0.4,
+        "Peer Review": 0.3,
+        "Writing Instruction": 0.4
+      }
     },
     {
       "id": "72c04019-1152-56e5-9799-bf8d577c3749",
@@ -3015,7 +2993,74 @@
       "onet_element_id": "T-EDTECH",
       "aliases": [
         "Educational Technology"
-      ]
+      ],
+      "neighbors": {
+        "E-Learning Development": 0.3,
+        "Learning Management Systems": 0.3
+      }
+    },
+    {
+      "id": "6e5e23fa-6828-5f5f-9b5e-e753dfb51b2c",
+      "name": "Education Policy",
+      "category": "domain",
+      "subcategory": "Education Administration",
+      "aliases": [
+        "Educational Policy"
+      ],
+      "neighbors": {
+        "Public Policy": 0.2
+      }
+    },
+    {
+      "id": "d35f4122-be33-5f5a-b9ea-d87cc4a90dd3",
+      "name": "Educational Assessment",
+      "category": "domain",
+      "subcategory": "Education",
+      "aliases": [
+        "Student Assessment",
+        "Assessment Design",
+        "Grading"
+      ],
+      "neighbors": {
+        "Formative Assessment": 0.2,
+        "Program Evaluation": 0.4,
+        "Psychometrics": 0.3,
+        "Summative Assessment": 0.2,
+        "Turnitin": 0.5
+      }
+    },
+    {
+      "id": "db0e5088-a016-5051-a3f2-d4eeae29171e",
+      "name": "Educational Leadership",
+      "category": "domain",
+      "subcategory": "Education Administration",
+      "aliases": [
+        "School Leadership",
+        "Academic Leadership",
+        "Educational Administration",
+        "District Leadership"
+      ],
+      "neighbors": {
+        "Board Governance": 0.3,
+        "Faculty Development": 0.3,
+        "Leadership": 0.2,
+        "School Administration": 0.2,
+        "School Improvement Planning": 0.3,
+        "Teacher Evaluation": 0.3
+      }
+    },
+    {
+      "id": "7772235c-c778-5e55-800a-aefab8a20a15",
+      "name": "Educational Research",
+      "category": "domain",
+      "subcategory": "Academic Disciplines",
+      "aliases": [
+        "Learning Sciences"
+      ],
+      "neighbors": {
+        "Psychometrics": 0.4,
+        "Research Design": 0.3
+      }
     },
     {
       "id": "dce9146c-b780-538d-aa89-1211a1483be6",
@@ -3046,10 +3091,7 @@
     {
       "id": "28f9f0c2-d7fd-5940-b0d8-7fb2f5e2bb8c",
       "name": "Electron",
-      "category": "tool",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "tool"
     },
     {
       "id": "b9763310-3559-51a6-a2c8-0d4acf82d37b",
@@ -3069,10 +3111,7 @@
     {
       "id": "76ddb067-5a24-59af-a656-2a9e11407906",
       "name": "Email Outreach",
-      "category": "soft",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "8cc6e8e6-7a73-5106-a86c-d9ac24dc7ad1",
@@ -3107,16 +3146,13 @@
       "name": "Employee Relations",
       "category": "domain",
       "neighbors": {
-        "R": 0.2
+        "Labor Relations": 0.2
       }
     },
     {
       "id": "c4f5d3a8-8836-5a34-9bcd-762eeb000a5d",
       "name": "Employer Branding",
-      "category": "domain",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "3405ebb9-09d7-5404-bcc6-5c2cdc573171",
@@ -3139,6 +3175,15 @@
       ],
       "neighbors": {
         "Integration Testing": 0.4
+      }
+    },
+    {
+      "id": "d99474f8-7a7c-56ba-a8f6-5d4eccf44ef5",
+      "name": "EndNote",
+      "category": "tool",
+      "subcategory": "Research Tools",
+      "neighbors": {
+        "Literature Review": 0.3
       }
     },
     {
@@ -3178,9 +3223,22 @@
     {
       "id": "86260286-a9b7-5780-92c4-a0ba136993f7",
       "name": "Engineering Management",
+      "category": "domain"
+    },
+    {
+      "id": "621c9629-afda-5b61-857e-4200ed8db4d8",
+      "name": "Enrollment Management",
       "category": "domain",
+      "subcategory": "Education Administration",
+      "aliases": [
+        "Student Recruitment",
+        "Student Enrollment",
+        "Enrollment Strategy",
+        "Yield Modeling"
+      ],
       "neighbors": {
-        "Gin": 0.2
+        "Admissions": 0.2,
+        "Marketing": 0.5
       }
     },
     {
@@ -3194,10 +3252,7 @@
     {
       "id": "18c83394-acf2-5a9c-a522-48982d07b8f5",
       "name": "Enterprise Sales",
-      "category": "domain",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "5c9b12f8-6278-57d7-854b-780665451da1",
@@ -3220,9 +3275,15 @@
     {
       "id": "f13092d6-799b-5e06-9f22-88d8eff992de",
       "name": "Entrepreneurship",
-      "category": "soft",
+      "category": "soft"
+    },
+    {
+      "id": "ab7e20a2-0fe5-537f-98b9-8231915995e4",
+      "name": "Environmental Science",
+      "category": "domain",
+      "subcategory": "Academic Disciplines",
       "neighbors": {
-        "R": 0.2
+        "Fieldwork": 0.4
       }
     },
     {
@@ -3235,9 +3296,18 @@
     {
       "id": "d695d788-527b-5d53-bb87-58b86d883f91",
       "name": "Equity Administration",
-      "category": "domain",
+      "category": "domain"
+    },
+    {
+      "id": "9ceb17bc-e52e-5588-b7a1-422c6adf53e9",
+      "name": "eRA Commons",
+      "category": "tool",
+      "subcategory": "Research Tools",
+      "aliases": [
+        "Grants.gov"
+      ],
       "neighbors": {
-        "R": 0.2
+        "Research Administration": 0.2
       }
     },
     {
@@ -3248,9 +3318,22 @@
     {
       "id": "09eb8890-44d7-5cbf-8048-8d55ab5273b5",
       "name": "Escalation Management",
-      "category": "soft",
+      "category": "soft"
+    },
+    {
+      "id": "8763f53c-84aa-55bf-b828-349fc0039c41",
+      "name": "ESL Instruction",
+      "category": "domain",
+      "subcategory": "Education",
+      "aliases": [
+        "TESOL",
+        "ESOL",
+        "ELL Instruction",
+        "English Language Teaching"
+      ],
       "neighbors": {
-        "C": 0.2
+        "Linguistics": 0.4,
+        "Literacy Instruction": 0.4
       }
     },
     {
@@ -3261,6 +3344,23 @@
       "onet_element_id": "T-ESLINT",
       "neighbors": {
         "Biome": 0.4
+      }
+    },
+    {
+      "id": "9125fd7f-d36e-5e74-9a7e-b6afd471fa2f",
+      "name": "Ethnography",
+      "category": "technical",
+      "subcategory": "Research Methods",
+      "aliases": [
+        "Ethnographic Research",
+        "Participant Observation"
+      ],
+      "neighbors": {
+        "Anthropology": 0.2,
+        "Fieldwork": 0.2,
+        "Research Design": 0.2,
+        "Sociology": 0.3,
+        "User Research": 0.3
       }
     },
     {
@@ -3278,15 +3378,15 @@
     {
       "id": "8f2a4f8e-039e-551f-af43-a981bb5c0ec3",
       "name": "Event Management",
-      "category": "soft"
+      "category": "soft",
+      "neighbors": {
+        "Conference Organization": 0.2
+      }
     },
     {
       "id": "4c65c599-6a89-53f5-857e-0e12a6c9bf42",
       "name": "Event Marketing",
-      "category": "domain",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "dcb8574d-d824-5de0-a86e-3d99824a27cb",
@@ -3308,18 +3408,14 @@
     {
       "id": "cea1ff17-3a0c-5807-99f4-b678483cd301",
       "name": "Excel",
-      "category": "tool",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "tool"
     },
     {
       "id": "3b9d7b79-0581-5274-b6df-04bfcff11639",
       "name": "Execution",
       "category": "soft",
       "neighbors": {
-        "Autonomous Execution": 0.2,
-        "C": 0.2
+        "Autonomous Execution": 0.2
       }
     },
     {
@@ -3341,10 +3437,7 @@
     {
       "id": "04e63f66-24a3-53c0-800f-5d61b7915ea6",
       "name": "Executive Presence",
-      "category": "soft",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "dca876a1-f014-5a0c-ab30-5c2aa98770e1",
@@ -3365,17 +3458,15 @@
       "id": "37804fd9-551a-5af8-ac15-7988ee72d393",
       "name": "Experimental Design",
       "category": "soft",
+      "subcategory": "Research Methods",
       "neighbors": {
-        "R": 0.2
+        "Quantitative Research": 0.3
       }
     },
     {
       "id": "be77906f-d374-581b-bb91-f882918b7ac5",
       "name": "Experimentation Design",
-      "category": "soft",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "5825c73c-b734-5960-8160-a2557ed0a0a0",
@@ -3428,8 +3519,41 @@
       "id": "125cd801-0e37-5aff-a037-adbe373444d7",
       "name": "Facilitation",
       "category": "soft",
+      "aliases": [
+        "Workshop Facilitation"
+      ],
       "neighbors": {
-        "C": 0.2
+        "Academic Service": 0.5
+      }
+    },
+    {
+      "id": "a5309aae-63db-55f4-bc41-203d53153329",
+      "name": "Faculty Development",
+      "category": "domain",
+      "subcategory": "Education Administration",
+      "aliases": [
+        "Staff Development",
+        "Instructor Onboarding"
+      ],
+      "neighbors": {
+        "Educational Leadership": 0.3,
+        "Instructional Coaching": 0.3
+      }
+    },
+    {
+      "id": "6c4b12ef-ba75-532c-97de-c173ab95556d",
+      "name": "Family Engagement",
+      "category": "domain",
+      "subcategory": "Education",
+      "aliases": [
+        "Parent Communication",
+        "Parent Engagement",
+        "Parent Involvement",
+        "Family Partnerships"
+      ],
+      "neighbors": {
+        "Communication": 0.5,
+        "Seesaw": 0.4
       }
     },
     {
@@ -3464,7 +3588,6 @@
       "name": "Feedback",
       "category": "soft",
       "neighbors": {
-        "C": 0.2,
         "Product Feedback": 0.2
       }
     },
@@ -3482,9 +3605,21 @@
     {
       "id": "fd9fd922-18e1-54d3-8030-8a4fb1aa27a1",
       "name": "Field Marketing",
-      "category": "domain",
+      "category": "domain"
+    },
+    {
+      "id": "8c9d1e2f-3958-5e5f-9177-2b1ec9c3b651",
+      "name": "Fieldwork",
+      "category": "technical",
+      "subcategory": "Research Methods",
+      "aliases": [
+        "Field Research"
+      ],
       "neighbors": {
-        "R": 0.2
+        "Archival Research": 0.5,
+        "Data Collection": 0.3,
+        "Environmental Science": 0.4,
+        "Ethnography": 0.2
       }
     },
     {
@@ -3499,20 +3634,26 @@
       }
     },
     {
+      "id": "ff4812f4-0889-539a-8233-4bc1500f4764",
+      "name": "Financial Aid",
+      "category": "domain",
+      "subcategory": "Education Administration",
+      "aliases": [
+        "Financial Aid Administration"
+      ],
+      "neighbors": {
+        "Student Affairs": 0.4
+      }
+    },
+    {
       "id": "6d1abc97-519a-5555-92f5-a50b54b4f274",
       "name": "Financial Analysis",
-      "category": "technical",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "technical"
     },
     {
       "id": "d0555807-0792-587d-b148-a9f072248cc5",
       "name": "Financial Modeling",
-      "category": "technical",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "technical"
     },
     {
       "id": "9883f3a2-df3d-54a5-87a0-1dde11647d96",
@@ -3522,18 +3663,12 @@
     {
       "id": "9b5e4050-26f9-56d8-8108-5260fca117db",
       "name": "Financial Planning",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "c86690fb-ce2f-5ace-a10b-0c5b312ad8db",
       "name": "Financial Reporting",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "87428955-42c8-55c6-b4b7-2db6eb0e25b5",
@@ -3546,10 +3681,7 @@
     {
       "id": "8ea29c37-efb9-576f-8530-33b041c84278",
       "name": "Financial Services",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "d43170ff-2b13-57ab-8d5a-2ea63cac28a4",
@@ -3629,19 +3761,36 @@
       }
     },
     {
+      "id": "fc489c59-44b4-5246-9207-49385d916e06",
+      "name": "Focus Groups",
+      "category": "technical",
+      "subcategory": "Research Methods",
+      "aliases": [
+        "Focus Group Moderation"
+      ],
+      "neighbors": {
+        "Market Research": 0.3,
+        "Qualitative Research": 0.2,
+        "User Research": 0.2
+      }
+    },
+    {
       "id": "9231e551-745e-5195-84c8-71f803eb0c2c",
       "name": "Forecasting",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "9fdb7373-d500-5bde-bcce-b1eb6818c7ba",
       "name": "Forensics",
+      "category": "domain"
+    },
+    {
+      "id": "11ccf523-0407-5dc0-8c51-d32506031989",
+      "name": "Formative Assessment",
       "category": "domain",
+      "subcategory": "Education",
       "neighbors": {
-        "C": 0.2
+        "Educational Assessment": 0.2
       }
     },
     {
@@ -3660,39 +3809,42 @@
     {
       "id": "eb8d418e-5d18-507d-af0b-d3faea28b7c1",
       "name": "Fraud Detection",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "621faa76-82f5-5bea-9135-37290f70ed8c",
       "name": "Frontend Development",
-      "category": "technical",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "technical"
     },
     {
       "id": "d990e020-2bc8-58a9-8317-2d29523b66a9",
       "name": "Full-Cycle Recruiting",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "aa0675c1-bb48-5abb-ae95-a0b4cfaedbe9",
       "name": "Full-Stack Development",
-      "category": "technical",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "technical"
     },
     {
       "id": "a834e9b7-174c-5f4f-8995-9cc511eb49fe",
       "name": "Fund Administration",
       "category": "domain"
+    },
+    {
+      "id": "b8efa945-8c07-59c2-a806-1de9d78ab345",
+      "name": "Fundraising",
+      "category": "domain",
+      "aliases": [
+        "Development",
+        "Donor Relations",
+        "Advancement",
+        "Annual Fund"
+      ],
+      "neighbors": {
+        "Alumni Relations": 0.3,
+        "Grant Writing": 0.2
+      }
     },
     {
       "id": "bb2abcbe-2b33-52c1-9345-141671fc3246",
@@ -3753,14 +3905,8 @@
       "subcategory": "Backend Frameworks",
       "onet_element_id": "T-GIN",
       "neighbors": {
-        "Engineering Management": 0.2,
         "Fiber": 0.3,
-        "Go": 0.1,
-        "Messaging": 0.2,
-        "Platform Engineering": 0.2,
-        "Sales Engineering": 0.2,
-        "Software Engineering": 0.2,
-        "Systems Engineering": 0.2
+        "Go": 0.1
       }
     },
     {
@@ -3813,14 +3959,8 @@
         "Golang"
       ],
       "neighbors": {
-        "Algorithms": 0.2,
         "Fiber": 0.1,
         "Gin": 0.1,
-        "Go-to-Market Strategy": 0.2,
-        "Gong": 0.2,
-        "Google Sheets": 0.2,
-        "Google Slides": 0.2,
-        "Government Relations": 0.2,
         "Programming": 0.0,
         "Rust": 0.5
       }
@@ -3828,26 +3968,17 @@
     {
       "id": "ef4b93b3-df68-598b-92cd-1f157881cfc7",
       "name": "Go-to-Market Strategy",
-      "category": "domain",
-      "neighbors": {
-        "Go": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "7b3b2dad-f346-5a9e-9d35-2c8596e1494b",
       "name": "Goal Achievement",
-      "category": "soft",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "802cce14-7e54-5d87-b30b-03425cab1c5b",
       "name": "Gong",
-      "category": "tool",
-      "neighbors": {
-        "Go": 0.2
-      }
+      "category": "tool"
     },
     {
       "id": "3897d6da-c266-5988-93cb-65ac319798d0",
@@ -3883,6 +4014,15 @@
       "id": "59804cc2-60f6-535a-aabd-1cc2a0e3fd76",
       "name": "Google Calendar",
       "category": "tool"
+    },
+    {
+      "id": "c0199dd0-b570-53f8-a791-cfdf6ffb17d8",
+      "name": "Google Classroom",
+      "category": "tool",
+      "subcategory": "Education Tools",
+      "neighbors": {
+        "Learning Management Systems": 0.2
+      }
     },
     {
       "id": "44fbb6c9-0a67-5370-9c4a-96ff94174a76",
@@ -3977,18 +4117,12 @@
     {
       "id": "cbc2a9e7-d138-5f18-915d-0dda66f6ee89",
       "name": "Google Sheets",
-      "category": "tool",
-      "neighbors": {
-        "Go": 0.2
-      }
+      "category": "tool"
     },
     {
       "id": "003ae43a-5f28-53ea-9a76-61b3341720e0",
       "name": "Google Slides",
-      "category": "tool",
-      "neighbors": {
-        "Go": 0.2
-      }
+      "category": "tool"
     },
     {
       "id": "ec66b989-06bb-5458-955e-c52bb9e2a122",
@@ -4007,10 +4141,7 @@
     {
       "id": "bd79c13b-de47-531e-ae34-d7ddbcf51567",
       "name": "Google Workspace",
-      "category": "tool",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "tool"
     },
     {
       "id": "560c5605-8f9f-57eb-9755-04dccf01955a",
@@ -4020,18 +4151,12 @@
     {
       "id": "3fe04c39-2f65-52c8-a8ec-67918684d003",
       "name": "Government Relations",
-      "category": "domain",
-      "neighbors": {
-        "Go": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "306a4703-bda9-5218-8b80-0ed04f7839c6",
       "name": "GPU/Accelerator Programming",
-      "category": "technical",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "technical"
     },
     {
       "id": "42a3f61a-8cb1-5154-94e9-c3e20a135929",
@@ -4044,12 +4169,26 @@
       }
     },
     {
+      "id": "faed0f9c-f96e-5b87-8f73-a07486993e16",
+      "name": "Grant Writing",
+      "category": "soft",
+      "subcategory": "Content",
+      "aliases": [
+        "Grant Proposals",
+        "Grantsmanship",
+        "Research Funding"
+      ],
+      "neighbors": {
+        "Academic Writing": 0.3,
+        "Fundraising": 0.2,
+        "Research Administration": 0.2,
+        "Technical Writing": 0.4
+      }
+    },
+    {
       "id": "d8123edc-ee00-5944-bce5-5a70ee9d7f54",
       "name": "Graph Neural Networks",
-      "category": "technical",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "technical"
     },
     {
       "id": "bd82ba5c-0dc0-5937-90e9-3f2eed03e1bd",
@@ -4069,10 +4208,7 @@
     {
       "id": "2dcfc7ba-1433-5635-a385-f80f96815854",
       "name": "Greenhouse",
-      "category": "tool",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "tool"
     },
     {
       "id": "32c3e48e-d45e-5279-a6ea-a0931b2c8e27",
@@ -4088,10 +4224,7 @@
     {
       "id": "a7da45fb-4ca1-5f39-b014-bd146a4bfe72",
       "name": "Growth Marketing",
-      "category": "domain",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "87e49362-858c-5d4e-b31f-a3b09269fe9c",
@@ -4151,10 +4284,7 @@
     {
       "id": "8c912c99-8324-5c6f-9f78-54920113de9d",
       "name": "Healthcare",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "2d386737-a27c-5a6d-ad25-db3bef04a708",
@@ -4204,6 +4334,19 @@
       "category": "domain"
     },
     {
+      "id": "707124c3-e48d-50df-ac68-b88cf5ab66c1",
+      "name": "Higher Education",
+      "category": "domain",
+      "subcategory": "Education",
+      "aliases": [
+        "Postsecondary Education"
+      ],
+      "neighbors": {
+        "Academic Advising": 0.4,
+        "Student Affairs": 0.3
+      }
+    },
+    {
       "id": "637c199f-204a-54d5-a8cf-b601e14adf8d",
       "name": "HIPAA",
       "category": "domain",
@@ -4213,9 +4356,19 @@
     {
       "id": "79b43f13-e850-5f19-a224-b1db162cd81a",
       "name": "Hiring",
-      "category": "soft",
+      "category": "soft"
+    },
+    {
+      "id": "17eecc43-411b-5fcc-915b-85c505605dfd",
+      "name": "History",
+      "category": "domain",
+      "subcategory": "Academic Disciplines",
+      "aliases": [
+        "Intellectual History",
+        "Historiography"
+      ],
       "neighbors": {
-        "R": 0.2
+        "Archival Research": 0.3
       }
     },
     {
@@ -4308,12 +4461,23 @@
       ]
     },
     {
+      "id": "909e67f7-1ef7-5ae8-a523-e551ee86144b",
+      "name": "IEP Development",
+      "category": "domain",
+      "subcategory": "Education",
+      "aliases": [
+        "Individualized Education Programs",
+        "IEP Writing",
+        "504 Plans"
+      ],
+      "neighbors": {
+        "Special Education": 0.2
+      }
+    },
+    {
       "id": "00d6431c-0335-5972-ad67-a46fdd083c88",
       "name": "IFRS",
-      "category": "domain",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "297d4d0f-574b-556d-a6a2-f1f0bdffd2e4",
@@ -4360,10 +4524,7 @@
     {
       "id": "8729df89-3f48-529e-a8ed-63de2082d2c8",
       "name": "Influencer Marketing",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "ad4f3198-18b3-579b-a9e3-4834a3fb5b87",
@@ -4386,35 +4547,25 @@
     {
       "id": "ec167db8-edc8-533d-bf0f-49e225179b2f",
       "name": "Information Retrieval",
-      "category": "domain",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "58df0c1e-8b11-552f-bdf4-fe90b83ce67c",
       "name": "Infrastructure",
       "category": "domain",
       "neighbors": {
-        "C": 0.2,
         "Infrastructure Security": 0.2
       }
     },
     {
       "id": "6cce4868-964e-5daf-baf7-5991aa22119e",
       "name": "Infrastructure as Code",
-      "category": "technical",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "technical"
     },
     {
       "id": "72e67a7c-e253-5692-98b5-db71c74a4b50",
       "name": "Infrastructure Engineering",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "22e1f4d2-f372-5cf1-b231-d236b7a12be6",
@@ -4432,6 +4583,21 @@
       "onet_element_id": "2.B.3.d"
     },
     {
+      "id": "41f67246-e137-592c-9c07-0805ffa24f2e",
+      "name": "Institutional Research",
+      "category": "domain",
+      "subcategory": "Education Administration",
+      "aliases": [
+        "Institutional Effectiveness",
+        "Enrollment Analytics",
+        "Higher Ed Analytics"
+      ],
+      "neighbors": {
+        "Data Analysis": 0.2,
+        "Statistical Analysis": 0.3
+      }
+    },
+    {
       "id": "f8b5b126-99cf-5b5d-9402-b63a882fefc7",
       "name": "Instructing",
       "category": "soft",
@@ -4440,12 +4606,44 @@
       "aliases": [
         "Teaching",
         "Training"
-      ]
+      ],
+      "neighbors": {
+        "Online Teaching": 0.2,
+        "Pedagogy": 0.2,
+        "Training and Development": 0.2,
+        "Tutoring": 0.2
+      }
+    },
+    {
+      "id": "d4287255-e321-5931-a6dd-56f8b890a722",
+      "name": "Instructional Coaching",
+      "category": "domain",
+      "subcategory": "Education",
+      "aliases": [
+        "Teacher Coaching"
+      ],
+      "neighbors": {
+        "Faculty Development": 0.3,
+        "Mentoring": 0.3,
+        "Teacher Evaluation": 0.3
+      }
     },
     {
       "id": "a8c06454-ff47-5ad1-911d-200139046b67",
       "name": "Instructional Design",
-      "category": "soft"
+      "category": "soft",
+      "subcategory": "Education",
+      "neighbors": {
+        "Adobe Captivate": 0.3,
+        "Adult Education": 0.4,
+        "Articulate Storyline": 0.3,
+        "Compliance Training": 0.3,
+        "Course Development": 0.3,
+        "Curriculum Design": 0.2,
+        "E-Learning Development": 0.2,
+        "Learning Experience Design": 0.1,
+        "Needs Assessment": 0.3
+      }
     },
     {
       "id": "4a08f318-d792-5543-ba99-3f537756414a",
@@ -4469,18 +4667,12 @@
     {
       "id": "0ed4245d-8bd3-5cd0-8bd8-119e7c490f28",
       "name": "Intellectual Curiosity",
-      "category": "soft",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "3627676a-9859-53dd-bae1-8e0c90471871",
       "name": "Intellectual Property",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "97a99acb-08bc-540c-a92d-855821738789",
@@ -4490,26 +4682,17 @@
     {
       "id": "8effab17-aa1a-529d-b08d-9968a002632f",
       "name": "Interaction Design",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "1c4b6396-2d3a-598f-82a9-cc0f063b13fd",
       "name": "Intercom",
-      "category": "tool",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "tool"
     },
     {
       "id": "04c12134-fc60-5597-ab8b-ca14dda5e3d6",
       "name": "Internal Audit",
-      "category": "domain",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "8ebe0bdb-40d6-56ec-a8ab-9bdcf3aa9020",
@@ -4619,18 +4802,12 @@
     {
       "id": "4000bc9e-08ff-5ef6-b12c-4780ea64815b",
       "name": "IT Operations",
-      "category": "domain",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "b9237afc-f0fd-54d5-ae16-ad996e4d7a4a",
       "name": "IT Risk Governance",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "22e2a031-b03e-5002-a1ff-dcf61883598a",
@@ -4741,10 +4918,7 @@
     {
       "id": "063772fd-ebf6-5140-97fb-3d1dd51b753c",
       "name": "Job Architecture",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "7816596d-2662-584e-abd1-c613a6aa3ac2",
@@ -4797,12 +4971,31 @@
       ]
     },
     {
+      "id": "0d275c66-2280-545f-991a-61beb09fd1bd",
+      "name": "K-12 Education",
+      "category": "domain",
+      "subcategory": "Education",
+      "aliases": [
+        "Primary Education",
+        "Secondary Education"
+      ],
+      "neighbors": {
+        "Lesson Planning": 0.4
+      }
+    },
+    {
+      "id": "8e2c1c71-7f04-55dd-8b61-498727a8b211",
+      "name": "Kahoot",
+      "category": "tool",
+      "subcategory": "Education Tools",
+      "neighbors": {
+        "Student Engagement": 0.4
+      }
+    },
+    {
       "id": "d7edc794-6c73-523b-a213-b219e46221b0",
       "name": "Kernel Development",
-      "category": "technical",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "technical"
     },
     {
       "id": "dd8a32d6-ab34-5230-bf50-1ea5d5e4978d",
@@ -4817,10 +5010,7 @@
     {
       "id": "e4701ea4-c9eb-5f0c-bde4-c620cfa27214",
       "name": "Knowledge Sharing",
-      "category": "soft",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "21a09870-6d55-57de-b2ca-c0348271d525",
@@ -4859,11 +5049,41 @@
       }
     },
     {
+      "id": "44e34eb0-43ff-5183-9990-aaf38a2ce3ee",
+      "name": "Lab Management",
+      "category": "domain",
+      "subcategory": "Academia",
+      "aliases": [
+        "Laboratory Management",
+        "Lab Operations",
+        "Research Group Management",
+        "Research Team Coordination"
+      ],
+      "neighbors": {
+        "Project Management": 0.4,
+        "Research Administration": 0.4,
+        "Scientific Research": 0.3
+      }
+    },
+    {
       "id": "78aeca2f-cb16-5b7e-87bb-108cb7bebf11",
       "name": "Labor Economics",
       "category": "domain",
       "neighbors": {
         "Economics": 0.2
+      }
+    },
+    {
+      "id": "66efac9a-f5ee-5389-9795-b9b9a9d6de83",
+      "name": "Labor Relations",
+      "category": "domain",
+      "aliases": [
+        "Collective Bargaining",
+        "Union Relations"
+      ],
+      "neighbors": {
+        "Employee Relations": 0.2,
+        "Negotiation": 0.3
       }
     },
     {
@@ -4907,6 +5127,19 @@
       }
     },
     {
+      "id": "98f3025d-7060-5df4-9991-94a1f9adf991",
+      "name": "LaTeX",
+      "category": "tool",
+      "subcategory": "Research Tools",
+      "aliases": [
+        "Overleaf",
+        "TeX"
+      ],
+      "neighbors": {
+        "Academic Writing": 0.3
+      }
+    },
+    {
       "id": "b4726b6c-b88a-50c0-b700-58cdf12c4811",
       "name": "Launch Management",
       "category": "soft"
@@ -4924,10 +5157,7 @@
     {
       "id": "aaafe33f-6ffa-5a92-af6c-172595483c91",
       "name": "Lead Generation",
-      "category": "domain",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "385bc117-5f2c-5268-934d-647b3319d1ce",
@@ -4939,6 +5169,7 @@
         "team leadership"
       ],
       "neighbors": {
+        "Educational Leadership": 0.2,
         "Influence": 0.3,
         "Sales Leadership": 0.2,
         "Strategic Thinking": 0.3,
@@ -4955,6 +5186,41 @@
         "Lean",
         "Lean Startup"
       ]
+    },
+    {
+      "id": "4c9b7aa4-bfc7-5da5-8989-a36366cbb5aa",
+      "name": "Learning Experience Design",
+      "category": "soft",
+      "subcategory": "Education",
+      "aliases": [
+        "LXD",
+        "LX Design"
+      ],
+      "neighbors": {
+        "Instructional Design": 0.1,
+        "UX Design": 0.3
+      }
+    },
+    {
+      "id": "3738bda4-d23b-56c9-89a2-0b09b60d623a",
+      "name": "Learning Management Systems",
+      "category": "tool",
+      "subcategory": "Education Tools",
+      "aliases": [
+        "LMS",
+        "LMS Administration",
+        "LMS Implementation"
+      ],
+      "neighbors": {
+        "Blackboard": 0.2,
+        "Canvas LMS": 0.2,
+        "EdTech": 0.3,
+        "Google Classroom": 0.2,
+        "Moodle": 0.2,
+        "PowerSchool": 0.4,
+        "Schoology": 0.2,
+        "Student Information Systems": 0.4
+      }
     },
     {
       "id": "af37c4e5-4684-55d1-a62c-674dd64bfb29",
@@ -4974,26 +5240,30 @@
     {
       "id": "ff33d898-87fc-5e45-bb7d-d3f892f08944",
       "name": "Legal Operations",
-      "category": "domain",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "e128966c-d31c-5ef1-b1d2-f74a08ed4399",
       "name": "Legal Writing",
-      "category": "soft",
+      "category": "soft"
+    },
+    {
+      "id": "14902f11-2599-5c5a-82bc-4e1ca84524f2",
+      "name": "Lesson Planning",
+      "category": "domain",
+      "subcategory": "Education",
+      "aliases": [
+        "Lesson Design"
+      ],
       "neighbors": {
-        "R": 0.2
+        "K-12 Education": 0.4,
+        "Pedagogy": 0.2
       }
     },
     {
       "id": "83209464-6dca-57b0-a7de-6f68d1505959",
       "name": "Lifecycle Marketing",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "467f1fbf-5953-5e1b-ba61-58f2b564e842",
@@ -5006,12 +5276,21 @@
       }
     },
     {
+      "id": "d447ae9d-b1b6-5d3e-8dbd-ab3565bd9657",
+      "name": "Linguistics",
+      "category": "domain",
+      "subcategory": "Academic Disciplines",
+      "aliases": [
+        "Applied Linguistics"
+      ],
+      "neighbors": {
+        "ESL Instruction": 0.4
+      }
+    },
+    {
       "id": "920f8539-2682-5632-a89e-bbc927111445",
       "name": "LinkedIn Sales Navigator",
-      "category": "tool",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "tool"
     },
     {
       "id": "4d435614-62ef-53d2-9632-4fd9a3257246",
@@ -5023,6 +5302,51 @@
         "Linux Administration",
         "Unix"
       ]
+    },
+    {
+      "id": "66e08592-a685-5fa7-8562-58a069dbf30f",
+      "name": "Literacy Instruction",
+      "category": "domain",
+      "subcategory": "Education",
+      "aliases": [
+        "Reading Instruction",
+        "Phonics Instruction"
+      ],
+      "neighbors": {
+        "ESL Instruction": 0.4,
+        "Early Childhood Education": 0.4,
+        "Writing Instruction": 0.3
+      }
+    },
+    {
+      "id": "17c60720-8e67-5913-b64c-3316fa82d00b",
+      "name": "Literature",
+      "category": "domain",
+      "subcategory": "Academic Disciplines",
+      "aliases": [
+        "English Literature",
+        "Comparative Literature"
+      ],
+      "neighbors": {
+        "Textual Analysis": 0.3
+      }
+    },
+    {
+      "id": "7e04f30a-99b5-5728-a2f5-dab7f85f6ef8",
+      "name": "Literature Review",
+      "category": "technical",
+      "subcategory": "Research Methods",
+      "aliases": [
+        "Systematic Literature Review",
+        "Literature Synthesis"
+      ],
+      "neighbors": {
+        "Academic Writing": 0.3,
+        "EndNote": 0.3,
+        "Mendeley": 0.3,
+        "Meta-Analysis": 0.3,
+        "Zotero": 0.3
+      }
     },
     {
       "id": "4bd81110-1a6d-5fc8-abb9-4af38dd630e1",
@@ -5088,10 +5412,7 @@
     {
       "id": "f9277481-e3eb-5f01-8756-765c9df776c9",
       "name": "macOS",
-      "category": "technical",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "technical"
     },
     {
       "id": "81c2a90a-6edb-5630-9494-6eb3954edd42",
@@ -5101,10 +5422,7 @@
     {
       "id": "defc0a74-1ea6-56a4-b49e-011c9ae5a257",
       "name": "Malware Analysis",
-      "category": "domain",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "5b4ce8e1-8837-54f4-96dd-05c945ca0c61",
@@ -5154,7 +5472,8 @@
       "name": "Market Research",
       "category": "domain",
       "neighbors": {
-        "C": 0.2
+        "Focus Groups": 0.3,
+        "Survey Design": 0.4
       }
     },
     {
@@ -5166,9 +5485,9 @@
         "Content Marketing": 0.2,
         "Digital Marketing": 0.2,
         "Email Marketing": 0.2,
+        "Enrollment Management": 0.5,
         "Marketing Operations": 0.2,
         "Performance Marketing": 0.2,
-        "R": 0.2,
         "Segment Marketing": 0.2,
         "Technical Marketing": 0.2
       }
@@ -5184,9 +5503,19 @@
     {
       "id": "1680f27f-5c84-5734-8c08-4e267af564cc",
       "name": "Marketo",
-      "category": "tool",
+      "category": "tool"
+    },
+    {
+      "id": "3d685020-37c6-513e-9dd5-d0af824b75c9",
+      "name": "Master Scheduling",
+      "category": "domain",
+      "subcategory": "Education Administration",
+      "aliases": [
+        "Academic Scheduling"
+      ],
       "neighbors": {
-        "R": 0.2
+        "Scheduling": 0.3,
+        "School Administration": 0.2
       }
     },
     {
@@ -5243,10 +5572,7 @@
     {
       "id": "a5b5e526-e373-527f-9a66-a61a6d7f52e3",
       "name": "Measurement",
-      "category": "soft",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "db135b17-2a97-5333-805d-8f2db8c8ecea",
@@ -5256,10 +5582,7 @@
     {
       "id": "8e126fd4-9efd-5672-afa9-30108a7cdef5",
       "name": "Media Relations",
-      "category": "soft",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "ea708aab-913e-50c2-989f-0f6ab0d33bf2",
@@ -5277,6 +5600,15 @@
       "category": "technical"
     },
     {
+      "id": "52e0c00c-6ab7-5bf4-86a6-ed314658636b",
+      "name": "Mendeley",
+      "category": "tool",
+      "subcategory": "Research Tools",
+      "neighbors": {
+        "Literature Review": 0.3
+      }
+    },
+    {
       "id": "038dfd26-f0c7-532b-b8a0-bc39b48828ff",
       "name": "Mentoring",
       "category": "soft",
@@ -5284,16 +5616,19 @@
       "onet_element_id": "T-MENTORING",
       "aliases": [
         "Coaching",
+        "Student Mentoring",
         "mentorship"
-      ]
+      ],
+      "neighbors": {
+        "Academic Advising": 0.3,
+        "Instructional Coaching": 0.3,
+        "Thesis Advising": 0.2
+      }
     },
     {
       "id": "81d559b8-8e1c-52b0-a008-3a51d1e316a3",
       "name": "Mergers and Acquisitions",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "c032fe9c-2bfc-54fc-86c1-eb0ba9a2f126",
@@ -5308,9 +5643,19 @@
     {
       "id": "a7edf25b-36dc-532f-9e76-2f2f8d788554",
       "name": "Messaging",
-      "category": "soft",
+      "category": "soft"
+    },
+    {
+      "id": "f15559c3-cdbe-5fb2-881b-778f3170fd3e",
+      "name": "Meta-Analysis",
+      "category": "technical",
+      "subcategory": "Research Methods",
+      "aliases": [
+        "Systematic Review"
+      ],
       "neighbors": {
-        "Gin": 0.2
+        "Literature Review": 0.3,
+        "Statistical Analysis": 0.3
       }
     },
     {
@@ -5331,10 +5676,7 @@
     {
       "id": "806b0c6c-f68e-562e-beb9-4d6d0e144410",
       "name": "Metrics Design",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "c63f574a-0d8e-515b-a762-6be9d862dbc0",
@@ -5375,18 +5717,12 @@
     {
       "id": "1370f2a9-86d5-57a7-b84f-1783d419a749",
       "name": "Microsoft Excel",
-      "category": "tool",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "tool"
     },
     {
       "id": "06a62b49-4f92-5b98-9d74-dd2e105284af",
       "name": "Microsoft Office",
-      "category": "tool",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "tool"
     },
     {
       "id": "1d8f9580-893b-586f-a494-ef1b24fa848d",
@@ -5394,6 +5730,18 @@
       "category": "tool",
       "subcategory": "Design",
       "onet_element_id": "T-MIRO"
+    },
+    {
+      "id": "5e8c4328-8c86-5cb8-b492-7158c622745b",
+      "name": "Mixed Methods Research",
+      "category": "technical",
+      "subcategory": "Research Methods",
+      "aliases": [
+        "Mixed Methods"
+      ],
+      "neighbors": {
+        "Research Design": 0.2
+      }
     },
     {
       "id": "1ed59fe4-b268-5b45-b870-b9721e42fbc1",
@@ -5427,10 +5775,7 @@
     {
       "id": "37771688-0abc-5f53-866d-bd0d8a1280de",
       "name": "Mobile Device Management",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "dcaa16c5-03b6-516e-a84f-e39b9cca5469",
@@ -5449,10 +5794,7 @@
     {
       "id": "ed5bf585-25f2-5ed0-b946-fd1307209938",
       "name": "Model Training",
-      "category": "technical",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "technical"
     },
     {
       "id": "fef46795-60e2-50a6-b56e-21ea79fcfd1e",
@@ -5497,11 +5839,32 @@
       "category": "domain"
     },
     {
+      "id": "97d70329-a1c3-5b7c-b458-e9d9ff851407",
+      "name": "Moodle",
+      "category": "tool",
+      "subcategory": "Education Tools",
+      "neighbors": {
+        "Learning Management Systems": 0.2
+      }
+    },
+    {
       "id": "6a0a235f-3413-5f61-8473-0a20edfa18c1",
       "name": "Motion Graphics",
+      "category": "domain"
+    },
+    {
+      "id": "f3b881cf-9828-526d-94ce-d78c377700bf",
+      "name": "MTSS Coordination",
       "category": "domain",
+      "subcategory": "Education",
+      "aliases": [
+        "MTSS",
+        "RTI",
+        "Multi-Tiered Systems of Support"
+      ],
       "neighbors": {
-        "C": 0.2
+        "School Administration": 0.4,
+        "Special Education": 0.3
       }
     },
     {
@@ -5525,18 +5888,12 @@
     {
       "id": "42fbd38d-06aa-5e86-a0ec-e3a3a1c7506d",
       "name": "Music Industry Knowledge",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "6574b4b2-98ca-5376-98e0-66b21314129c",
       "name": "Music Information Retrieval",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "0da1ec1f-533f-5981-8494-83a16624b69f",
@@ -5595,11 +5952,29 @@
       "category": "tool"
     },
     {
+      "id": "1cd72e3c-e0e7-52c6-aae8-937e82f9eb0b",
+      "name": "Needs Assessment",
+      "category": "soft",
+      "subcategory": "Process",
+      "aliases": [
+        "Learning Needs Analysis",
+        "Training Needs Analysis"
+      ],
+      "neighbors": {
+        "Instructional Design": 0.3,
+        "Program Evaluation": 0.4,
+        "Training and Development": 0.3
+      }
+    },
+    {
       "id": "4480b2dd-1533-51ce-a596-3169dc518b1a",
       "name": "Negotiation",
       "category": "soft",
       "subcategory": "Social",
-      "onet_element_id": "2.B.1.d"
+      "onet_element_id": "2.B.1.d",
+      "neighbors": {
+        "Labor Relations": 0.3
+      }
     },
     {
       "id": "2f1aec22-a0dc-5926-a696-964d84121d21",
@@ -5644,9 +6019,15 @@
     {
       "id": "19842b81-8263-580b-a002-4e0456576642",
       "name": "Networking",
-      "category": "technical",
+      "category": "technical"
+    },
+    {
+      "id": "c92d65b6-bc84-5fe6-9ad3-0f778f48d335",
+      "name": "Neuroscience",
+      "category": "domain",
+      "subcategory": "Academic Disciplines",
       "neighbors": {
-        "R": 0.2
+        "Biology": 0.4
       }
     },
     {
@@ -5779,6 +6160,15 @@
       "category": "tool"
     },
     {
+      "id": "1b0537c0-471e-51b1-ab38-e1d56027fa68",
+      "name": "NVivo",
+      "category": "tool",
+      "subcategory": "Research Tools",
+      "neighbors": {
+        "Qualitative Research": 0.2
+      }
+    },
+    {
       "id": "c41c2558-6635-5582-96fb-482fd013fc8b",
       "name": "Nx",
       "category": "tool",
@@ -5844,10 +6234,7 @@
     {
       "id": "ef6d22bd-10aa-597c-b24c-c007376c9268",
       "name": "Offensive Security",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "aa1595be-ac1d-5222-86bc-2624dff8f828",
@@ -5872,18 +6259,28 @@
     {
       "id": "7c318f71-a2d0-537f-998a-839844f5c88e",
       "name": "Onboarding",
+      "category": "domain"
+    },
+    {
+      "id": "d3fad3bb-88a0-526c-af22-aabb3a97f3de",
+      "name": "Online Teaching",
       "category": "domain",
+      "subcategory": "Education",
+      "aliases": [
+        "Remote Teaching",
+        "Virtual Instruction",
+        "Distance Education"
+      ],
       "neighbors": {
-        "R": 0.2
+        "Blended Learning": 0.2,
+        "E-Learning Development": 0.3,
+        "Instructing": 0.2
       }
     },
     {
       "id": "4a860912-5b42-59ad-82a2-273b8537fb59",
       "name": "Open Source",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "c63e98a6-012e-59d1-9ce7-16bf780fb88c",
@@ -5921,10 +6318,7 @@
     {
       "id": "09ef2ac4-b182-551c-bc72-ce0a76e1cbee",
       "name": "Operational Excellence",
-      "category": "soft",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "db9b3599-86bb-5ac9-aaf4-c0dfede6dcfe",
@@ -5938,7 +6332,7 @@
       "name": "Operations Management",
       "category": "domain",
       "neighbors": {
-        "R": 0.2
+        "School Administration": 0.4
       }
     },
     {
@@ -5960,10 +6354,7 @@
     {
       "id": "d78935d5-f014-5e7e-adab-9fee210a1dca",
       "name": "Oracle",
-      "category": "tool",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "tool"
     },
     {
       "id": "53a60b92-4485-504b-aef2-444f79e9edec",
@@ -5976,8 +6367,7 @@
       "category": "soft",
       "neighbors": {
         "Organizational Development": 0.2,
-        "Organizational Skills": 0.2,
-        "R": 0.2
+        "Organizational Skills": 0.2
       }
     },
     {
@@ -6004,10 +6394,7 @@
     {
       "id": "d6d104dd-a64f-58b0-84fe-fdba03b7dbd4",
       "name": "Outreach",
-      "category": "tool",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "tool"
     },
     {
       "id": "91cce4cc-5812-5609-a19e-6975f0e016d0",
@@ -6054,34 +6441,22 @@
     {
       "id": "211d3966-2f51-5d70-b4eb-dd6119e58f95",
       "name": "Partner Management",
-      "category": "soft",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "65252ce9-660b-5e69-aa46-c856a9876fe3",
       "name": "Partner Marketing",
-      "category": "domain",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "4ab36bca-8f74-504a-91f8-2a7d6de7cc42",
       "name": "Partnership Management",
-      "category": "soft",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "9a5269bf-f676-5e5a-b98c-d6d36989b188",
       "name": "Pattern Recognition",
-      "category": "technical",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "technical"
     },
     {
       "id": "5afd0810-38aa-5fcf-9173-681e217e5cc7",
@@ -6091,10 +6466,7 @@
     {
       "id": "a1b16be5-8bb9-56c1-aab0-0ab237db172a",
       "name": "Payroll",
-      "category": "domain",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "79ef4f18-d7c2-5e01-89a4-059598d1de81",
@@ -6120,6 +6492,40 @@
       }
     },
     {
+      "id": "33a0c833-0519-5cc1-a0c6-bf1eaa910086",
+      "name": "Pedagogy",
+      "category": "domain",
+      "subcategory": "Education",
+      "aliases": [
+        "Teaching Methods",
+        "Pedagogical Content Knowledge"
+      ],
+      "neighbors": {
+        "Classroom Management": 0.2,
+        "Culturally Responsive Teaching": 0.2,
+        "Differentiated Instruction": 0.2,
+        "Instructing": 0.2,
+        "Lesson Planning": 0.2,
+        "Project-Based Learning": 0.2,
+        "Universal Design for Learning": 0.2
+      }
+    },
+    {
+      "id": "fc34ddd2-91a2-5230-9166-7cf45bfe7ee5",
+      "name": "Peer Review",
+      "category": "domain",
+      "subcategory": "Academia",
+      "aliases": [
+        "Manuscript Review",
+        "Referee Reports",
+        "Journal Review"
+      ],
+      "neighbors": {
+        "Academic Publishing": 0.2,
+        "Editing": 0.3
+      }
+    },
+    {
       "id": "cbedddc9-8c94-5694-8699-439e2c6923da",
       "name": "Penetration Testing",
       "category": "technical",
@@ -6133,10 +6539,7 @@
     {
       "id": "0b02bb8e-c0a1-5229-ad05-fcf8eaab4718",
       "name": "Performance Management",
-      "category": "soft",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "cc347bf4-9651-5b3d-90bb-ed6ad27d11a9",
@@ -6169,10 +6572,7 @@
     {
       "id": "12a2fef5-753b-507e-8c3d-1eab85fa0c13",
       "name": "Personalization",
-      "category": "domain",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "94d2a304-d52a-58cc-96ef-b1ae66f1e402",
@@ -6180,6 +6580,18 @@
       "category": "soft",
       "subcategory": "Social",
       "onet_element_id": "2.B.1.c"
+    },
+    {
+      "id": "9399033f-c232-5ac8-8900-a6744cd81111",
+      "name": "Philosophy",
+      "category": "domain",
+      "subcategory": "Academic Disciplines",
+      "aliases": [
+        "Political Philosophy"
+      ],
+      "neighbors": {
+        "Academic Writing": 0.5
+      }
     },
     {
       "id": "7d9715c0-17b5-51f2-9937-abd7bb59d306",
@@ -6218,10 +6630,7 @@
     {
       "id": "d6b52e30-c46b-56c6-9892-d76643afc7b9",
       "name": "Platform Engineering",
-      "category": "domain",
-      "neighbors": {
-        "Gin": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "dbaf5d34-e978-5c25-8ab5-57b2fb26960e",
@@ -6260,10 +6669,7 @@
     {
       "id": "509567fa-f1ad-51f9-981d-75485f2d0e16",
       "name": "Policy Development",
-      "category": "soft",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "6bc9077a-b9d2-5733-80bd-e053ac52a2bf",
@@ -6271,9 +6677,27 @@
       "category": "domain"
     },
     {
+      "id": "29aa6e67-b609-5483-87ca-61f03196daa6",
+      "name": "Political Science",
+      "category": "domain",
+      "subcategory": "Academic Disciplines",
+      "aliases": [
+        "Comparative Politics"
+      ],
+      "neighbors": {
+        "American Politics": 0.2,
+        "Political Theory": 0.2,
+        "Public Policy": 0.4
+      }
+    },
+    {
       "id": "cf3691ac-ebbb-5514-8c06-4d25193dfeea",
       "name": "Political Theory",
-      "category": "domain"
+      "category": "domain",
+      "subcategory": "Academic Disciplines",
+      "neighbors": {
+        "Political Science": 0.2
+      }
     },
     {
       "id": "49c0a1ff-9338-534f-b5c9-d4e1ea0784d8",
@@ -6334,26 +6758,27 @@
     {
       "id": "83001135-c09d-5679-ba0c-eb9be73a72c4",
       "name": "PowerPoint",
+      "category": "tool"
+    },
+    {
+      "id": "48c7dc67-e21d-5b11-b383-3126814b822b",
+      "name": "PowerSchool",
       "category": "tool",
+      "subcategory": "Education Tools",
       "neighbors": {
-        "R": 0.2
+        "Learning Management Systems": 0.4,
+        "Student Information Systems": 0.2
       }
     },
     {
       "id": "1f609c7c-8b55-5b89-8a8c-a0fb620f8139",
       "name": "PowerShell",
-      "category": "technical",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "technical"
     },
     {
       "id": "8e6a8ca6-95bd-5906-8b12-ec6035c8eb6b",
       "name": "Pragmatism",
-      "category": "soft",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "7487698b-c4d4-50dd-be6e-0191202093c4",
@@ -6362,10 +6787,12 @@
       "subcategory": "Communication",
       "onet_element_id": "T-PRESENTATION",
       "aliases": [
-        "Public Speaking"
+        "Public Speaking",
+        "Lecturing"
       ],
       "neighbors": {
-        "Communication": 0.2
+        "Communication": 0.2,
+        "Conference Presentation": 0.1
       }
     },
     {
@@ -6395,10 +6822,7 @@
     {
       "id": "2c43ee35-820f-55b1-90bd-ebf3978d8560",
       "name": "Pricing Strategy",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "9812774e-5942-523f-bc4a-568a0f2b4695",
@@ -6430,7 +6854,6 @@
       "name": "Privacy",
       "category": "domain",
       "neighbors": {
-        "C": 0.2,
         "Differential Privacy": 0.2
       }
     },
@@ -6442,10 +6865,7 @@
     {
       "id": "8398361f-68b7-51de-9702-a091329cc933",
       "name": "Private Equity",
-      "category": "domain",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "8c2d8f96-19b2-5430-ae44-4b63f6800ac7",
@@ -6460,10 +6880,7 @@
     {
       "id": "70d0abde-e56c-5790-b5a9-f557f4bb74f0",
       "name": "Probabilistic Modeling",
-      "category": "technical",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "technical"
     },
     {
       "id": "f2331636-c6b3-5e03-b78f-55dd9fb05858",
@@ -6479,43 +6896,30 @@
     {
       "id": "a24740c0-4557-59a9-a1dd-220ee8be0fbb",
       "name": "Process Improvement",
-      "category": "soft",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "5349b32f-28e5-5361-9860-242d2e4a13d4",
       "name": "Procurement",
       "category": "domain",
       "neighbors": {
-        "C": 0.2,
         "Energy Procurement": 0.2
       }
     },
     {
       "id": "6390dba0-b3b9-5188-af0e-dafd65cea4f3",
       "name": "Product Demonstrations",
-      "category": "soft",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "ae1746ad-9709-533c-b84e-5fd14a927aaf",
       "name": "Product Design",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "ad5e0359-9e04-51da-840d-3762e4b3848d",
       "name": "Product Development",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "5d510978-317c-5bfe-bbee-c5f2f4295079",
@@ -6538,10 +6942,7 @@
     {
       "id": "dd321efb-29ff-54c7-b25c-23f6142e7bdd",
       "name": "Product Knowledge",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "076215a1-da20-5ae7-b4ad-defbdd9163c6",
@@ -6557,18 +6958,12 @@
     {
       "id": "04fdb1c3-a087-5687-a507-dabf672ca12c",
       "name": "Product Marketing",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "d559ac8b-046a-548d-b35a-a35b6676d023",
       "name": "Product Operations",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "40e79373-d12f-5a08-87f7-fed2f4dafe64",
@@ -6591,18 +6986,12 @@
     {
       "id": "73c06f99-d85b-5b21-9f85-ad649aea74ee",
       "name": "Product Sense",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "70f9a679-a22e-59c7-a1fd-7640482f2a7a",
       "name": "Product Strategy",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "b8e5032e-1cc2-57ac-be33-f3fe6a726d32",
@@ -6617,10 +7006,7 @@
     {
       "id": "34ac02cd-79d3-58be-a681-6345be0bf29f",
       "name": "Product-Led Growth",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "c02de9fc-08df-570e-ab4f-a240cb7edc84",
@@ -6630,10 +7016,7 @@
     {
       "id": "6f1a670f-ac89-529d-8a4a-b101e6a3e10c",
       "name": "Production Ownership",
-      "category": "soft",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "e3c1d28b-d9b0-5552-879f-0c742015cb98",
@@ -6651,11 +7034,28 @@
       "category": "technical"
     },
     {
+      "id": "84874d66-5aba-5cac-9ffb-1c1cec0a9bc1",
+      "name": "Program Evaluation",
+      "category": "technical",
+      "subcategory": "Research Methods",
+      "aliases": [
+        "Impact Evaluation",
+        "Evaluation Research"
+      ],
+      "neighbors": {
+        "Data Analysis": 0.3,
+        "Educational Assessment": 0.4,
+        "Needs Assessment": 0.4,
+        "Program Management": 0.4,
+        "Public Health": 0.4
+      }
+    },
+    {
       "id": "df8cbc58-ffce-5553-9de1-2bf97d019890",
       "name": "Program Management",
       "category": "domain",
       "neighbors": {
-        "R": 0.2
+        "Program Evaluation": 0.4
       }
     },
     {
@@ -6720,7 +7120,22 @@
       "onet_element_id": "T-PROJMGMT",
       "aliases": [
         "PMP"
-      ]
+      ],
+      "neighbors": {
+        "Lab Management": 0.4
+      }
+    },
+    {
+      "id": "ccea73c1-44be-5df9-9c0f-0a203ad31279",
+      "name": "Project-Based Learning",
+      "category": "domain",
+      "subcategory": "Education",
+      "aliases": [
+        "Inquiry-Based Learning"
+      ],
+      "neighbors": {
+        "Pedagogy": 0.2
+      }
     },
     {
       "id": "18c78c77-a6a1-5fed-b3a6-2f2f54f03999",
@@ -6752,17 +7167,13 @@
     {
       "id": "2a33dc8c-22f0-5e3b-92be-4cdd2ccbb7a4",
       "name": "Prospecting",
-      "category": "soft",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "83bc8245-ca18-51ff-be38-6644baddb444",
       "name": "Prototyping",
       "category": "technical",
       "neighbors": {
-        "R": 0.2,
         "Rapid Prototyping": 0.2
       }
     },
@@ -6772,17 +7183,62 @@
       "category": "soft"
     },
     {
+      "id": "b6ba490c-573b-5e2f-88db-42bbefbdd027",
+      "name": "Psychology",
+      "category": "domain",
+      "subcategory": "Academic Disciplines",
+      "aliases": [
+        "Cognitive Psychology",
+        "Developmental Psychology"
+      ],
+      "neighbors": {
+        "Psychometrics": 0.4
+      }
+    },
+    {
+      "id": "107c6e8b-2663-58d6-b929-450a2c0da405",
+      "name": "Psychometrics",
+      "category": "technical",
+      "subcategory": "Research Methods",
+      "aliases": [
+        "Psychometric Analysis",
+        "Educational Measurement"
+      ],
+      "neighbors": {
+        "Educational Assessment": 0.3,
+        "Educational Research": 0.4,
+        "Psychology": 0.4,
+        "Statistics": 0.4
+      }
+    },
+    {
+      "id": "9d5c23cf-a5bb-553a-8508-7f29f06ba4d8",
+      "name": "Public Health",
+      "category": "domain",
+      "subcategory": "Academic Disciplines",
+      "aliases": [
+        "Epidemiology"
+      ],
+      "neighbors": {
+        "Program Evaluation": 0.4
+      }
+    },
+    {
       "id": "7f47ddda-1e80-517b-9d95-16eb9830a7fc",
       "name": "Public Policy",
       "category": "domain",
       "neighbors": {
-        "C": 0.2
+        "Education Policy": 0.2,
+        "Political Science": 0.4
       }
     },
     {
       "id": "135aea5a-ca93-5bec-b453-6a17a863dee7",
       "name": "Public Relations",
-      "category": "domain"
+      "category": "domain",
+      "neighbors": {
+        "Science Communication": 0.4
+      }
     },
     {
       "id": "5beb8bb2-650d-5f41-823b-af1e9e3648ce",
@@ -6848,9 +7304,26 @@
     {
       "id": "462b9f09-b884-5379-ba59-125c279a55d4",
       "name": "Qualification",
-      "category": "soft",
+      "category": "soft"
+    },
+    {
+      "id": "53f3865b-3379-589c-a379-ef6ee5d266d0",
+      "name": "Qualitative Research",
+      "category": "technical",
+      "subcategory": "Research Methods",
+      "aliases": [
+        "Qualitative Methods",
+        "Qualitative Analysis"
+      ],
       "neighbors": {
-        "C": 0.2
+        "ATLAS.ti": 0.2,
+        "Content Analysis": 0.2,
+        "Focus Groups": 0.2,
+        "NVivo": 0.2,
+        "Research Design": 0.2,
+        "Research Interviewing": 0.2,
+        "Textual Analysis": 0.2,
+        "User Research": 0.2
       }
     },
     {
@@ -6865,9 +7338,39 @@
       ]
     },
     {
+      "id": "c610fbad-9749-5689-a159-05637afcb055",
+      "name": "Qualtrics",
+      "category": "tool",
+      "subcategory": "Research Tools",
+      "neighbors": {
+        "Survey Design": 0.2
+      }
+    },
+    {
       "id": "01e409da-04ab-51f6-a108-d9ac08512f22",
       "name": "Quantitative Analysis",
-      "category": "soft"
+      "category": "soft",
+      "neighbors": {
+        "Quantitative Research": 0.3
+      }
+    },
+    {
+      "id": "59db6d0b-1813-5d32-8be8-65eddd0c9bab",
+      "name": "Quantitative Research",
+      "category": "technical",
+      "subcategory": "Research Methods",
+      "aliases": [
+        "Quantitative Methods"
+      ],
+      "neighbors": {
+        "Data Analysis": 0.2,
+        "Experimental Design": 0.3,
+        "Quantitative Analysis": 0.3,
+        "Research Design": 0.2,
+        "Statistical Analysis": 0.2,
+        "Statistics": 0.1,
+        "Survey Design": 0.3
+      }
     },
     {
       "id": "9b897438-7300-5e2f-ae60-0b9dba1deb18",
@@ -6877,10 +7380,7 @@
     {
       "id": "f35a189a-06d4-5a00-ba12-3636f2e58076",
       "name": "Query Optimization",
-      "category": "technical",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "technical"
     },
     {
       "id": "35578b74-bbb7-50dd-bf2c-f012277ffc8e",
@@ -6894,104 +7394,7 @@
       "subcategory": "Programming Languages",
       "onet_element_id": "T-R",
       "neighbors": {
-        "Adobe Target": 0.2,
-        "Airtable": 0.2,
-        "Anti-Money Laundering": 0.2,
-        "Attribution": 0.2,
-        "Auditoria": 0.2,
-        "Authorization": 0.2,
-        "Billing Operations": 0.2,
-        "Brand Management": 0.2,
-        "Brex": 0.2,
-        "Builder mentality": 0.2,
-        "Burp Suite": 0.2,
-        "Business Operations": 0.2,
-        "Data Integration": 0.2,
-        "Data Loss Prevention": 0.2,
-        "Data Migration": 0.2,
-        "Data Warehousing": 0.2,
-        "Demand Generation": 0.2,
-        "Developer Relations": 0.2,
-        "Diversity": 0.2,
-        "Employee Relations": 0.2,
-        "Employer Branding": 0.2,
-        "Enterprise Sales": 0.2,
-        "Entrepreneurship": 0.2,
-        "Equity Administration": 0.2,
-        "Event Marketing": 0.2,
-        "Experimental Design": 0.2,
-        "Experimentation Design": 0.2,
-        "Field Marketing": 0.2,
-        "Frontend Development": 0.2,
-        "Graph Neural Networks": 0.2,
-        "Greenhouse": 0.2,
-        "Growth Marketing": 0.2,
-        "Hiring": 0.2,
-        "IFRS": 0.2,
-        "IT Operations": 0.2,
-        "Information Retrieval": 0.2,
-        "Internal Audit": 0.2,
-        "Kernel Development": 0.2,
-        "Knowledge Sharing": 0.2,
-        "Lead Generation": 0.2,
-        "Legal Operations": 0.2,
-        "Legal Writing": 0.2,
-        "LinkedIn Sales Navigator": 0.2,
-        "Malware Analysis": 0.2,
-        "Marketing": 0.2,
-        "Marketo": 0.2,
-        "Measurement": 0.2,
-        "Media Relations": 0.2,
-        "Model Training": 0.2,
-        "Networking": 0.2,
-        "Onboarding": 0.2,
-        "Operations Management": 0.2,
-        "Organization": 0.2,
-        "Partner Management": 0.2,
-        "Partner Marketing": 0.2,
-        "Partnership Management": 0.2,
-        "Payroll": 0.2,
-        "Personalization": 0.2,
-        "PowerPoint": 0.2,
-        "PowerShell": 0.2,
-        "Pragmatism": 0.2,
-        "Private Equity": 0.2,
-        "Program Management": 0.2,
-        "Prototyping": 0.2,
-        "Query Optimization": 0.2,
-        "Ranking Systems": 0.2,
-        "Ray": 0.2,
-        "Real-time Systems": 0.2,
-        "Red Teaming": 0.2,
-        "Relationship Building": 0.2,
-        "Reliability": 0.2,
-        "Retention": 0.2,
-        "Retool": 0.2,
-        "Revenue Operations": 0.2,
-        "Risk Management": 0.2,
-        "Roadmap Planning": 0.2,
-        "Sales Operations": 0.2,
-        "Sales Strategy": 0.2,
-        "Server-Side Rendering": 0.2,
-        "Storytelling": 0.2,
-        "Talent Strategy": 0.2,
-        "Territory Management": 0.2,
-        "Threat Hunting": 0.2,
-        "Total Rewards": 0.2,
-        "Training and Development": 0.2,
-        "Trend Analysis": 0.2,
-        "Triage": 0.2,
-        "Triton": 0.2,
-        "Trust and Safety": 0.2,
-        "Typography": 0.2,
-        "Vendor Management": 0.2,
-        "Vulnerability Management": 0.2,
-        "Workato": 0.2,
-        "Workday": 0.2,
-        "Workflow Optimization": 0.2,
-        "Workiva": 0.2,
-        "Zapier": 0.2,
-        "Zuora": 0.2
+        "Statistical Analysis": 0.2
       }
     },
     {
@@ -7008,10 +7411,7 @@
     {
       "id": "da429aeb-e90b-56be-a854-90d781306c64",
       "name": "Ranking Systems",
-      "category": "domain",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "f7a080a4-b34d-52e2-b0c9-93b7deee4586",
@@ -7029,10 +7429,7 @@
     {
       "id": "f2b91bf7-e165-5939-b480-005fa121ecb6",
       "name": "Ray",
-      "category": "tool",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "tool"
     },
     {
       "id": "d5cea594-978f-5da3-a29c-9993d57e2ed2",
@@ -7108,42 +7505,38 @@
     {
       "id": "0effae07-3a24-5004-8689-a5e73eed2d89",
       "name": "Real-time Systems",
-      "category": "technical",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "technical"
     },
     {
       "id": "44dbac20-be7d-508b-82b5-0aa14279191d",
       "name": "Recommendation Systems",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "03f6c89b-bff4-571c-a86d-efc715ba18a8",
       "name": "Reconciliation",
       "category": "soft",
       "neighbors": {
-        "Account Reconciliation": 0.2,
-        "C": 0.2
+        "Account Reconciliation": 0.2
       }
     },
     {
       "id": "a39053b9-2e94-56ff-9a13-9f339cbc042c",
       "name": "Recruitment",
-      "category": "soft",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "baef89e1-a471-51bc-83b8-265302138695",
       "name": "Red Teaming",
-      "category": "domain",
+      "category": "domain"
+    },
+    {
+      "id": "78aba855-062c-5a21-9b8d-37c37219f834",
+      "name": "REDCap",
+      "category": "tool",
+      "subcategory": "Research Tools",
       "neighbors": {
-        "R": 0.2
+        "Data Collection": 0.2
       }
     },
     {
@@ -7193,7 +7586,8 @@
       "name": "Regulatory Compliance",
       "category": "domain",
       "neighbors": {
-        "C": 0.2
+        "Accreditation": 0.3,
+        "Compliance Training": 0.3
       }
     },
     {
@@ -7209,17 +7603,13 @@
     {
       "id": "b51aa251-97e5-51d4-a8a1-b79c08931719",
       "name": "Relationship Building",
-      "category": "soft",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "c7e69c8c-e41d-5385-ae59-66e11e866e9e",
       "name": "Reliability",
       "category": "soft",
       "neighbors": {
-        "R": 0.2,
         "Reliability Engineering": 0.2
       }
     },
@@ -7277,9 +7667,79 @@
       "id": "dce395c5-f53e-5696-81be-1b8526cd6dc0",
       "name": "Research",
       "category": "domain",
+      "subcategory": "Research Methods",
       "neighbors": {
-        "C": 0.2,
+        "Research Design": 0.2,
         "Scientific Research": 0.2
+      }
+    },
+    {
+      "id": "83734f92-5169-5e78-8424-1bbfcfb3fdae",
+      "name": "Research Administration",
+      "category": "domain",
+      "subcategory": "Academia",
+      "aliases": [
+        "Grants Administration",
+        "Grants Management",
+        "Research Compliance",
+        "Subaward Management"
+      ],
+      "neighbors": {
+        "Compliance": 0.4,
+        "Grant Writing": 0.2,
+        "Lab Management": 0.4,
+        "Research Ethics": 0.3,
+        "eRA Commons": 0.2
+      }
+    },
+    {
+      "id": "09f7c721-01b0-5ab0-a73c-e0a2d4c21bf1",
+      "name": "Research Design",
+      "category": "technical",
+      "subcategory": "Research Methods",
+      "aliases": [
+        "Study Design",
+        "Research Methodology"
+      ],
+      "neighbors": {
+        "Action Research": 0.2,
+        "Educational Research": 0.3,
+        "Ethnography": 0.2,
+        "Mixed Methods Research": 0.2,
+        "Qualitative Research": 0.2,
+        "Quantitative Research": 0.2,
+        "Research": 0.2,
+        "Survey Design": 0.2
+      }
+    },
+    {
+      "id": "74dc8e33-accd-56ca-be88-722dd76fb487",
+      "name": "Research Ethics",
+      "category": "domain",
+      "subcategory": "Academia",
+      "aliases": [
+        "IRB Compliance",
+        "IRB Administration",
+        "Human Subjects Research",
+        "Responsible Conduct of Research"
+      ],
+      "neighbors": {
+        "Compliance": 0.4,
+        "Research Administration": 0.3
+      }
+    },
+    {
+      "id": "1aea3773-c4ae-5e74-b02e-88ccbdc160ff",
+      "name": "Research Interviewing",
+      "category": "technical",
+      "subcategory": "Research Methods",
+      "aliases": [
+        "Qualitative Interviewing",
+        "Semi-Structured Interviewing"
+      ],
+      "neighbors": {
+        "Qualitative Research": 0.2,
+        "User Research": 0.3
       }
     },
     {
@@ -7300,10 +7760,7 @@
     {
       "id": "46f8fc85-2079-5ac2-ab0c-62bb1be44dae",
       "name": "Resourcefulness",
-      "category": "soft",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "9de88fbb-9243-5c23-86c5-99dd142aae8c",
@@ -7343,18 +7800,12 @@
     {
       "id": "818bff28-c613-565b-a414-aa2881beadc3",
       "name": "Retention",
-      "category": "domain",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "4c110784-1f04-5ebd-9bae-b3f4f13116dc",
       "name": "Retool",
-      "category": "tool",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "tool"
     },
     {
       "id": "d9cfd942-a717-52b8-91a1-b04c48c942f3",
@@ -7372,18 +7823,12 @@
     {
       "id": "13dd8d66-20ec-539a-b04d-468ecea4c630",
       "name": "Revenue Operations",
-      "category": "domain",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "226d9839-514b-5c83-807f-1f7cdec92968",
       "name": "Revenue Recognition",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "9e744dce-5fed-5f56-a005-00a59b6e11cb",
@@ -7405,25 +7850,18 @@
       "name": "Risk Management",
       "category": "domain",
       "neighbors": {
-        "Financial Risk Management": 0.2,
-        "R": 0.2
+        "Financial Risk Management": 0.2
       }
     },
     {
       "id": "2d45c9d6-07da-510d-b15f-dead817b9e4c",
       "name": "Roadmap Planning",
-      "category": "soft",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "e632a7fa-de35-57a2-8b99-3f9140aeacf0",
       "name": "Robotics",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "75d68be8-0642-5702-b6f3-72e5f55cceb2",
@@ -7446,10 +7884,7 @@
     {
       "id": "28060b10-271b-5b7d-8247-2509f62ceb18",
       "name": "Root Cause Analysis",
-      "category": "soft",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "e81551d5-eb02-5768-bd2a-0842e7e9d44a",
@@ -7545,10 +7980,7 @@
     {
       "id": "4495e166-bdcc-57b5-bb69-43afce6c5466",
       "name": "Sales Engineering",
-      "category": "domain",
-      "neighbors": {
-        "Gin": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "d810d789-060f-5b4d-bbc8-5bebd977bb68",
@@ -7569,18 +8001,12 @@
     {
       "id": "5071fb1f-fa85-58bc-8067-8a5a7ddb8998",
       "name": "Sales Operations",
-      "category": "domain",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "0ce6f930-2604-57a7-8d2d-b9f1c7d1c62d",
       "name": "Sales Strategy",
-      "category": "domain",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "d025905a-9944-5339-bee9-9949775e1d81",
@@ -7593,10 +8019,7 @@
     {
       "id": "82d759a7-1465-549c-8ab9-8c81c4310be3",
       "name": "Salesforce",
-      "category": "tool",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "tool"
     },
     {
       "id": "7c32c087-d4f4-5cbe-a799-56b9d9624c1c",
@@ -7643,10 +8066,7 @@
     {
       "id": "da910aa6-34e3-5f25-882f-c37bd2a91fb1",
       "name": "Scalability",
-      "category": "technical",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "technical"
     },
     {
       "id": "82ca2e2c-aa65-519c-9ca6-d263f0d13c4f",
@@ -7658,7 +8078,60 @@
       "name": "Scheduling",
       "category": "soft",
       "neighbors": {
-        "C": 0.2
+        "Master Scheduling": 0.3
+      }
+    },
+    {
+      "id": "fa93174a-a6c3-5f64-95cf-00534db0e94c",
+      "name": "School Administration",
+      "category": "domain",
+      "subcategory": "Education Administration",
+      "aliases": [
+        "School Management",
+        "District Administration",
+        "Building Administration"
+      ],
+      "neighbors": {
+        "Educational Leadership": 0.2,
+        "MTSS Coordination": 0.4,
+        "Master Scheduling": 0.2,
+        "Operations Management": 0.4
+      }
+    },
+    {
+      "id": "399f4621-d603-518d-b446-9e4e5a024bd6",
+      "name": "School Counseling",
+      "category": "domain",
+      "subcategory": "Education",
+      "aliases": [
+        "Guidance Counseling"
+      ],
+      "neighbors": {
+        "Conflict Resolution": 0.5,
+        "Crisis Intervention": 0.2,
+        "Student Affairs": 0.3
+      }
+    },
+    {
+      "id": "41431320-1789-5f1e-ba46-3c5116e0e14e",
+      "name": "School Improvement Planning",
+      "category": "domain",
+      "subcategory": "Education Administration",
+      "aliases": [
+        "Continuous Improvement Planning"
+      ],
+      "neighbors": {
+        "Educational Leadership": 0.3,
+        "Strategic Planning": 0.2
+      }
+    },
+    {
+      "id": "7854a800-3c79-558e-8aae-0e3ca8565abc",
+      "name": "Schoology",
+      "category": "tool",
+      "subcategory": "Education Tools",
+      "neighbors": {
+        "Learning Management Systems": 0.2
       }
     },
     {
@@ -7669,10 +8142,29 @@
       "onet_element_id": "2.A.1.f"
     },
     {
+      "id": "533c4756-1a0c-525b-b9dc-f8f70b0110f8",
+      "name": "Science Communication",
+      "category": "soft",
+      "subcategory": "Communication",
+      "aliases": [
+        "SciComm",
+        "Science Communications",
+        "Research Communication"
+      ],
+      "neighbors": {
+        "Conference Presentation": 0.4,
+        "Content Strategy": 0.5,
+        "Public Relations": 0.4,
+        "Technical Writing": 0.4
+      }
+    },
+    {
       "id": "1d6a50aa-94f8-5b43-b333-ada5b1333018",
       "name": "Scientific Research",
       "category": "domain",
+      "subcategory": "Research Methods",
       "neighbors": {
+        "Lab Management": 0.3,
         "Research": 0.2
       }
     },
@@ -7701,18 +8193,12 @@
     {
       "id": "a213e410-be75-5bf9-9fb2-91fc259d3528",
       "name": "Scope Management",
-      "category": "soft",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "ae0bd878-cc74-5586-a7f8-14e54b2a7796",
       "name": "Scripting",
-      "category": "soft",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "c151d030-a62f-5574-8f2c-7e952cfb3da2",
@@ -7748,25 +8234,18 @@
     {
       "id": "f67ab2fa-0b34-553b-b59a-ae6ac486a7d3",
       "name": "Secure Coding",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "ed994349-dbc6-51a6-961f-0c2e170225eb",
       "name": "Secure Design",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "b56789b2-2739-54a3-afa7-fcd6f2a5123a",
       "name": "Security",
       "category": "domain",
       "neighbors": {
-        "C": 0.2,
         "Data Security": 0.2,
         "Endpoint Security": 0.2,
         "Enterprise Security": 0.2,
@@ -7787,17 +8266,21 @@
     {
       "id": "d5146357-6692-5364-9910-cd6a86f2baca",
       "name": "Security Engineering",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "10c4a579-f222-580d-865f-8cd769d4ee9c",
       "name": "Security Operations",
-      "category": "domain",
+      "category": "domain"
+    },
+    {
+      "id": "57475fce-2091-594f-8e13-04879a8f9f88",
+      "name": "Seesaw",
+      "category": "tool",
+      "subcategory": "Education Tools",
       "neighbors": {
-        "C": 0.2
+        "Early Childhood Education": 0.4,
+        "Family Engagement": 0.4
       }
     },
     {
@@ -7897,10 +8380,7 @@
     {
       "id": "f9ee59be-8b9f-5fcf-94b2-2e5b7ac9e7e5",
       "name": "Server-Side Rendering",
-      "category": "technical",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "technical"
     },
     {
       "id": "2542cd0c-670a-57ab-ba59-a575a58c6bb2",
@@ -7973,10 +8453,7 @@
     {
       "id": "6a6198cb-8cc9-5458-9567-323dcea7f11b",
       "name": "Signal Processing",
-      "category": "technical",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "technical"
     },
     {
       "id": "ba0967c4-1d6e-506c-be26-16d5e6ad7e85",
@@ -8021,6 +8498,19 @@
       "onet_element_id": "T-SLACK"
     },
     {
+      "id": "6862c5eb-0514-57a9-bdb0-7cb6d96fdd90",
+      "name": "Slate",
+      "category": "tool",
+      "subcategory": "Education Tools",
+      "aliases": [
+        "Technolutions Slate"
+      ],
+      "neighbors": {
+        "Admissions": 0.2,
+        "Student Information Systems": 0.3
+      }
+    },
+    {
       "id": "4b180bf9-a2ed-50f3-84da-dd38fec10797",
       "name": "Slurm",
       "category": "tool"
@@ -8063,10 +8553,7 @@
     {
       "id": "c08844d7-2b62-5f1d-b041-e39f49bffbfa",
       "name": "Social Media Marketing",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "8ac24ee6-20d4-5608-8b63-b129d3d9e8cf",
@@ -8078,18 +8565,21 @@
     {
       "id": "0bc230dc-4065-5d0d-93a0-82ef19d0b4d4",
       "name": "Social Selling",
-      "category": "soft",
+      "category": "soft"
+    },
+    {
+      "id": "02a4e5d8-cecd-5f9d-a1ff-6c1bbda747c2",
+      "name": "Sociology",
+      "category": "domain",
+      "subcategory": "Academic Disciplines",
       "neighbors": {
-        "C": 0.2
+        "Ethnography": 0.3
       }
     },
     {
       "id": "9083acfe-4591-53c8-9206-81ad015e5a67",
       "name": "Software Engineering",
-      "category": "technical",
-      "neighbors": {
-        "Gin": 0.2
-      }
+      "category": "technical"
     },
     {
       "id": "0af15bde-2af2-5ce1-89dd-cd5a7f4af0c1",
@@ -8127,10 +8617,7 @@
     {
       "id": "5d1e1862-9e55-50bf-a525-f4cd452af8f8",
       "name": "Solutions Architecture",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "a0dd7bbd-41c7-5040-8ccb-e68bb00da421",
@@ -8140,10 +8627,7 @@
     {
       "id": "1909b64b-fac3-58f9-8f25-ba9221dbb300",
       "name": "Sourcing",
-      "category": "soft",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "e112727f-4828-5dc7-bbf4-c357c317c629",
@@ -8159,6 +8643,21 @@
       "category": "soft",
       "subcategory": "Content",
       "onet_element_id": "2.A.1.d"
+    },
+    {
+      "id": "c1acc4dc-1eb8-5b97-bedd-0581d936a066",
+      "name": "Special Education",
+      "category": "domain",
+      "subcategory": "Education",
+      "aliases": [
+        "SPED",
+        "Inclusive Education"
+      ],
+      "neighbors": {
+        "Differentiated Instruction": 0.3,
+        "IEP Development": 0.2,
+        "MTSS Coordination": 0.3
+      }
     },
     {
       "id": "01b049d9-4480-50f7-9f72-84f9e9010586",
@@ -8187,6 +8686,18 @@
       ],
       "neighbors": {
         "Java": 0.1
+      }
+    },
+    {
+      "id": "a89b0a0f-dda5-54d1-9c61-d1a82520fb9f",
+      "name": "SPSS",
+      "category": "tool",
+      "subcategory": "Research Tools",
+      "aliases": [
+        "IBM SPSS"
+      ],
+      "neighbors": {
+        "Statistical Analysis": 0.2
       }
     },
     {
@@ -8240,12 +8751,24 @@
     {
       "id": "9b8d4628-f2ce-5c72-930b-22ab42c83ddf",
       "name": "Stakeholder Management",
-      "category": "soft"
+      "category": "soft",
+      "neighbors": {
+        "Board Governance": 0.3
+      }
     },
     {
       "id": "2b3269ef-b5be-5ffa-8217-dc48b4f1c293",
       "name": "Startup Experience",
       "category": "soft"
+    },
+    {
+      "id": "e0d178af-0c1e-5cf7-9089-16757dbe2036",
+      "name": "Stata",
+      "category": "tool",
+      "subcategory": "Research Tools",
+      "neighbors": {
+        "Statistical Analysis": 0.2
+      }
     },
     {
       "id": "41b0c476-29ce-5be2-b2c9-67440446abf0",
@@ -8256,8 +8779,42 @@
       "id": "a2c72486-7770-55c6-b551-0680fd1b35eb",
       "name": "Statistical Analysis",
       "category": "technical",
+      "subcategory": "Research Methods",
       "neighbors": {
-        "C": 0.2
+        "Institutional Research": 0.3,
+        "Meta-Analysis": 0.3,
+        "Quantitative Research": 0.2,
+        "R": 0.2,
+        "SPSS": 0.2,
+        "Stata": 0.2,
+        "Statistics": 0.1
+      }
+    },
+    {
+      "id": "2a9aaf20-b4a1-51ae-a699-88733cc31de8",
+      "name": "Statistics",
+      "category": "technical",
+      "subcategory": "Research Methods",
+      "aliases": [
+        "Statistical Methods",
+        "Applied Statistics"
+      ],
+      "neighbors": {
+        "Psychometrics": 0.4,
+        "Quantitative Research": 0.1,
+        "Statistical Analysis": 0.1
+      }
+    },
+    {
+      "id": "fca7c232-cd98-540c-b9c3-857292e85c6b",
+      "name": "STEM Education",
+      "category": "domain",
+      "subcategory": "Education",
+      "aliases": [
+        "STEAM Education"
+      ],
+      "neighbors": {
+        "Curriculum Design": 0.4
       }
     },
     {
@@ -8275,26 +8832,20 @@
     {
       "id": "054878d5-ce6d-5bfc-a922-5156b4a705ec",
       "name": "Storytelling",
-      "category": "soft",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "699aedd9-1233-55de-83bf-36c5c6bc6795",
       "name": "Strategic Planning",
       "category": "soft",
       "neighbors": {
-        "C": 0.2
+        "School Improvement Planning": 0.2
       }
     },
     {
       "id": "bfad2bac-5db6-5770-9b81-97b8b6172498",
       "name": "Strategic Sourcing",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "a15a27aa-3419-519c-863e-55196c304185",
@@ -8324,9 +8875,74 @@
       "onet_element_id": "T-STRIPE"
     },
     {
+      "id": "ddd894a3-0723-587b-aa6f-0cb91a8713d5",
+      "name": "Student Affairs",
+      "category": "domain",
+      "subcategory": "Education Administration",
+      "aliases": [
+        "Student Services",
+        "Student Support",
+        "Student Services Administration",
+        "Learner Services"
+      ],
+      "neighbors": {
+        "Financial Aid": 0.4,
+        "Higher Education": 0.3,
+        "School Counseling": 0.3,
+        "Student Success": 0.2
+      }
+    },
+    {
+      "id": "c584c39e-cd58-575b-b11c-efe9be34a081",
+      "name": "Student Engagement",
+      "category": "domain",
+      "subcategory": "Education",
+      "neighbors": {
+        "Classroom Management": 0.4,
+        "Kahoot": 0.4
+      }
+    },
+    {
+      "id": "d41b106f-f4af-5fc0-a40b-48ff009a9737",
+      "name": "Student Information Systems",
+      "category": "tool",
+      "subcategory": "Education Tools",
+      "aliases": [
+        "SIS"
+      ],
+      "neighbors": {
+        "Learning Management Systems": 0.4,
+        "PowerSchool": 0.2,
+        "Slate": 0.3
+      }
+    },
+    {
+      "id": "e082685c-f66c-5795-b8de-948ce08c7a4f",
+      "name": "Student Success",
+      "category": "domain",
+      "subcategory": "Education Administration",
+      "aliases": [
+        "Student Retention",
+        "Retention Programs"
+      ],
+      "neighbors": {
+        "Academic Advising": 0.3,
+        "Student Affairs": 0.2
+      }
+    },
+    {
       "id": "481006fd-a320-56ac-bf14-4f6347fb8bb6",
       "name": "Subject Matter Expertise",
       "category": "soft"
+    },
+    {
+      "id": "30787459-ca12-5774-a625-f42bf708f27f",
+      "name": "Summative Assessment",
+      "category": "domain",
+      "subcategory": "Education",
+      "neighbors": {
+        "Educational Assessment": 0.2
+      }
     },
     {
       "id": "26c60e0d-c0a7-558a-925a-2ce3fcc48294",
@@ -8360,10 +8976,7 @@
     {
       "id": "b5dc9bdf-50b9-5abb-821a-463513d8b2cc",
       "name": "Supply Chain Management",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "438e662e-c42f-547d-aec9-6ad307413d38",
@@ -8371,6 +8984,23 @@
       "category": "domain",
       "neighbors": {
         "Security": 0.2
+      }
+    },
+    {
+      "id": "e22052ec-1caf-5716-ac32-abded03f2732",
+      "name": "Survey Design",
+      "category": "technical",
+      "subcategory": "Research Methods",
+      "aliases": [
+        "Survey Research",
+        "Questionnaire Design"
+      ],
+      "neighbors": {
+        "Market Research": 0.4,
+        "Qualtrics": 0.2,
+        "Quantitative Research": 0.3,
+        "Research Design": 0.2,
+        "User Research": 0.3
       }
     },
     {
@@ -8465,10 +9095,7 @@
     {
       "id": "aaffc174-697f-562a-8213-10ca8c0e0d8e",
       "name": "Systems Engineering",
-      "category": "technical",
-      "neighbors": {
-        "Gin": 0.2
-      }
+      "category": "technical"
     },
     {
       "id": "3de3e51c-988d-54d8-8fcc-e821bfd32b75",
@@ -8493,10 +9120,7 @@
     {
       "id": "391ac268-a136-531d-82b9-f42796f9f065",
       "name": "Systems Security",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "2c369fb4-a31f-542d-92ce-eac5492d987d",
@@ -8553,10 +9177,7 @@
     {
       "id": "e7d49df1-b882-5f35-b4ba-d38b5d8270d2",
       "name": "Talent Strategy",
-      "category": "domain",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "dd4d5eab-8b54-51db-86de-0d892bc612c2",
@@ -8572,6 +9193,19 @@
       "aliases": [
         "Networking Fundamentals"
       ]
+    },
+    {
+      "id": "2eb9ef16-6647-5d81-8650-9eedd132e1cf",
+      "name": "Teacher Evaluation",
+      "category": "domain",
+      "subcategory": "Education Administration",
+      "aliases": [
+        "Instructional Evaluation"
+      ],
+      "neighbors": {
+        "Educational Leadership": 0.3,
+        "Instructional Coaching": 0.3
+      }
     },
     {
       "id": "1580ab13-c55b-55b1-87c8-911fb0c89e32",
@@ -8617,10 +9251,7 @@
     {
       "id": "5ec26469-512d-5240-86f3-22774fed8db3",
       "name": "Technical Communication",
-      "category": "soft",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "9a7635b3-6ad9-55cf-8b7f-9b31e2f1f5bc",
@@ -8673,41 +9304,33 @@
     {
       "id": "a00ec469-630d-5ba5-896b-1a1cfd555a2c",
       "name": "Technical Presentations",
-      "category": "soft",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "bebde2a8-6db1-5da1-bef4-6ad8cfd559b1",
       "name": "Technical Program Management",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "7f0949c2-d7d5-502e-8972-1381794ce956",
       "name": "Technical Sales",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "1da57041-267a-58d2-a4f5-3555114f37cb",
       "name": "Technical Support",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "f3944b0e-78ce-5320-b4dc-e975a8a6aec7",
       "name": "Technical Writing",
       "category": "domain",
       "subcategory": "Communication",
-      "onet_element_id": "T-TECHWRITING"
+      "onet_element_id": "T-TECHWRITING",
+      "neighbors": {
+        "Grant Writing": 0.4,
+        "Science Communication": 0.4
+      }
     },
     {
       "id": "7607107a-a7e9-5f0d-9ddf-fe22ec2a1704",
@@ -8770,10 +9393,7 @@
     {
       "id": "eddc3b4c-f6f5-5b29-9e19-9449a78e1a12",
       "name": "Territory Management",
-      "category": "soft",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "6f69d5c2-bda3-5514-aaa4-5a29aba89080",
@@ -8805,9 +9425,38 @@
       }
     },
     {
+      "id": "f7086848-68df-5e8f-bc32-f6c633abfc40",
+      "name": "Textual Analysis",
+      "category": "technical",
+      "subcategory": "Research Methods",
+      "aliases": [
+        "Close Reading",
+        "Literary Analysis"
+      ],
+      "neighbors": {
+        "Literature": 0.3,
+        "Qualitative Research": 0.2
+      }
+    },
+    {
       "id": "e9528bbd-bee0-5c2a-bc33-9cf2212b6896",
       "name": "Thermal Management",
       "category": "domain"
+    },
+    {
+      "id": "48be8f75-9456-51ad-8ffd-e4ec397064f6",
+      "name": "Thesis Advising",
+      "category": "domain",
+      "subcategory": "Academia",
+      "aliases": [
+        "Dissertation Advising",
+        "Graduate Student Advising",
+        "PhD Advising",
+        "Dissertation Committee Work"
+      ],
+      "neighbors": {
+        "Mentoring": 0.2
+      }
     },
     {
       "id": "5e0d2f61-c48c-54bd-9574-cbf7b723cdb8",
@@ -8825,18 +9474,12 @@
     {
       "id": "505dca83-7bc7-5be9-ac83-c24c686e3799",
       "name": "Threat Hunting",
-      "category": "domain",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "bbb864ce-b1f2-5ad0-af6d-95c50fa85d88",
       "name": "Threat Intelligence",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "426c5ca1-90f8-5107-9b07-6f6cf6e5c5b0",
@@ -8865,10 +9508,7 @@
     {
       "id": "47967de4-d1ab-562c-b95f-b58bebb46e75",
       "name": "Time Series Forecasting",
-      "category": "technical",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "technical"
     },
     {
       "id": "a338c1f3-9f41-5b66-8b43-5cc347ee3816",
@@ -8878,17 +9518,22 @@
     {
       "id": "03744157-5883-5944-b46d-0d6e96588a1b",
       "name": "Total Rewards",
-      "category": "domain",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "b2e317da-c8f6-55d2-b79e-14eeabc6afe8",
       "name": "Training and Development",
       "category": "soft",
+      "aliases": [
+        "Professional Development",
+        "Staff Training"
+      ],
       "neighbors": {
-        "R": 0.2
+        "Adult Education": 0.2,
+        "Compliance Training": 0.2,
+        "Instructing": 0.2,
+        "Needs Assessment": 0.3,
+        "Vocational Education": 0.3
       }
     },
     {
@@ -8899,9 +9544,19 @@
     {
       "id": "603e6ba0-04c6-5661-a207-51ab6fc644ef",
       "name": "Transparency",
-      "category": "soft",
+      "category": "soft"
+    },
+    {
+      "id": "ca98c776-b0dd-589d-970c-5ec22ea605e6",
+      "name": "Trauma-Informed Teaching",
+      "category": "domain",
+      "subcategory": "Education",
+      "aliases": [
+        "Trauma-Informed Practices",
+        "Trauma-Informed Practice"
+      ],
       "neighbors": {
-        "C": 0.2
+        "Classroom Management": 0.4
       }
     },
     {
@@ -8912,26 +9567,17 @@
     {
       "id": "4e910c69-6712-5fe6-8478-516b160bfb1a",
       "name": "Trend Analysis",
-      "category": "soft",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "e1919cf7-c21a-5c72-9216-a19fc5637351",
       "name": "Triage",
-      "category": "soft",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "soft"
     },
     {
       "id": "9c287e9d-ae08-51a3-b53c-796a51c196bf",
       "name": "Triton",
-      "category": "tool",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "tool"
     },
     {
       "id": "85159055-a4c2-5dfb-adf7-fe7fed40cafb",
@@ -8956,10 +9602,7 @@
     {
       "id": "c8bba838-d2b2-51fa-805f-2ce7e86d17f1",
       "name": "Trust and Safety",
-      "category": "domain",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "d9aeb48d-71b7-58e5-8fbd-d2d95f861836",
@@ -8981,6 +9624,27 @@
       "onet_element_id": "T-TURBOREPO",
       "neighbors": {
         "Nx": 0.3
+      }
+    },
+    {
+      "id": "8ef4831c-acb5-51c5-8eb2-953a716df1f1",
+      "name": "Turnitin",
+      "category": "tool",
+      "subcategory": "Education Tools",
+      "neighbors": {
+        "Educational Assessment": 0.5
+      }
+    },
+    {
+      "id": "1ea408e3-cf29-59ad-91c7-2158003f665a",
+      "name": "Tutoring",
+      "category": "domain",
+      "subcategory": "Education",
+      "aliases": [
+        "Academic Tutoring"
+      ],
+      "neighbors": {
+        "Instructing": 0.2
       }
     },
     {
@@ -9025,10 +9689,7 @@
     {
       "id": "a058ba26-c7fd-5430-9504-3b4f3b862e8f",
       "name": "Typography",
-      "category": "technical",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "technical"
     },
     {
       "id": "d83d021d-6465-5ada-b803-ce809048c33c",
@@ -9067,6 +9728,19 @@
       "neighbors": {
         "C#": 0.3,
         "Unreal Engine": 0.4
+      }
+    },
+    {
+      "id": "20e3aeea-9610-565b-98e4-b519e7ce1fb5",
+      "name": "Universal Design for Learning",
+      "category": "domain",
+      "subcategory": "Education",
+      "aliases": [
+        "UDL"
+      ],
+      "neighbors": {
+        "Accessibility": 0.3,
+        "Pedagogy": 0.2
       }
     },
     {
@@ -9122,6 +9796,11 @@
         "UX Research"
       ],
       "neighbors": {
+        "Ethnography": 0.3,
+        "Focus Groups": 0.2,
+        "Qualitative Research": 0.2,
+        "Research Interviewing": 0.3,
+        "Survey Design": 0.3,
         "UX Design": 0.2
       }
     },
@@ -9142,6 +9821,7 @@
         "UX/UI"
       ],
       "neighbors": {
+        "Learning Experience Design": 0.3,
         "UI Design": 0.2,
         "User Research": 0.2
       }
@@ -9161,26 +9841,17 @@
     {
       "id": "ed9873dc-3080-5d31-9aa1-a0eed59d3f97",
       "name": "Variance Analysis",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "e6d848b1-b7e0-56a9-b806-85cc3c5cb8cd",
       "name": "Vendor Management",
-      "category": "domain",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "aba0fa1e-7ea4-539e-a587-1d99c942cdc8",
       "name": "Venture Capital",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "00c40e5f-de2f-57e6-9ddc-3c5d595525a5",
@@ -9195,10 +9866,7 @@
     {
       "id": "b122f7e7-2c08-5ba2-8b25-5fb204ee49bc",
       "name": "Video Production",
-      "category": "tool",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "tool"
     },
     {
       "id": "9575be97-9892-592a-9525-19d169b7459b",
@@ -9236,6 +9904,19 @@
       "category": "tool"
     },
     {
+      "id": "8990aa8c-640a-5787-bf06-12fdf7ad79a0",
+      "name": "Vocational Education",
+      "category": "domain",
+      "subcategory": "Education",
+      "aliases": [
+        "Career and Technical Education",
+        "CTE"
+      ],
+      "neighbors": {
+        "Training and Development": 0.3
+      }
+    },
+    {
       "id": "4b8c1b6a-e36c-5c49-b63a-a993308de786",
       "name": "VPN",
       "category": "domain"
@@ -9266,18 +9947,12 @@
     {
       "id": "c1a3fb78-c0b5-5fad-8b44-70b637309c0a",
       "name": "Vulnerability Management",
-      "category": "domain",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "5f858e05-4703-5dec-b987-bb63d79a62cb",
       "name": "Vulnerability Research",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "df131996-810e-5c84-b0a5-4940d927ccec",
@@ -9321,10 +9996,7 @@
     {
       "id": "c29ece1e-35f3-508a-8d97-078f19065d19",
       "name": "WebRTC",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "11306d30-269f-525d-807c-6f2b36435dea",
@@ -9366,42 +10038,27 @@
     {
       "id": "d8be7c96-264f-50b9-af5a-235e28dd8f1d",
       "name": "Workato",
-      "category": "tool",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "tool"
     },
     {
       "id": "1456619e-b883-5feb-b60c-8af009d1c9be",
       "name": "Workday",
-      "category": "tool",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "tool"
     },
     {
       "id": "c773d648-4da1-5d44-94fe-77c5b11805a9",
       "name": "Workflow Optimization",
-      "category": "domain",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "95c5ae93-99a4-564c-a49a-adf64a50ba25",
       "name": "Workforce Planning",
-      "category": "domain",
-      "neighbors": {
-        "C": 0.2
-      }
+      "category": "domain"
     },
     {
       "id": "24c3f51d-fc25-5698-bdbd-48d36b12c070",
       "name": "Workiva",
-      "category": "tool",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "tool"
     },
     {
       "id": "057c60ef-36a6-5421-8b82-8edd1a2e8250",
@@ -9416,7 +10073,25 @@
       "name": "Writing",
       "category": "soft",
       "subcategory": "Content",
-      "onet_element_id": "2.A.1.c"
+      "onet_element_id": "2.A.1.c",
+      "neighbors": {
+        "Academic Writing": 0.2
+      }
+    },
+    {
+      "id": "e7f1687e-f3da-52ae-ac8d-16900236eaba",
+      "name": "Writing Instruction",
+      "category": "domain",
+      "subcategory": "Education",
+      "aliases": [
+        "Developmental Writing Instruction",
+        "Writing Feedback"
+      ],
+      "neighbors": {
+        "Academic Writing": 0.4,
+        "Editing": 0.4,
+        "Literacy Instruction": 0.3
+      }
     },
     {
       "id": "013afac9-1f10-5053-8b33-72fcc84918db",
@@ -9436,10 +10111,7 @@
     {
       "id": "4ddc7a6e-815f-56cd-8c9f-d097cda4ab1c",
       "name": "Zapier",
-      "category": "tool",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "tool"
     },
     {
       "id": "2167659a-561d-5201-9489-1c47a91e0e5e",
@@ -9467,12 +10139,18 @@
       "category": "tool"
     },
     {
+      "id": "cff86c37-eca6-5c58-859c-cce5a5276a69",
+      "name": "Zotero",
+      "category": "tool",
+      "subcategory": "Research Tools",
+      "neighbors": {
+        "Literature Review": 0.3
+      }
+    },
+    {
       "id": "cb019401-b106-511d-9d6d-b1ddd94d4913",
       "name": "Zuora",
-      "category": "tool",
-      "neighbors": {
-        "R": 0.2
-      }
+      "category": "tool"
     },
     {
       "id": "3852e215-0f66-5d25-b145-9567891b2938",

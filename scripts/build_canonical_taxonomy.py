@@ -28,7 +28,7 @@ SRC = Path(__file__).resolve().parent / "data"
 OUT = ROOT / "src" / "traitprint" / "data" / "taxonomy.json"
 
 # Bump whenever the artifact content changes (the version handshake).
-CANONICAL_VERSION = 2
+CANONICAL_VERSION = 3
 CANONICAL_LINEAGE = "canonical"
 # Stable namespace for deterministic skill ids (uuid5 over the lowercased name).
 TP_NS = uuid5(NAMESPACE_URL, "https://traitprint.dev/taxonomy")
