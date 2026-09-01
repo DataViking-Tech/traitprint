@@ -153,11 +153,12 @@ def test_write_taxonomy_cache_rejects_non_envelope_without_writing(
     assert not cache.exists()
 
 
-def test_packaged_taxonomy_is_canonical_v2() -> None:
+def test_packaged_taxonomy_is_canonical_v3() -> None:
     entries = load_taxonomy()
-    # The shipped artifact is now Cloud's full superset (canonical lineage).
+    # The shipped artifact is Cloud's full superset (canonical lineage);
+    # v3 added the education/academia pack.
     assert len(entries) > 500
-    assert load_taxonomy_version() == 2
+    assert load_taxonomy_version() == 3
     assert load_taxonomy_lineage() == "canonical"
 
 

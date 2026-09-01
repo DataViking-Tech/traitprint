@@ -17,9 +17,38 @@
     "aliases": []
   },
   {
+    "name": "Academic Advising",
+    "category": "domain",
+    "subcategory": "Education Administration",
+    "onet_element_id": null,
+    "aliases": [
+      "Student Advising"
+    ]
+  },
+  {
+    "name": "Academic Publishing",
+    "category": "domain",
+    "subcategory": "Academia",
+    "onet_element_id": null,
+    "aliases": [
+      "Scholarly Publishing",
+      "Journal Publishing"
+    ]
+  },
+  {
+    "name": "Academic Service",
+    "category": "domain",
+    "subcategory": "Academia",
+    "onet_element_id": null,
+    "aliases": [
+      "Institutional Service",
+      "Committee Service"
+    ]
+  },
+  {
     "name": "Academic Writing",
     "category": "soft",
-    "subcategory": null,
+    "subcategory": "Content",
     "onet_element_id": null,
     "aliases": []
   },
@@ -107,6 +136,25 @@
     "aliases": []
   },
   {
+    "name": "Accreditation",
+    "category": "domain",
+    "subcategory": "Education Administration",
+    "onet_element_id": null,
+    "aliases": [
+      "Program Accreditation",
+      "Accreditation Compliance"
+    ]
+  },
+  {
+    "name": "Action Research",
+    "category": "technical",
+    "subcategory": "Research Methods",
+    "onet_element_id": null,
+    "aliases": [
+      "Practitioner Research"
+    ]
+  },
+  {
     "name": "Active Learning",
     "category": "soft",
     "subcategory": "Process",
@@ -139,9 +187,26 @@
     ]
   },
   {
+    "name": "Admissions",
+    "category": "domain",
+    "subcategory": "Education Administration",
+    "onet_element_id": null,
+    "aliases": [
+      "College Admissions",
+      "Admissions Counseling"
+    ]
+  },
+  {
     "name": "Adobe Analytics",
     "category": "tool",
     "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Adobe Captivate",
+    "category": "tool",
+    "subcategory": "Education Tools",
     "onet_element_id": null,
     "aliases": []
   },
@@ -183,6 +248,17 @@
     "subcategory": null,
     "onet_element_id": null,
     "aliases": []
+  },
+  {
+    "name": "Adult Education",
+    "category": "domain",
+    "subcategory": "Education",
+    "onet_element_id": null,
+    "aliases": [
+      "Adult Learning",
+      "Andragogy",
+      "Continuing Education"
+    ]
   },
   {
     "name": "Adversarial Machine Learning",
@@ -278,6 +354,15 @@
     "aliases": []
   },
   {
+    "name": "Alumni Relations",
+    "category": "domain",
+    "subcategory": "Education Administration",
+    "onet_element_id": null,
+    "aliases": [
+      "Alumni Engagement"
+    ]
+  },
+  {
     "name": "Amazon Web Services",
     "category": "tool",
     "subcategory": "Cloud Platforms",
@@ -296,7 +381,7 @@
   {
     "name": "American Politics",
     "category": "domain",
-    "subcategory": null,
+    "subcategory": "Academic Disciplines",
     "onet_element_id": null,
     "aliases": []
   },
@@ -396,6 +481,13 @@
     "aliases": [
       "Claude API"
     ]
+  },
+  {
+    "name": "Anthropology",
+    "category": "domain",
+    "subcategory": "Academic Disciplines",
+    "onet_element_id": null,
+    "aliases": []
   },
   {
     "name": "Anti-Money Laundering",
@@ -512,6 +604,15 @@
     "aliases": []
   },
   {
+    "name": "Archival Research",
+    "category": "technical",
+    "subcategory": "Research Methods",
+    "onet_element_id": null,
+    "aliases": [
+      "Primary Source Research"
+    ]
+  },
+  {
     "name": "Argo Workflows",
     "category": "tool",
     "subcategory": null,
@@ -533,6 +634,16 @@
     "subcategory": null,
     "onet_element_id": null,
     "aliases": []
+  },
+  {
+    "name": "Articulate Storyline",
+    "category": "tool",
+    "subcategory": "Education Tools",
+    "onet_element_id": null,
+    "aliases": [
+      "Articulate 360",
+      "Storyline 360"
+    ]
   },
   {
     "name": "Artificial Intelligence",
@@ -590,6 +701,13 @@
     "name": "Asynchronous Programming",
     "category": "technical",
     "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "ATLAS.ti",
+    "category": "tool",
+    "subcategory": "Research Tools",
     "onet_element_id": null,
     "aliases": []
   },
@@ -979,11 +1097,38 @@
     "aliases": []
   },
   {
+    "name": "Biology",
+    "category": "domain",
+    "subcategory": "Academic Disciplines",
+    "onet_element_id": null,
+    "aliases": [
+      "Molecular Biology"
+    ]
+  },
+  {
     "name": "Biome",
     "category": "tool",
     "subcategory": "Build Tools",
     "onet_element_id": "T-BIOME",
     "aliases": []
+  },
+  {
+    "name": "Blackboard",
+    "category": "tool",
+    "subcategory": "Education Tools",
+    "onet_element_id": null,
+    "aliases": [
+      "Blackboard Learn"
+    ]
+  },
+  {
+    "name": "Blended Learning",
+    "category": "domain",
+    "subcategory": "Education",
+    "onet_element_id": null,
+    "aliases": [
+      "Hybrid Learning"
+    ]
   },
   {
     "name": "Blockchain",
@@ -1164,6 +1309,15 @@
     "aliases": []
   },
   {
+    "name": "Canvas LMS",
+    "category": "tool",
+    "subcategory": "Education Tools",
+    "onet_element_id": null,
+    "aliases": [
+      "Instructure Canvas"
+    ]
+  },
+  {
     "name": "Capacitor",
     "category": "tool",
     "subcategory": "Mobile Development",
@@ -1314,9 +1468,19 @@
   {
     "name": "Civic Education",
     "category": "domain",
-    "subcategory": null,
+    "subcategory": "Education",
     "onet_element_id": null,
     "aliases": []
+  },
+  {
+    "name": "Classroom Management",
+    "category": "domain",
+    "subcategory": "Education",
+    "onet_element_id": null,
+    "aliases": [
+      "Behavior Management",
+      "PBIS"
+    ]
   },
   {
     "name": "CLI",
@@ -1419,9 +1583,7 @@
     "category": "soft",
     "subcategory": "Collaboration",
     "onet_element_id": "T-CODEREVIEW",
-    "aliases": [
-      "Peer Review"
-    ]
+    "aliases": []
   },
   {
     "name": "Cold Calling",
@@ -1535,6 +1697,25 @@
     "aliases": []
   },
   {
+    "name": "Conference Organization",
+    "category": "domain",
+    "subcategory": "Academia",
+    "onet_element_id": null,
+    "aliases": [
+      "Workshop Organization"
+    ]
+  },
+  {
+    "name": "Conference Presentation",
+    "category": "soft",
+    "subcategory": "Communication",
+    "onet_element_id": null,
+    "aliases": [
+      "Academic Presentations",
+      "Invited Talks"
+    ]
+  },
+  {
     "name": "Configuration Management",
     "category": "domain",
     "subcategory": null,
@@ -1598,6 +1779,16 @@
     "subcategory": null,
     "onet_element_id": null,
     "aliases": []
+  },
+  {
+    "name": "Content Analysis",
+    "category": "technical",
+    "subcategory": "Research Methods",
+    "onet_element_id": null,
+    "aliases": [
+      "Thematic Analysis",
+      "Discourse Analysis"
+    ]
   },
   {
     "name": "Content Classification",
@@ -1736,6 +1927,16 @@
     "aliases": []
   },
   {
+    "name": "Course Development",
+    "category": "domain",
+    "subcategory": "Education",
+    "onet_element_id": null,
+    "aliases": [
+      "Course Design",
+      "Syllabus Design"
+    ]
+  },
+  {
     "name": "CQRS",
     "category": "technical",
     "subcategory": "Architecture",
@@ -1820,6 +2021,15 @@
     "aliases": []
   },
   {
+    "name": "Culturally Responsive Teaching",
+    "category": "domain",
+    "subcategory": "Education",
+    "onet_element_id": null,
+    "aliases": [
+      "Inclusive Teaching"
+    ]
+  },
+  {
     "name": "Curation",
     "category": "soft",
     "subcategory": null,
@@ -1836,9 +2046,12 @@
   {
     "name": "Curriculum Design",
     "category": "domain",
-    "subcategory": null,
+    "subcategory": "Education",
     "onet_element_id": null,
-    "aliases": []
+    "aliases": [
+      "Curriculum Development",
+      "Curriculum Planning"
+    ]
   },
   {
     "name": "Cursor",
@@ -1962,7 +2175,7 @@
   {
     "name": "Data Collection",
     "category": "domain",
-    "subcategory": null,
+    "subcategory": "Research Methods",
     "onet_element_id": null,
     "aliases": []
   },
@@ -2308,6 +2521,16 @@
     "aliases": []
   },
   {
+    "name": "Differentiated Instruction",
+    "category": "domain",
+    "subcategory": "Education",
+    "onet_element_id": null,
+    "aliases": [
+      "Differentiation",
+      "Scaffolded Instruction"
+    ]
+  },
+  {
     "name": "Digital Marketing",
     "category": "domain",
     "subcategory": null,
@@ -2444,6 +2667,25 @@
     ]
   },
   {
+    "name": "E-Learning Development",
+    "category": "domain",
+    "subcategory": "Education",
+    "onet_element_id": null,
+    "aliases": [
+      "eLearning Development",
+      "Online Course Development"
+    ]
+  },
+  {
+    "name": "Early Childhood Education",
+    "category": "domain",
+    "subcategory": "Education",
+    "onet_element_id": null,
+    "aliases": [
+      "Pre-K Education"
+    ]
+  },
+  {
     "name": "eBPF",
     "category": "technical",
     "subcategory": null,
@@ -2492,6 +2734,44 @@
     "onet_element_id": "T-EDTECH",
     "aliases": [
       "Educational Technology"
+    ]
+  },
+  {
+    "name": "Education Policy",
+    "category": "domain",
+    "subcategory": "Education Administration",
+    "onet_element_id": null,
+    "aliases": [
+      "Educational Policy"
+    ]
+  },
+  {
+    "name": "Educational Assessment",
+    "category": "domain",
+    "subcategory": "Education",
+    "onet_element_id": null,
+    "aliases": [
+      "Student Assessment",
+      "Assessment Design"
+    ]
+  },
+  {
+    "name": "Educational Leadership",
+    "category": "domain",
+    "subcategory": "Education Administration",
+    "onet_element_id": null,
+    "aliases": [
+      "School Leadership",
+      "Academic Leadership"
+    ]
+  },
+  {
+    "name": "Educational Research",
+    "category": "domain",
+    "subcategory": "Academic Disciplines",
+    "onet_element_id": null,
+    "aliases": [
+      "Learning Sciences"
     ]
   },
   {
@@ -2616,6 +2896,13 @@
     ]
   },
   {
+    "name": "EndNote",
+    "category": "tool",
+    "subcategory": "Research Tools",
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
     "name": "Endpoint Detection and Response",
     "category": "domain",
     "subcategory": null,
@@ -2656,6 +2943,16 @@
     "subcategory": null,
     "onet_element_id": null,
     "aliases": []
+  },
+  {
+    "name": "Enrollment Management",
+    "category": "domain",
+    "subcategory": "Education Administration",
+    "onet_element_id": null,
+    "aliases": [
+      "Student Recruitment",
+      "Student Enrollment"
+    ]
   },
   {
     "name": "Enterprise Architecture",
@@ -2700,6 +2997,13 @@
     "aliases": []
   },
   {
+    "name": "Environmental Science",
+    "category": "domain",
+    "subcategory": "Academic Disciplines",
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
     "name": "Equipment Selection",
     "category": "technical",
     "subcategory": "Technical",
@@ -2728,11 +3032,33 @@
     "aliases": []
   },
   {
+    "name": "ESL Instruction",
+    "category": "domain",
+    "subcategory": "Education",
+    "onet_element_id": null,
+    "aliases": [
+      "TESOL",
+      "ESOL",
+      "ELL Instruction",
+      "English Language Teaching"
+    ]
+  },
+  {
     "name": "ESLint",
     "category": "tool",
     "subcategory": "Build Tools",
     "onet_element_id": "T-ESLINT",
     "aliases": []
+  },
+  {
+    "name": "Ethnography",
+    "category": "technical",
+    "subcategory": "Research Methods",
+    "onet_element_id": null,
+    "aliases": [
+      "Ethnographic Research",
+      "Participant Observation"
+    ]
   },
   {
     "name": "ETL",
@@ -2840,7 +3166,7 @@
   {
     "name": "Experimental Design",
     "category": "soft",
-    "subcategory": null,
+    "subcategory": "Research Methods",
     "onet_element_id": null,
     "aliases": []
   },
@@ -2896,7 +3222,26 @@
     "category": "soft",
     "subcategory": null,
     "onet_element_id": null,
+    "aliases": [
+      "Workshop Facilitation"
+    ]
+  },
+  {
+    "name": "Faculty Development",
+    "category": "domain",
+    "subcategory": "Education Administration",
+    "onet_element_id": null,
     "aliases": []
+  },
+  {
+    "name": "Family Engagement",
+    "category": "domain",
+    "subcategory": "Education",
+    "onet_element_id": null,
+    "aliases": [
+      "Parent Communication",
+      "Parent Engagement"
+    ]
   },
   {
     "name": "FastAPI",
@@ -2941,11 +3286,29 @@
     "aliases": []
   },
   {
+    "name": "Fieldwork",
+    "category": "technical",
+    "subcategory": "Research Methods",
+    "onet_element_id": null,
+    "aliases": [
+      "Field Research"
+    ]
+  },
+  {
     "name": "Figma",
     "category": "tool",
     "subcategory": "Design",
     "onet_element_id": "T-FIGMA",
     "aliases": []
+  },
+  {
+    "name": "Financial Aid",
+    "category": "domain",
+    "subcategory": "Education Administration",
+    "onet_element_id": null,
+    "aliases": [
+      "Financial Aid Administration"
+    ]
   },
   {
     "name": "Financial Analysis",
@@ -3069,6 +3432,15 @@
     "aliases": []
   },
   {
+    "name": "Focus Groups",
+    "category": "technical",
+    "subcategory": "Research Methods",
+    "onet_element_id": null,
+    "aliases": [
+      "Focus Group Moderation"
+    ]
+  },
+  {
     "name": "Forecasting",
     "category": "domain",
     "subcategory": null,
@@ -3079,6 +3451,13 @@
     "name": "Forensics",
     "category": "domain",
     "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Formative Assessment",
+    "category": "domain",
+    "subcategory": "Education",
     "onet_element_id": null,
     "aliases": []
   },
@@ -3125,6 +3504,17 @@
     "subcategory": null,
     "onet_element_id": null,
     "aliases": []
+  },
+  {
+    "name": "Fundraising",
+    "category": "domain",
+    "subcategory": null,
+    "onet_element_id": null,
+    "aliases": [
+      "Development",
+      "Donor Relations",
+      "Advancement"
+    ]
   },
   {
     "name": "Funnel Analysis",
@@ -3272,6 +3662,13 @@
     "aliases": []
   },
   {
+    "name": "Google Classroom",
+    "category": "tool",
+    "subcategory": "Education Tools",
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
     "name": "Google Cloud Functions",
     "category": "tool",
     "subcategory": "Cloud Platforms",
@@ -3381,6 +3778,17 @@
     "subcategory": "Observability",
     "onet_element_id": "T-GRAFANA",
     "aliases": []
+  },
+  {
+    "name": "Grant Writing",
+    "category": "soft",
+    "subcategory": "Content",
+    "onet_element_id": null,
+    "aliases": [
+      "Grant Proposals",
+      "Grantsmanship",
+      "Research Funding"
+    ]
   },
   {
     "name": "Graph Neural Networks",
@@ -3527,6 +3935,15 @@
     "aliases": []
   },
   {
+    "name": "Higher Education",
+    "category": "domain",
+    "subcategory": "Education",
+    "onet_element_id": null,
+    "aliases": [
+      "Postsecondary Education"
+    ]
+  },
+  {
     "name": "HIPAA",
     "category": "domain",
     "subcategory": "Security",
@@ -3539,6 +3956,16 @@
     "subcategory": null,
     "onet_element_id": null,
     "aliases": []
+  },
+  {
+    "name": "History",
+    "category": "domain",
+    "subcategory": "Academic Disciplines",
+    "onet_element_id": null,
+    "aliases": [
+      "Intellectual History",
+      "Historiography"
+    ]
   },
   {
     "name": "Hono",
@@ -3620,6 +4047,17 @@
     "onet_element_id": "T-IAMSEC",
     "aliases": [
       "IAM Security"
+    ]
+  },
+  {
+    "name": "IEP Development",
+    "category": "domain",
+    "subcategory": "Education",
+    "onet_element_id": null,
+    "aliases": [
+      "Individualized Education Programs",
+      "IEP Writing",
+      "504 Plans"
     ]
   },
   {
@@ -3731,6 +4169,15 @@
     "aliases": []
   },
   {
+    "name": "Institutional Research",
+    "category": "domain",
+    "subcategory": "Education Administration",
+    "onet_element_id": null,
+    "aliases": [
+      "Institutional Effectiveness"
+    ]
+  },
+  {
     "name": "Instructing",
     "category": "soft",
     "subcategory": "Social",
@@ -3741,9 +4188,18 @@
     ]
   },
   {
+    "name": "Instructional Coaching",
+    "category": "domain",
+    "subcategory": "Education",
+    "onet_element_id": null,
+    "aliases": [
+      "Teacher Coaching"
+    ]
+  },
+  {
     "name": "Instructional Design",
     "category": "soft",
-    "subcategory": null,
+    "subcategory": "Education",
     "onet_element_id": null,
     "aliases": []
   },
@@ -4065,6 +4521,23 @@
     ]
   },
   {
+    "name": "K-12 Education",
+    "category": "domain",
+    "subcategory": "Education",
+    "onet_element_id": null,
+    "aliases": [
+      "Primary Education",
+      "Secondary Education"
+    ]
+  },
+  {
+    "name": "Kahoot",
+    "category": "tool",
+    "subcategory": "Education Tools",
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
     "name": "Kernel Development",
     "category": "technical",
     "subcategory": null,
@@ -4116,6 +4589,17 @@
     ]
   },
   {
+    "name": "Lab Management",
+    "category": "domain",
+    "subcategory": "Academia",
+    "onet_element_id": null,
+    "aliases": [
+      "Laboratory Management",
+      "Lab Operations",
+      "Research Group Management"
+    ]
+  },
+  {
     "name": "Labor Economics",
     "category": "domain",
     "subcategory": null,
@@ -4144,6 +4628,16 @@
     "aliases": [
       "Foundation Models",
       "LLMs"
+    ]
+  },
+  {
+    "name": "LaTeX",
+    "category": "tool",
+    "subcategory": "Research Tools",
+    "onet_element_id": null,
+    "aliases": [
+      "Overleaf",
+      "TeX"
     ]
   },
   {
@@ -4187,6 +4681,26 @@
     ]
   },
   {
+    "name": "Learning Experience Design",
+    "category": "soft",
+    "subcategory": "Education",
+    "onet_element_id": null,
+    "aliases": [
+      "LXD",
+      "LX Design"
+    ]
+  },
+  {
+    "name": "Learning Management Systems",
+    "category": "tool",
+    "subcategory": "Education Tools",
+    "onet_element_id": null,
+    "aliases": [
+      "LMS",
+      "LMS Administration"
+    ]
+  },
+  {
     "name": "Learning Strategies",
     "category": "soft",
     "subcategory": "Process",
@@ -4215,6 +4729,15 @@
     "aliases": []
   },
   {
+    "name": "Lesson Planning",
+    "category": "domain",
+    "subcategory": "Education",
+    "onet_element_id": null,
+    "aliases": [
+      "Lesson Design"
+    ]
+  },
+  {
     "name": "Lifecycle Marketing",
     "category": "domain",
     "subcategory": null,
@@ -4227,6 +4750,15 @@
     "subcategory": "Project Management",
     "onet_element_id": "T-LINEAR",
     "aliases": []
+  },
+  {
+    "name": "Linguistics",
+    "category": "domain",
+    "subcategory": "Academic Disciplines",
+    "onet_element_id": null,
+    "aliases": [
+      "Applied Linguistics"
+    ]
   },
   {
     "name": "LinkedIn Sales Navigator",
@@ -4243,6 +4775,36 @@
     "aliases": [
       "Linux Administration",
       "Unix"
+    ]
+  },
+  {
+    "name": "Literacy Instruction",
+    "category": "domain",
+    "subcategory": "Education",
+    "onet_element_id": null,
+    "aliases": [
+      "Reading Instruction",
+      "Phonics Instruction"
+    ]
+  },
+  {
+    "name": "Literature",
+    "category": "domain",
+    "subcategory": "Academic Disciplines",
+    "onet_element_id": null,
+    "aliases": [
+      "English Literature",
+      "Comparative Literature"
+    ]
+  },
+  {
+    "name": "Literature Review",
+    "category": "technical",
+    "subcategory": "Research Methods",
+    "onet_element_id": null,
+    "aliases": [
+      "Systematic Literature Review",
+      "Literature Synthesis"
     ]
   },
   {
@@ -4453,12 +5015,20 @@
     "aliases": []
   },
   {
+    "name": "Mendeley",
+    "category": "tool",
+    "subcategory": "Research Tools",
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
     "name": "Mentoring",
     "category": "soft",
     "subcategory": "Leadership",
     "onet_element_id": "T-MENTORING",
     "aliases": [
-      "Coaching"
+      "Coaching",
+      "Student Mentoring"
     ]
   },
   {
@@ -4483,6 +5053,15 @@
     "subcategory": null,
     "onet_element_id": null,
     "aliases": []
+  },
+  {
+    "name": "Meta-Analysis",
+    "category": "technical",
+    "subcategory": "Research Methods",
+    "onet_element_id": null,
+    "aliases": [
+      "Systematic Review"
+    ]
   },
   {
     "name": "Metabase",
@@ -4557,6 +5136,15 @@
     "subcategory": "Design",
     "onet_element_id": "T-MIRO",
     "aliases": []
+  },
+  {
+    "name": "Mixed Methods Research",
+    "category": "technical",
+    "subcategory": "Research Methods",
+    "onet_element_id": null,
+    "aliases": [
+      "Mixed Methods"
+    ]
   },
   {
     "name": "MLflow",
@@ -4638,6 +5226,13 @@
     "name": "Month-End Close",
     "category": "domain",
     "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Moodle",
+    "category": "tool",
+    "subcategory": "Education Tools",
     "onet_element_id": null,
     "aliases": []
   },
@@ -4786,6 +5381,13 @@
     "aliases": []
   },
   {
+    "name": "Neuroscience",
+    "category": "domain",
+    "subcategory": "Academic Disciplines",
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
     "name": "New Business Acquisition",
     "category": "domain",
     "subcategory": null,
@@ -4891,6 +5493,13 @@
     "aliases": []
   },
   {
+    "name": "NVivo",
+    "category": "tool",
+    "subcategory": "Research Tools",
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
     "name": "Nx",
     "category": "tool",
     "subcategory": "Build Tools",
@@ -4971,6 +5580,17 @@
     "subcategory": null,
     "onet_element_id": null,
     "aliases": []
+  },
+  {
+    "name": "Online Teaching",
+    "category": "domain",
+    "subcategory": "Education",
+    "onet_element_id": null,
+    "aliases": [
+      "Remote Teaching",
+      "Virtual Instruction",
+      "Distance Education"
+    ]
   },
   {
     "name": "Open Source",
@@ -5192,6 +5812,26 @@
     "aliases": []
   },
   {
+    "name": "Pedagogy",
+    "category": "domain",
+    "subcategory": "Education",
+    "onet_element_id": null,
+    "aliases": [
+      "Teaching Methods",
+      "Pedagogical Content Knowledge"
+    ]
+  },
+  {
+    "name": "Peer Review",
+    "category": "domain",
+    "subcategory": "Academia",
+    "onet_element_id": null,
+    "aliases": [
+      "Manuscript Review",
+      "Referee Reports"
+    ]
+  },
+  {
     "name": "Penetration Testing",
     "category": "technical",
     "subcategory": "Security",
@@ -5244,6 +5884,15 @@
     "subcategory": "Social",
     "onet_element_id": "2.B.1.c",
     "aliases": []
+  },
+  {
+    "name": "Philosophy",
+    "category": "domain",
+    "subcategory": "Academic Disciplines",
+    "onet_element_id": null,
+    "aliases": [
+      "Political Philosophy"
+    ]
   },
   {
     "name": "PHP",
@@ -5325,9 +5974,18 @@
     "aliases": []
   },
   {
+    "name": "Political Science",
+    "category": "domain",
+    "subcategory": "Academic Disciplines",
+    "onet_element_id": null,
+    "aliases": [
+      "Comparative Politics"
+    ]
+  },
+  {
     "name": "Political Theory",
     "category": "domain",
-    "subcategory": null,
+    "subcategory": "Academic Disciplines",
     "onet_element_id": null,
     "aliases": []
   },
@@ -5386,6 +6044,13 @@
     "aliases": []
   },
   {
+    "name": "PowerSchool",
+    "category": "tool",
+    "subcategory": "Education Tools",
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
     "name": "PowerShell",
     "category": "technical",
     "subcategory": null,
@@ -5405,7 +6070,8 @@
     "subcategory": "Communication",
     "onet_element_id": "T-PRESENTATION",
     "aliases": [
-      "Public Speaking"
+      "Public Speaking",
+      "Lecturing"
     ]
   },
   {
@@ -5678,6 +6344,16 @@
     "aliases": []
   },
   {
+    "name": "Program Evaluation",
+    "category": "technical",
+    "subcategory": "Research Methods",
+    "onet_element_id": null,
+    "aliases": [
+      "Impact Evaluation",
+      "Evaluation Research"
+    ]
+  },
+  {
     "name": "Program Management",
     "category": "domain",
     "subcategory": null,
@@ -5721,6 +6397,15 @@
     ]
   },
   {
+    "name": "Project-Based Learning",
+    "category": "domain",
+    "subcategory": "Education",
+    "onet_element_id": null,
+    "aliases": [
+      "Inquiry-Based Learning"
+    ]
+  },
+  {
     "name": "Prometheus",
     "category": "tool",
     "subcategory": "Observability",
@@ -5761,6 +6446,35 @@
     "subcategory": null,
     "onet_element_id": null,
     "aliases": []
+  },
+  {
+    "name": "Psychology",
+    "category": "domain",
+    "subcategory": "Academic Disciplines",
+    "onet_element_id": null,
+    "aliases": [
+      "Cognitive Psychology",
+      "Developmental Psychology"
+    ]
+  },
+  {
+    "name": "Psychometrics",
+    "category": "technical",
+    "subcategory": "Research Methods",
+    "onet_element_id": null,
+    "aliases": [
+      "Psychometric Analysis",
+      "Educational Measurement"
+    ]
+  },
+  {
+    "name": "Public Health",
+    "category": "domain",
+    "subcategory": "Academic Disciplines",
+    "onet_element_id": null,
+    "aliases": [
+      "Epidemiology"
+    ]
   },
   {
     "name": "Public Policy",
@@ -5812,6 +6526,16 @@
     "aliases": []
   },
   {
+    "name": "Qualitative Research",
+    "category": "technical",
+    "subcategory": "Research Methods",
+    "onet_element_id": null,
+    "aliases": [
+      "Qualitative Methods",
+      "Qualitative Analysis"
+    ]
+  },
+  {
     "name": "Quality Control Analysis",
     "category": "technical",
     "subcategory": "Technical",
@@ -5822,11 +6546,27 @@
     ]
   },
   {
+    "name": "Qualtrics",
+    "category": "tool",
+    "subcategory": "Research Tools",
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
     "name": "Quantitative Analysis",
     "category": "soft",
     "subcategory": null,
     "onet_element_id": null,
     "aliases": []
+  },
+  {
+    "name": "Quantitative Research",
+    "category": "technical",
+    "subcategory": "Research Methods",
+    "onet_element_id": null,
+    "aliases": [
+      "Quantitative Methods"
+    ]
   },
   {
     "name": "Quarterly Business Reviews",
@@ -5969,6 +6709,13 @@
     "aliases": []
   },
   {
+    "name": "REDCap",
+    "category": "tool",
+    "subcategory": "Research Tools",
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
     "name": "Redis",
     "category": "tool",
     "subcategory": "Databases",
@@ -6084,9 +6831,40 @@
   {
     "name": "Research",
     "category": "domain",
-    "subcategory": null,
+    "subcategory": "Research Methods",
     "onet_element_id": null,
     "aliases": []
+  },
+  {
+    "name": "Research Design",
+    "category": "technical",
+    "subcategory": "Research Methods",
+    "onet_element_id": null,
+    "aliases": [
+      "Study Design",
+      "Research Methodology"
+    ]
+  },
+  {
+    "name": "Research Ethics",
+    "category": "domain",
+    "subcategory": "Academia",
+    "onet_element_id": null,
+    "aliases": [
+      "IRB Compliance",
+      "Human Subjects Research",
+      "Responsible Conduct of Research"
+    ]
+  },
+  {
+    "name": "Research Interviewing",
+    "category": "technical",
+    "subcategory": "Research Methods",
+    "onet_element_id": null,
+    "aliases": [
+      "Qualitative Interviewing",
+      "Semi-Structured Interviewing"
+    ]
   },
   {
     "name": "Resilience",
@@ -6429,6 +7207,31 @@
     "aliases": []
   },
   {
+    "name": "School Administration",
+    "category": "domain",
+    "subcategory": "Education Administration",
+    "onet_element_id": null,
+    "aliases": [
+      "School Management"
+    ]
+  },
+  {
+    "name": "School Counseling",
+    "category": "domain",
+    "subcategory": "Education",
+    "onet_element_id": null,
+    "aliases": [
+      "Guidance Counseling"
+    ]
+  },
+  {
+    "name": "Schoology",
+    "category": "tool",
+    "subcategory": "Education Tools",
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
     "name": "Science",
     "category": "technical",
     "subcategory": "Content",
@@ -6436,9 +7239,20 @@
     "aliases": []
   },
   {
+    "name": "Science Communication",
+    "category": "soft",
+    "subcategory": "Communication",
+    "onet_element_id": null,
+    "aliases": [
+      "SciComm",
+      "Science Communications",
+      "Research Communication"
+    ]
+  },
+  {
     "name": "Scientific Research",
     "category": "domain",
-    "subcategory": null,
+    "subcategory": "Research Methods",
     "onet_element_id": null,
     "aliases": []
   },
@@ -6546,6 +7360,13 @@
     "name": "Security Operations",
     "category": "domain",
     "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Seesaw",
+    "category": "tool",
+    "subcategory": "Education Tools",
     "onet_element_id": null,
     "aliases": []
   },
@@ -6789,6 +7610,13 @@
     "aliases": []
   },
   {
+    "name": "Sociology",
+    "category": "domain",
+    "subcategory": "Academic Disciplines",
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
     "name": "Software Engineering",
     "category": "technical",
     "subcategory": null,
@@ -6855,6 +7683,16 @@
     "aliases": []
   },
   {
+    "name": "Special Education",
+    "category": "domain",
+    "subcategory": "Education",
+    "onet_element_id": null,
+    "aliases": [
+      "SPED",
+      "Inclusive Education"
+    ]
+  },
+  {
     "name": "Splunk",
     "category": "tool",
     "subcategory": "Observability",
@@ -6876,6 +7714,15 @@
     "aliases": [
       "Spring",
       "Spring Framework"
+    ]
+  },
+  {
+    "name": "SPSS",
+    "category": "tool",
+    "subcategory": "Research Tools",
+    "onet_element_id": null,
+    "aliases": [
+      "IBM SPSS"
     ]
   },
   {
@@ -6923,6 +7770,13 @@
     "aliases": []
   },
   {
+    "name": "Stata",
+    "category": "tool",
+    "subcategory": "Research Tools",
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
     "name": "State Management",
     "category": "technical",
     "subcategory": null,
@@ -6932,9 +7786,28 @@
   {
     "name": "Statistical Analysis",
     "category": "technical",
-    "subcategory": null,
+    "subcategory": "Research Methods",
     "onet_element_id": null,
     "aliases": []
+  },
+  {
+    "name": "Statistics",
+    "category": "technical",
+    "subcategory": "Research Methods",
+    "onet_element_id": null,
+    "aliases": [
+      "Statistical Methods",
+      "Applied Statistics"
+    ]
+  },
+  {
+    "name": "STEM Education",
+    "category": "domain",
+    "subcategory": "Education",
+    "onet_element_id": null,
+    "aliases": [
+      "STEAM Education"
+    ]
   },
   {
     "name": "Storage Systems",
@@ -7000,9 +7873,33 @@
     "aliases": []
   },
   {
+    "name": "Student Affairs",
+    "category": "domain",
+    "subcategory": "Education Administration",
+    "onet_element_id": null,
+    "aliases": [
+      "Student Services",
+      "Student Support"
+    ]
+  },
+  {
+    "name": "Student Engagement",
+    "category": "domain",
+    "subcategory": "Education",
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
     "name": "Subject Matter Expertise",
     "category": "soft",
     "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Summative Assessment",
+    "category": "domain",
+    "subcategory": "Education",
     "onet_element_id": null,
     "aliases": []
   },
@@ -7047,6 +7944,16 @@
     "subcategory": null,
     "onet_element_id": null,
     "aliases": []
+  },
+  {
+    "name": "Survey Design",
+    "category": "technical",
+    "subcategory": "Research Methods",
+    "onet_element_id": null,
+    "aliases": [
+      "Survey Research",
+      "Questionnaire Design"
+    ]
   },
   {
     "name": "Sustainability",
@@ -7459,11 +8366,31 @@
     ]
   },
   {
+    "name": "Textual Analysis",
+    "category": "technical",
+    "subcategory": "Research Methods",
+    "onet_element_id": null,
+    "aliases": [
+      "Close Reading",
+      "Literary Analysis"
+    ]
+  },
+  {
     "name": "Thermal Management",
     "category": "domain",
     "subcategory": null,
     "onet_element_id": null,
     "aliases": []
+  },
+  {
+    "name": "Thesis Advising",
+    "category": "domain",
+    "subcategory": "Academia",
+    "onet_element_id": null,
+    "aliases": [
+      "Dissertation Advising",
+      "Graduate Student Advising"
+    ]
   },
   {
     "name": "Thought Leadership",
@@ -7540,7 +8467,10 @@
     "category": "soft",
     "subcategory": null,
     "onet_element_id": null,
-    "aliases": []
+    "aliases": [
+      "Professional Development",
+      "Staff Training"
+    ]
   },
   {
     "name": "Transfer Pricing",
@@ -7555,6 +8485,15 @@
     "subcategory": null,
     "onet_element_id": null,
     "aliases": []
+  },
+  {
+    "name": "Trauma-Informed Teaching",
+    "category": "domain",
+    "subcategory": "Education",
+    "onet_element_id": null,
+    "aliases": [
+      "Trauma-Informed Practices"
+    ]
   },
   {
     "name": "Treasury",
@@ -7629,6 +8568,22 @@
     "aliases": []
   },
   {
+    "name": "Turnitin",
+    "category": "tool",
+    "subcategory": "Education Tools",
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Tutoring",
+    "category": "domain",
+    "subcategory": "Education",
+    "onet_element_id": null,
+    "aliases": [
+      "Academic Tutoring"
+    ]
+  },
+  {
     "name": "Twilio",
     "category": "tool",
     "subcategory": "APIs",
@@ -7687,6 +8642,15 @@
     "subcategory": "Game Development",
     "onet_element_id": "T-UNITY",
     "aliases": []
+  },
+  {
+    "name": "Universal Design for Learning",
+    "category": "domain",
+    "subcategory": "Education",
+    "onet_element_id": null,
+    "aliases": [
+      "UDL"
+    ]
   },
   {
     "name": "Unreal Engine",
@@ -7843,6 +8807,16 @@
     "subcategory": null,
     "onet_element_id": null,
     "aliases": []
+  },
+  {
+    "name": "Vocational Education",
+    "category": "domain",
+    "subcategory": "Education",
+    "onet_element_id": null,
+    "aliases": [
+      "Career and Technical Education",
+      "CTE"
+    ]
   },
   {
     "name": "VPN",
@@ -8064,6 +9038,13 @@
     "name": "ZoomInfo",
     "category": "tool",
     "subcategory": null,
+    "onet_element_id": null,
+    "aliases": []
+  },
+  {
+    "name": "Zotero",
+    "category": "tool",
+    "subcategory": "Research Tools",
     "onet_element_id": null,
     "aliases": []
   },

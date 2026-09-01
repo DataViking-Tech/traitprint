@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Canonical taxonomy v3 — education/academia pack** — the bundled
+  taxonomy grows 1083 → 1190 skills: teaching & pedagogy, research
+  methods, academia practice (grant writing, peer review, publishing),
+  education administration, a starter set of academic disciplines, and
+  the sector's tools (LMS platforms, SPSS/Stata/NVivo, Qualtrics,
+  Zotero/LaTeX, …), plus ~150 new relationship edges including
+  career-translator bridges (curriculum → instructional/LX design → UX,
+  qualitative methods → user research, grant writing → fundraising).
+  Also removes 299 spurious `parent_of` edges that substring-matching
+  had attached to the single-letter skills `C`, `R`, `Go`, and `Gin`
+  (e.g. "R parent_of Zuora"), and moves the "Peer Review" alias off
+  Code Review onto a new academic Peer Review skill. Shared dumps and
+  Cloud handshake move to `canonical` v3 in lockstep
+  (traitprint-cloud PR pending).
+
 - **MCP SDK 2.0 / spec 2026-07-28** — the local stdio server now runs on
   the official `mcp` Python SDK 2.x (pinned `mcp>=2.0,<3`), which speaks
   both the 2026-07-28 revision (`server/discover` handshake, stateless
